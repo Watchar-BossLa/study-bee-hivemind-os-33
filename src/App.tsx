@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Courses from "./pages/Courses";
 import NotFound from "./pages/NotFound";
+import NotImplemented from "./pages/NotImplemented";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,14 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/courses" element={<Courses />} />
+          
+          {/* Placeholder routes for features mentioned in the spec */}
+          <Route path="/flashcards" element={<NotImplemented />} />
+          <Route path="/tutor" element={<NotImplemented />} />
+          <Route path="/ocr" element={<NotImplemented />} />
+          <Route path="/arena" element={<NotImplemented />} />
+          <Route path="/spaced-repetition" element={<NotImplemented />} />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

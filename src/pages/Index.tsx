@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import FeaturesSection from '@/components/FeaturesSection';
+import AIFeatures from '@/components/AIFeatures';
 import CourseCard, { CourseProps } from '@/components/CourseCard';
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -50,6 +51,8 @@ const Index = () => {
       
       <main className="flex-grow">
         <HeroSection />
+        
+        <AIFeatures />
         
         <FeaturesSection />
         
