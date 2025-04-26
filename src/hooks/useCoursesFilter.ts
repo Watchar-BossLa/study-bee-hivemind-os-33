@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { CourseProps } from '@/components/CourseCard';
+import { useState, useCallback } from 'react';
+import { CourseProps } from '@/types/course';
 
 export const useCoursesFilter = (coursesData: CourseProps[]) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,11 +16,11 @@ export const useCoursesFilter = (coursesData: CourseProps[]) => {
     return matchesSearch && matchesCategory && matchesLevel;
   });
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchTerm('');
     setSelectedCategory(null);
     setSelectedLevel(null);
-  };
+  }, []);
 
   return {
     searchTerm,
