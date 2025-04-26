@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Courses from "./pages/Courses";
 import NotFound from "./pages/NotFound";
 import NotImplemented from "./pages/NotImplemented";
+import OCRFlashcards from "./pages/OCRFlashcards";
 
 const queryClient = new QueryClient();
 
@@ -21,10 +22,12 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/courses" element={<Courses />} />
           
+          {/* OCR Flashcards implementation */}
+          <Route path="/ocr" element={<OCRFlashcards />} />
+          
           {/* Placeholder routes for features mentioned in the spec */}
           <Route path="/flashcards" element={<NotImplemented />} />
           <Route path="/tutor" element={<NotImplemented />} />
-          <Route path="/ocr" element={<NotImplemented />} />
           <Route path="/arena" element={<NotImplemented />} />
           <Route path="/spaced-repetition" element={<NotImplemented />} />
           
