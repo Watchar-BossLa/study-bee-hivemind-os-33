@@ -1,8 +1,10 @@
 
+export type MessageRole = 'user' | 'assistant';
+
 export type MessageType = {
   id: string;
   content: string;
-  role: 'user' | 'assistant';
+  role: MessageRole;
   timestamp: Date;
   modelUsed?: string;
   loading?: boolean;
