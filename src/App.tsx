@@ -9,6 +9,7 @@ import Courses from "./pages/Courses";
 import NotFound from "./pages/NotFound";
 import NotImplemented from "./pages/NotImplemented";
 import OCRFlashcards from "./pages/OCRFlashcards";
+import GraphTutor from "./pages/GraphTutor";
 
 const queryClient = new QueryClient();
 
@@ -25,9 +26,11 @@ const App = () => (
           {/* OCR Flashcards implementation */}
           <Route path="/ocr" element={<OCRFlashcards />} />
           
+          {/* Graph-RAG Tutoring implementation */}
+          <Route path="/tutor" element={<GraphTutor />} />
+          
           {/* Placeholder routes for features mentioned in the spec */}
           <Route path="/flashcards" element={<NotImplemented />} />
-          <Route path="/tutor" element={<NotImplemented />} />
           <Route path="/arena" element={<NotImplemented />} />
           <Route path="/spaced-repetition" element={<NotImplemented />} />
           
