@@ -1,29 +1,12 @@
-
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Network, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { GraphData } from './types/graph';
+import GraphCanvas from './components/GraphCanvas';
+import TopicFilters from './components/TopicFilters';
 
-// Simple graph data for visualization
-type GraphNode = {
-  id: string;
-  label: string;
-  size: number;
-  color: string;
-};
-
-type GraphEdge = {
-  from: string;
-  to: string;
-  label?: string;
-};
-
-type GraphData = {
-  nodes: GraphNode[];
-  edges: GraphEdge[];
-};
-
-// Sample knowledge graph data for demonstration
+// Sample knowledge graph data
 const sampleGraphData: GraphData = {
   nodes: [
     { id: '1', label: 'Mitochondria', size: 20, color: '#6366f1' },
@@ -52,97 +35,7 @@ const sampleGraphData: GraphData = {
 
 const KnowledgeGraph = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
-  
-  // For a simple visualization, we're drawing circles with connecting lines
-  // In a production app, you'd use a library like vis.js or react-force-graph
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        const drawGraph = () => {
-          // Clear canvas
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          
-          // Set canvas dimensions
-          canvas.width = canvas.offsetWidth;
-          canvas.height = canvas.offsetHeight;
-          
-          // Position nodes in a circular layout
-          const centerX = canvas.width / 2;
-          const centerY = canvas.height / 2;
-          const radius = Math.min(centerX, centerY) * 0.7;
-          
-          const nodePositions: { [key: string]: { x: number; y: number } } = {};
-          
-          // Draw edges first (so they appear behind nodes)
-          sampleGraphData.edges.forEach(edge => {
-            const fromNode = sampleGraphData.nodes.find(n => n.id === edge.from);
-            const toNode = sampleGraphData.nodes.find(n => n.id === edge.to);
-            
-            if (fromNode && toNode) {
-              const fromAngle = (parseInt(fromNode.id) / sampleGraphData.nodes.length) * 2 * Math.PI;
-              const toAngle = (parseInt(toNode.id) / sampleGraphData.nodes.length) * 2 * Math.PI;
-              
-              const fromX = centerX + radius * Math.cos(fromAngle);
-              const fromY = centerY + radius * Math.sin(fromAngle);
-              const toX = centerX + radius * Math.cos(toAngle);
-              const toY = centerY + radius * Math.sin(toAngle);
-              
-              nodePositions[fromNode.id] = { x: fromX, y: fromY };
-              nodePositions[toNode.id] = { x: toX, y: toY };
-              
-              // Draw line (edge)
-              ctx.beginPath();
-              ctx.moveTo(fromX, fromY);
-              ctx.lineTo(toX, toY);
-              ctx.strokeStyle = '#e2e8f0';
-              ctx.lineWidth = 1;
-              ctx.stroke();
-            }
-          });
-          
-          // Draw nodes
-          sampleGraphData.nodes.forEach((node, index) => {
-            const isActive = activeTopic === node.label || 
-              (!activeTopic && searchTerm.length > 0 && 
-                node.label.toLowerCase().includes(searchTerm.toLowerCase()));
-              
-            // Use position from edges if available, otherwise calculate
-            const position = nodePositions[node.id] || {
-              x: centerX + radius * Math.cos((index / sampleGraphData.nodes.length) * 2 * Math.PI),
-              y: centerY + radius * Math.sin((index / sampleGraphData.nodes.length) * 2 * Math.PI)
-            };
-            
-            // Draw circle (node)
-            ctx.beginPath();
-            ctx.arc(position.x, position.y, isActive ? node.size + 3 : node.size, 0, 2 * Math.PI);
-            ctx.fillStyle = isActive ? '#f43f5e' : node.color;
-            ctx.fill();
-            
-            // Draw label
-            ctx.font = isActive ? 'bold 12px sans-serif' : '12px sans-serif';
-            ctx.fillStyle = '#f8fafc';
-            ctx.textAlign = 'center';
-            ctx.fillText(node.label, position.x, position.y + node.size + 15);
-          });
-        };
-        
-        // Initial draw
-        drawGraph();
-        
-        // Redraw on window resize
-        window.addEventListener('resize', drawGraph);
-        
-        // Clean up
-        return () => {
-          window.removeEventListener('resize', drawGraph);
-        };
-      }
-    }
-  }, [searchTerm, activeTopic]);
   
   // Topics derived from the graph for the sidebar
   const topics = Array.from(new Set(sampleGraphData.nodes.map(node => node.label)));
@@ -166,31 +59,16 @@ const KnowledgeGraph = () => {
         </div>
       </CardHeader>
       <CardContent className="p-4 flex-grow flex flex-col">
-        <div className="flex gap-2 flex-wrap mb-4">
-          {topics.slice(0, 5).map((topic) => (
-            <button
-              key={topic}
-              className={`px-3 py-1 text-xs rounded-full ${
-                activeTopic === topic 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              }`}
-              onClick={() => setActiveTopic(activeTopic === topic ? null : topic)}
-            >
-              {topic}
-            </button>
-          ))}
-        </div>
-        
-        <div className="relative flex-grow bg-muted/30 rounded-md overflow-hidden">
-          <canvas 
-            ref={canvasRef} 
-            className="w-full h-full"
-          />
-          <div className="absolute bottom-2 left-2 text-xs text-muted-foreground">
-            <p>Graph visualization powered by Graph-RAG</p>
-          </div>
-        </div>
+        <TopicFilters 
+          topics={topics}
+          activeTopic={activeTopic}
+          setActiveTopic={setActiveTopic}
+        />
+        <GraphCanvas 
+          graphData={sampleGraphData}
+          activeTopic={activeTopic}
+          searchTerm={searchTerm}
+        />
       </CardContent>
     </Card>
   );
