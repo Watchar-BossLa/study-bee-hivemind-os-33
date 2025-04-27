@@ -36,3 +36,21 @@ export type ArenaStats = {
   correct_answers: number;
   last_match_date: string | null;
 };
+
+export type Achievement = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  earned: boolean;
+  earned_at?: string;
+};
+
+export type LeaderboardEntry = {
+  user_id: string;
+  username: string | null;
+  matches_played: number;
+  matches_won: number;
+  total_score: number;
+  highest_score: number;
+};
