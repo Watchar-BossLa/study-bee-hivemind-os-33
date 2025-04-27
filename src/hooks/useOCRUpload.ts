@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { v4 as uuidv4 } from '@supabase/supabase-js';
 
 export const useOCRUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -11,14 +10,15 @@ export const useOCRUpload = () => {
   const uploadAndProcess = async (file: File) => {
     setIsUploading(true);
     try {
-      // Generate a unique path for the image
-      const user = (await supabase.auth.getUser()).data.user;
-      if (!user) throw new Error('User not authenticated');
+      // Get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error('User not authenticated');
       
-      const filePath = `${user.id}/${uuidv4()}-${file.name}`;
+      // Generate a unique path for the image
+      const filePath = `${user.id}/${Date.now()}-${file.name}`;
       
       // Upload image to storage
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('ocr-images')
         .upload(filePath, file);
         
@@ -34,7 +34,8 @@ export const useOCRUpload = () => {
         .from('ocr_uploads')
         .insert({
           image_url: publicUrl,
-          status: 'pending'
+          status: 'pending',
+          user_id: user.id
         })
         .select()
         .single();
