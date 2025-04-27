@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import type { ArenaMatch, MatchPlayer, QuizQuestion, ArenaStats, LeaderboardEntry, Achievement } from '@/types/arena';
+import { useArenaStats } from './useArenaStats';
+import { useArenaAchievements } from './useArenaAchievements';
+import { calculateScore } from '@/utils/arenaUtils';
+import type { ArenaMatch, MatchPlayer, QuizQuestion } from '@/types/arena';
 
 export const useArena = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -12,112 +15,11 @@ export const useArena = () => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(15);
   const [matchComplete, setMatchComplete] = useState(false);
-  const [arenaStats, setArenaStats] = useState<ArenaStats | null>(null);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [unsubscribe, setUnsubscribe] = useState<() => void | null>(() => null);
+  
   const { toast } = useToast();
-
-  const fetchUserStats = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: stats } = await supabase
-        .from('arena_stats')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (stats) {
-        setArenaStats(stats);
-      }
-    } catch (error) {
-      console.error('Error fetching user stats:', error);
-    }
-  }, []);
-
-  const fetchLeaderboard = useCallback(async () => {
-    try {
-      const { data } = await supabase
-        .from('arena_stats')
-        .select('*')
-        .order('highest_score', { ascending: false })
-        .limit(10);
-
-      if (data) {
-        const formattedLeaderboard: LeaderboardEntry[] = data.map((entry) => ({
-          user_id: entry.user_id,
-          username: entry.user_id.substring(0, 8), // Placeholder for user name
-          matches_played: entry.matches_played,
-          matches_won: entry.matches_won,
-          total_score: entry.total_score,
-          highest_score: entry.highest_score,
-        }));
-        
-        setLeaderboard(formattedLeaderboard);
-      }
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-    }
-  }, []);
-
-  const fetchAchievements = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: userAchievements } = await supabase
-        .from('user_achievements')
-        .select('*')
-        .eq('user_id', user.id);
-
-      const allAchievements: Achievement[] = [
-        {
-          id: 'first-match',
-          name: 'First Match',
-          description: 'Participated in your first quiz match',
-          icon: 'award',
-          earned: false,
-        },
-        {
-          id: 'first-win',
-          name: 'First Win',
-          description: 'Won your first quiz match',
-          icon: 'trophy',
-          earned: false,
-        },
-        {
-          id: 'perfect-score',
-          name: 'Perfect Score',
-          description: 'Answered all questions correctly in a match',
-          icon: 'star',
-          earned: false,
-        },
-        {
-          id: 'five-matches',
-          name: 'Quiz Enthusiast',
-          description: 'Participated in 5 quiz matches',
-          icon: 'medal',
-          earned: false,
-        }
-      ];
-
-      if (userAchievements) {
-        userAchievements.forEach((achievement) => {
-          const index = allAchievements.findIndex(a => a.id === achievement.achievement_id);
-          if (index !== -1) {
-            allAchievements[index].earned = true;
-            allAchievements[index].earned_at = achievement.earned_at;
-          }
-        });
-      }
-
-      setAchievements(allAchievements);
-    } catch (error) {
-      console.error('Error fetching achievements:', error);
-    }
-  }, []);
+  const { arenaStats, leaderboard, fetchUserStats, fetchLeaderboard } = useArenaStats();
+  const { achievements, fetchAchievements, awardAchievement } = useArenaAchievements();
 
   const joinMatch = async () => {
     try {
@@ -237,15 +139,6 @@ export const useArena = () => {
 
     } catch (error) {
       console.error('Error submitting answer:', error);
-    }
-  };
-
-  const calculateScore = (difficulty: string): number => {
-    switch (difficulty) {
-      case 'easy': return 10;
-      case 'medium': return 20;
-      case 'hard': return 30;
-      default: return 10;
     }
   };
 
