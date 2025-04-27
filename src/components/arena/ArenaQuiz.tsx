@@ -11,7 +11,7 @@ interface ArenaQuizProps {
   question: QuizQuestion;
   timeLeft: number;
   selectedAnswer: string | null;
-  onAnswer: (answer: string) => void;
+  onAnswer: (answer: 'a' | 'b' | 'c' | 'd') => void;
   questionNumber: number;
   totalQuestions: number;
   matchComplete: boolean;

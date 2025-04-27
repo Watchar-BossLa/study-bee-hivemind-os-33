@@ -177,7 +177,7 @@ export const useArena = () => {
     } catch (error) {
       toast({
         title: "Error joining match",
-        description: error.message,
+        description: "Failed to join match",
         variant: "destructive",
       });
     }
@@ -194,7 +194,19 @@ export const useArena = () => {
         .limit(5);
 
       if (questionData) {
-        setQuestions(questionData);
+        const typedQuestions: QuizQuestion[] = questionData.map(q => ({
+          id: q.id,
+          question: q.question,
+          option_a: q.option_a,
+          option_b: q.option_b,
+          option_c: q.option_c,
+          option_d: q.option_d,
+          correct_answer: q.correct_answer as 'a' | 'b' | 'c' | 'd',
+          difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
+          category: q.category
+        }));
+        
+        setQuestions(typedQuestions);
         
         // Update match status to active
         await supabase
@@ -211,7 +223,7 @@ export const useArena = () => {
   }, []);
 
   // Answer a question
-  const answerQuestion = async (answer: string) => {
+  const answerQuestion = async (answer: 'a' | 'b' | 'c' | 'd') => {
     if (!currentMatch || selectedAnswer || currentQuestionIndex >= questions.length) return;
     
     setSelectedAnswer(answer);
@@ -330,7 +342,14 @@ export const useArena = () => {
       .single();
     
     if (data) {
-      setCurrentMatch(data);
+      const typedMatch: ArenaMatch = {
+        id: data.id,
+        status: data.status as 'waiting' | 'active' | 'completed',
+        start_time: data.start_time,
+        end_time: data.end_time
+      };
+      
+      setCurrentMatch(typedMatch);
       
       // If match has become active, start the game
       if (data.status === 'active' && questions.length === 0) {
