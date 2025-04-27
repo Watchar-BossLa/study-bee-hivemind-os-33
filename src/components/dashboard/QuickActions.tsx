@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Brain, Camera, Book, Award } from "lucide-react";
+import { Brain, Camera, Book, Award, GraduationCap } from "lucide-react";
 
 const QuickActions = () => {
   const actions = [
@@ -22,18 +22,25 @@ const QuickActions = () => {
       color: "bg-purple-500"
     },
     {
+      title: "Qualifications",
+      description: "Explore qualification paths",
+      icon: GraduationCap,
+      href: "/qualifications",
+      color: "bg-green-500"
+    },
+    {
       title: "Create Flashcards",
       description: "Scan your notes",
       icon: Camera,
       href: "/ocr",
-      color: "bg-green-500"
+      color: "bg-amber-500"
     },
     {
       title: "Quiz Arena",
       description: "Test your knowledge",
       icon: Award,
       href: "/arena",
-      color: "bg-amber-500"
+      color: "bg-rose-500"
     }
   ];
 
@@ -44,7 +51,7 @@ const QuickActions = () => {
         <p className="text-muted-foreground">Get started with these learning tools</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {actions.map((action) => (
           <Link key={action.title} to={action.href}>
             <Card className="h-full hover:shadow-md transition-shadow">
