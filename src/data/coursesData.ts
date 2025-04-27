@@ -1,5 +1,5 @@
 
-import { CourseProps } from '@/components/CourseCard';
+import { CourseProps } from '@/types/course';
 
 export const coursesData: CourseProps[] = [
   {
