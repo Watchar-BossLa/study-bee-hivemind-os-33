@@ -99,7 +99,7 @@ export const useArenaMatch = () => {
     if (data) {
       const typedMatch: ArenaMatch = {
         id: data.id,
-        status: data.status,
+        status: data.status as 'waiting' | 'active' | 'completed',
         start_time: data.start_time,
         end_time: data.end_time
       };
@@ -136,7 +136,7 @@ export const useArenaMatch = () => {
       await supabase
         .from('arena_matches')
         .update({ 
-          status: 'completed',
+          status: 'completed' as const,
           end_time: new Date().toISOString()
         })
         .eq('id', currentMatch.id);

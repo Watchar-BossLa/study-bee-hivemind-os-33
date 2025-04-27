@@ -26,8 +26,8 @@ export const useArenaQuestion = (matchId: string | null) => {
           option_b: q.option_b,
           option_c: q.option_c,
           option_d: q.option_d,
-          correct_answer: q.correct_answer,
-          difficulty: q.difficulty,
+          correct_answer: q.correct_answer as 'a' | 'b' | 'c' | 'd',
+          difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
           category: q.category
         }));
         

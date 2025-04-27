@@ -264,7 +264,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_player_progress: {
+        Args: {
+          match_id_param: string
+          user_id_param: string
+          score_to_add: number
+          is_correct: boolean
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       processing_status: "pending" | "processing" | "completed" | "error"

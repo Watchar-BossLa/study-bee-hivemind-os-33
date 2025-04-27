@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { useArenaMatch } from './useArenaMatch';
 import { useArenaQuestion } from './useArenaQuestion';
 import { useArenaStats } from './useArenaStats';
 import { useArenaAchievements } from './useArenaAchievements';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useArena = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -84,17 +84,46 @@ export const useArena = () => {
     }
   }, [currentMatch?.status, questions.length]);
 
-  useEffect(() => {
-    if (matchComplete) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && currentMatch) {
-        checkForAchievements(user.id, currentMatch.id);
-      }
-      
-      fetchUserStats();
-      fetchLeaderboard();
-      resetQuestions();
+  const checkForAchievements = async (userId: string, matchId: string) => {
+    const { data: playerData } = await supabase
+      .from('match_players')
+      .select('*')
+      .eq('match_id', matchId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!playerData) return;
+
+    // First match achievement
+    await awardAchievement(userId, 'first-match');
+
+    // Perfect score achievement
+    if (playerData.questions_answered > 0 && playerData.correct_answers === playerData.questions_answered) {
+      await awardAchievement(userId, 'perfect-score');
     }
+
+    // Check if won the match
+    const isWinner = players.every(p => p.user_id === userId || p.score < playerData.score);
+    if (isWinner) {
+      await awardAchievement(userId, 'first-win');
+    }
+  };
+
+  useEffect(() => {
+    const handleMatchComplete = async () => {
+      if (matchComplete && currentMatch) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await checkForAchievements(user.id, currentMatch.id);
+        }
+        
+        fetchUserStats();
+        fetchLeaderboard();
+        resetQuestions();
+      }
+    };
+
+    handleMatchComplete();
   }, [matchComplete, currentMatch, fetchUserStats, fetchLeaderboard]);
 
   return {
