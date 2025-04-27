@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -12,10 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
-// Define the OCR processing states
 type ProcessingState = 'idle' | 'capturing' | 'processing' | 'complete' | 'error';
 
-// Define the flashcard structure as per the spec
 interface Flashcard {
   id: string;
   question: string;
@@ -34,19 +31,13 @@ const OCRFlashcards = () => {
   const [isImportingFromDevice, setIsImportingFromDevice] = useState(false);
   const { toast } = useToast();
 
-  // Process image and generate flashcards
   const processImage = async (imageSrc: string) => {
     setCapturedImage(imageSrc);
     setProcessingState('processing');
     
     try {
-      // In a real implementation, this would call the backend Rust service
-      // as defined in the spec: OCR-Svc with Rust + OpenCV (deskew, denoise) → PyTesseract OCR
-      
-      // Simulate the API call with a timeout
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Mock response - in production this would come from the backend
       const mockFlashcards: Flashcard[] = [
         { 
           id: Date.now().toString() + '-1', 
@@ -243,11 +234,7 @@ const OCRFlashcards = () => {
               </div>
               
               <TabsContent value="all" className="mt-0">
-                <FlashcardsList flashcards={flashcards.map(card => ({
-                  id: card.id,
-                  question: card.question,
-                  answer: card.answer
-                }))} />
+                <FlashcardsList flashcards={flashcards} />
               </TabsContent>
               
               <TabsContent value="recent" className="mt-0">
@@ -255,19 +242,14 @@ const OCRFlashcards = () => {
                   flashcards={flashcards
                     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                     .slice(0, 5)
-                    .map(card => ({
-                      id: card.id,
-                      question: card.question,
-                      answer: card.answer
-                    }))
-                  } 
+                  }
                 />
               </TabsContent>
               
               <TabsContent value="study" className="mt-0">
                 <FlashcardsList 
-                  flashcards={[]} 
-                  emptyMessage="No flashcards scheduled for study today. Use the SM-2⁺ algorithm to optimize your learning." 
+                  flashcards={[]}
+                  emptyMessage="No flashcards scheduled for study today. Use the SM-2⁺ algorithm to optimize your learning."
                 />
               </TabsContent>
             </Tabs>
