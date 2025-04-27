@@ -6,6 +6,9 @@ import HeroSection from '@/components/HeroSection';
 import FeaturesSection from '@/components/FeaturesSection';
 import AIFeatures from '@/components/AIFeatures';
 import CourseCard from '@/components/CourseCard';
+import DashboardStats from '@/components/dashboard/DashboardStats';
+import QuickActions from '@/components/dashboard/QuickActions';
+import LearningProgress from '@/components/dashboard/LearningProgress';
 import { CourseProps } from '@/types/course';
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -53,12 +56,33 @@ const Index = () => {
       <main className="flex-grow">
         <HeroSection />
         
+        {/* Dashboard Quick Actions Section */}
+        <section className="py-12 bg-gray-50/50">
+          <div className="container">
+            <QuickActions />
+          </div>
+        </section>
+        
+        {/* Learning Progress Section */}
+        <section className="py-12 bg-white">
+          <div className="container">
+            <LearningProgress />
+          </div>
+        </section>
+        
+        {/* Stats Overview */}
+        <section className="py-12 bg-gray-50/50">
+          <div className="container">
+            <DashboardStats />
+          </div>
+        </section>
+        
         <AIFeatures />
         
         <FeaturesSection />
         
         {/* Featured Courses Section */}
-        <section className="py-16 bg-bee-light">
+        <section className="py-16 bg-white">
           <div className="container">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
               <div>
