@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { GraphData } from '../types/graph';
 import { useGraphPositions } from '../hooks/useGraphPositions';
 import { drawEdges } from './graph/GraphEdges';
@@ -92,7 +92,10 @@ const GraphCanvas = ({ graphData, activeTopic, searchTerm }: GraphCanvasProps) =
         onMouseDown={handlers.startDrag}
         onMouseUp={handlers.endDrag}
         onMouseLeave={handlers.endDrag}
-        onWheel={handlers.handleWheel}
+        onWheel={(e: React.WheelEvent<HTMLCanvasElement>) => {
+          e.preventDefault();
+          handlers.handleWheel(e.nativeEvent);
+        }}
       />
       <div className="absolute bottom-2 left-2 text-xs text-muted-foreground">
         <p>Graph visualization powered by Graph-RAG</p>

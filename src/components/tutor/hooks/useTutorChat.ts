@@ -1,14 +1,17 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageType } from '../types/chat';
+import { quorumForge } from '../services/QuorumForge';
+import { useToast } from '@/hooks/use-toast';
+import { learningPathService } from '../services/LearningPathService';
 
 const initialMessages: MessageType[] = [
   {
     id: '1',
-    content: 'Hello! I\'m your AI tutor. I can help you understand various subjects using a knowledge graph to provide context-rich explanations. What would you like to learn about today?',
+    content: 'Hello! I\'m your AI tutor powered by QuorumForge. I can help you understand various subjects using a knowledge graph to provide context-rich explanations. What would you like to learn about today?',
     role: 'assistant',
     timestamp: new Date(Date.now() - 60000),
-    modelUsed: 'Llama-3',
+    modelUsed: 'QuorumForge OS',
   },
 ];
 
@@ -17,14 +20,17 @@ export const useTutorChat = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
+  const [activePath, setActivePath] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const simulateProcessing = () => {
     setProcessingProgress(0);
     const steps = [
       "Analyzing query",
+      "Routing to optimal LLM",
+      "Convening QuorumForge council",
       "Retrieving knowledge graph nodes",
-      "Selecting optimal LLM",
-      "Generating response"
+      "Generating consensus response"
     ];
     
     let step = 0;
@@ -40,48 +46,98 @@ export const useTutorChat = () => {
     }, 800);
   };
 
-  const completeResponse = () => {
-    const responses = [
-      {
-        content: "The mitochondrion is a double membrane-bound organelle found in most eukaryotic cells. The term 'powerhouse of the cell' refers to its primary function of generating most of the cell's supply of ATP, used as a source of chemical energy. The mitochondrion has its own DNA which is separate from the cell's nuclear DNA, suggesting that mitochondria evolved from free-living bacteria that were engulfed by primitive eukaryotic cells.",
-        model: "Llama-3",
-        topics: ["Cell Biology", "Cellular Respiration", "Evolution"]
-      },
-      {
-        content: "A binary search tree (BST) is a data structure that enables efficient search, insertion, and deletion operations. In a BST, the left subtree of a node contains only nodes with keys less than the node's key, and the right subtree contains only nodes with keys greater than the node's key. This property ensures that lookup, insert, and delete operations all take O(log n) time on average and O(n) time in the worst case.",
-        model: "GPT-4o",
-        topics: ["Data Structures", "Algorithms", "Computer Science"]
-      },
-      {
-        content: "The Pythagorean theorem states that in a right triangle, the square of the length of the hypotenuse (the side opposite the right angle) equals the sum of the squares of the lengths of the other two sides. If we denote the length of the hypotenuse as c, and the lengths of the other two sides as a and b, then the theorem can be expressed as: a² + b² = c². This fundamental theorem has applications in architecture, engineering, and countless areas of mathematics.",
-        model: "Mixtral",
-        topics: ["Mathematics", "Geometry", "Trigonometry"]
-      }
-    ];
-    
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    
-    setMessages(prevMessages => {
-      const newMessages = [...prevMessages];
-      const loadingMessageIndex = newMessages.findIndex(msg => msg.loading);
+  const completeResponse = async () => {
+    try {
+      // Generate a unique user ID (would normally come from auth)
+      const mockUserId = 'user-123';
       
-      if (loadingMessageIndex !== -1) {
-        newMessages[loadingMessageIndex] = {
-          id: newMessages[loadingMessageIndex].id,
-          content: randomResponse.content,
-          role: 'assistant',
-          timestamp: new Date(),
-          modelUsed: randomResponse.model,
-          relatedTopics: randomResponse.topics,
-          loading: false,
-        };
+      // Use our QuorumForge system to process the user's message
+      const userMessage = messages.find(m => m.loading === undefined && m.role === 'user');
+      if (!userMessage) return;
+      
+      const interaction = await quorumForge.processInteraction(
+        userMessage.content,
+        mockUserId,
+        { activePath }
+      );
+      
+      // Find the highest confidence response
+      const bestResponse = interaction.agentResponses.reduce(
+        (best, current) => current.confidenceScore > best.confidenceScore ? current : best,
+        interaction.agentResponses[0]
+      );
+      
+      // Create our final response
+      const agentNames = interaction.agentResponses.map(
+        resp => quorumForge.getAgents().find(a => a.id === resp.agentId)?.name
+      );
+      
+      // Check if this query might benefit from a learning path recommendation
+      const topics = extractTopicsFromMessage(userMessage.content);
+      if (topics.length > 0) {
+        const recommendedPaths = topics.flatMap(
+          topic => learningPathService.getPathsByTopic(topic)
+        );
+        
+        // If we found a relevant learning path, suggest it
+        if (recommendedPaths.length > 0) {
+          const path = recommendedPaths[0]; // Take the first matching path
+          
+          // Show a toast with the recommendation
+          toast({
+            title: "Learning Path Recommended",
+            description: `The "${path.name}" learning path is recommended based on your question.`,
+          });
+          
+          // Update active path
+          setActivePath(path.id);
+        }
       }
       
-      return newMessages;
-    });
-    
-    setIsLoading(false);
-    setProcessingProgress(100);
+      setMessages(prevMessages => {
+        const newMessages = [...prevMessages];
+        const loadingMessageIndex = newMessages.findIndex(msg => msg.loading);
+        
+        if (loadingMessageIndex !== -1) {
+          newMessages[loadingMessageIndex] = {
+            id: newMessages[loadingMessageIndex].id,
+            content: bestResponse.response,
+            role: 'assistant',
+            timestamp: new Date(),
+            modelUsed: bestResponse.modelUsed,
+            relatedTopics: topics,
+            agentContributors: agentNames.filter(Boolean) as string[],
+            loading: false,
+          };
+        }
+        
+        return newMessages;
+      });
+    } catch (error) {
+      console.error('Error processing with QuorumForge:', error);
+      
+      // Handle the error by providing an error message
+      setMessages(prevMessages => {
+        const newMessages = [...prevMessages];
+        const loadingMessageIndex = newMessages.findIndex(msg => msg.loading);
+        
+        if (loadingMessageIndex !== -1) {
+          newMessages[loadingMessageIndex] = {
+            id: newMessages[loadingMessageIndex].id,
+            content: "I apologize, but I encountered an issue processing your request. Please try again.",
+            role: 'assistant',
+            timestamp: new Date(),
+            modelUsed: 'System',
+            loading: false,
+          };
+        }
+        
+        return newMessages;
+      });
+    } finally {
+      setIsLoading(false);
+      setProcessingProgress(100);
+    }
   };
 
   const handleSend = () => {
@@ -113,7 +169,26 @@ export const useTutorChat = () => {
     input,
     isLoading,
     processingProgress,
+    activePath,
     setInput,
     handleSend,
+    setActivePath,
   };
 };
+
+// Helper function to extract potential topics from a message
+function extractTopicsFromMessage(message: string): string[] {
+  // This is a simplified implementation - in a real system,
+  // this would use NLP/entity extraction to identify topics
+  const lowerMessage = message.toLowerCase();
+  const potentialTopics = [
+    'Mitochondria', 'ATP', 'Cellular Respiration', 'Krebs Cycle',
+    'Electron Transport', 'Glycolysis', 'Cell Biology', 'DNA',
+    'RNA', 'Protein Synthesis', 'Genetics', 'Evolution',
+    'Natural Selection'
+  ];
+  
+  return potentialTopics.filter(topic => 
+    lowerMessage.includes(topic.toLowerCase())
+  );
+}

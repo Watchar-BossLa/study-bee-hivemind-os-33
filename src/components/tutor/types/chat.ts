@@ -1,12 +1,11 @@
 
-export type MessageRole = 'user' | 'assistant';
-
-export type MessageType = {
+export interface MessageType {
   id: string;
   content: string;
-  role: MessageRole;
+  role: 'user' | 'assistant' | 'system';
   timestamp: Date;
   modelUsed?: string;
-  loading?: boolean;
   relatedTopics?: string[];
-};
+  agentContributors?: string[];
+  loading?: boolean;
+}

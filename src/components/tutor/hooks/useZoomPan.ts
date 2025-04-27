@@ -1,5 +1,5 @@
 
-import { useState, useCallback, MouseEvent } from 'react';
+import { useState, useCallback } from 'react';
 
 interface ZoomPanState {
   scale: number;
@@ -21,15 +21,14 @@ export const useZoomPan = (minZoom: number = 0.5, maxZoom: number = 2) => {
   });
 
   const handleWheel = useCallback((e: WheelEvent) => {
-    e.preventDefault();
+    const delta = -e.deltaY * 0.001;
     setState(prev => {
-      const delta = -e.deltaY * 0.001;
       const newScale = Math.min(Math.max(prev.scale + delta, minZoom), maxZoom);
       return { ...prev, scale: newScale };
     });
   }, [minZoom, maxZoom]);
 
-  const startDrag = useCallback((e: MouseEvent) => {
+  const startDrag = useCallback((e: React.MouseEvent) => {
     setState(prev => ({
       ...prev,
       isDragging: true,
@@ -38,7 +37,7 @@ export const useZoomPan = (minZoom: number = 0.5, maxZoom: number = 2) => {
     }));
   }, []);
 
-  const onDrag = useCallback((e: MouseEvent) => {
+  const onDrag = useCallback((e: React.MouseEvent) => {
     setState(prev => {
       if (!prev.isDragging) return prev;
       return {
