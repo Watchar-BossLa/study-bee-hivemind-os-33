@@ -51,7 +51,7 @@ const relatedCourses = [
   { id: '4', topic: 'DNA', course: 'Introduction to Genetics' },
   { id: '5', topic: 'Krebs Cycle', course: 'Advanced Metabolism' },
   { id: '6', topic: 'Evolution', course: 'Evolutionary Biology' },
-  { id: '7', topic: 'Natural Selection', course: 'Darwin's Theory' },
+  { id: '7', topic: 'Natural Selection', course: "Darwin's Theory" },
 ];
 
 // Learning paths
