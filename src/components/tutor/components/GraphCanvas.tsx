@@ -1,9 +1,10 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { GraphData } from '../types/graph';
 import { useGraphPositions } from '../hooks/useGraphPositions';
 import { drawEdges } from './graph/GraphEdges';
 import { drawNodes } from './graph/GraphNodes';
+import { useZoomPan } from '../hooks/useZoomPan';
 
 interface GraphCanvasProps {
   graphData: GraphData;
@@ -14,22 +15,29 @@ interface GraphCanvasProps {
 const GraphCanvas = ({ graphData, activeTopic, searchTerm }: GraphCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  
   const { nodePositions, setNodePositions } = useGraphPositions(
     graphData,
     canvasRef.current?.offsetWidth || 0,
     canvasRef.current?.offsetHeight || 0
   );
 
+  const { scale, offsetX, offsetY, isDragging, handlers } = useZoomPan();
+
   // Handle mouse move to detect hovering on nodes
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isDragging) {
+      handlers.onDrag(e);
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = (e.clientX - rect.left - offsetX) / scale;
+    const y = (e.clientY - rect.top - offsetY) / scale;
     
-    // Check if mouse is over any node
     let foundNode = false;
     for (const node of graphData.nodes) {
       const nodePos = nodePositions[node.id];
@@ -51,46 +59,40 @@ const GraphCanvas = ({ graphData, activeTopic, searchTerm }: GraphCanvasProps) =
     }
   };
 
-  // Handle click on nodes
-  const handleClick = () => {
-    if (hoveredNode) {
-      const node = graphData.nodes.find(n => n.id === hoveredNode);
-      if (node) {
-        console.log(`Clicked on node: ${node.label}`);
-      }
-    }
-  };
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        const drawGraph = () => {
-          // Clear canvas and set dimensions
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          canvas.width = canvas.offsetWidth;
-          canvas.height = canvas.offsetHeight;
-          
-          // Draw edges and nodes
-          drawEdges(ctx, graphData, nodePositions);
-          drawNodes(ctx, graphData, nodePositions, activeTopic, hoveredNode, searchTerm);
-        };
+        // Clear canvas and set dimensions
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
         
-        drawGraph();
-        window.addEventListener('resize', drawGraph);
-        return () => window.removeEventListener('resize', drawGraph);
+        // Apply zoom and pan transformations
+        ctx.save();
+        ctx.translate(offsetX, offsetY);
+        ctx.scale(scale, scale);
+        
+        // Draw edges and nodes
+        drawEdges(ctx, graphData, nodePositions);
+        drawNodes(ctx, graphData, nodePositions, activeTopic, hoveredNode, searchTerm);
+        
+        ctx.restore();
       }
     }
-  }, [graphData, searchTerm, activeTopic, hoveredNode, nodePositions]);
+  }, [graphData, searchTerm, activeTopic, hoveredNode, nodePositions, scale, offsetX, offsetY]);
 
   return (
     <div className="relative flex-grow bg-muted/30 rounded-md overflow-hidden">
       <canvas 
         ref={canvasRef} 
-        className="w-full h-full cursor-pointer" 
+        className="w-full h-full cursor-grab active:cursor-grabbing" 
         onMouseMove={handleMouseMove}
-        onClick={handleClick}
+        onMouseDown={handlers.startDrag}
+        onMouseUp={handlers.endDrag}
+        onMouseLeave={handlers.endDrag}
+        onWheel={handlers.handleWheel}
       />
       <div className="absolute bottom-2 left-2 text-xs text-muted-foreground">
         <p>Graph visualization powered by Graph-RAG</p>
