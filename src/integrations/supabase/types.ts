@@ -9,6 +9,72 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      arena_matches: {
+        Row: {
+          created_at: string | null
+          end_time: string | null
+          id: string
+          start_time: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_time?: string | null
+          id?: string
+          start_time?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_time?: string | null
+          id?: string
+          start_time?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      arena_stats: {
+        Row: {
+          correct_answers: number
+          created_at: string | null
+          highest_score: number
+          last_match_date: string | null
+          matches_played: number
+          matches_won: number
+          questions_answered: number
+          total_score: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          correct_answers?: number
+          created_at?: string | null
+          highest_score?: number
+          last_match_date?: string | null
+          matches_played?: number
+          matches_won?: number
+          questions_answered?: number
+          total_score?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          correct_answers?: number
+          created_at?: string | null
+          highest_score?: number
+          last_match_date?: string | null
+          matches_played?: number
+          matches_won?: number
+          questions_answered?: number
+          total_score?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       flashcards: {
         Row: {
           answer: string
@@ -59,6 +125,47 @@ export type Database = {
           },
         ]
       }
+      match_players: {
+        Row: {
+          correct_answers: number
+          created_at: string | null
+          id: string
+          match_id: string
+          questions_answered: number
+          score: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          correct_answers?: number
+          created_at?: string | null
+          id?: string
+          match_id: string
+          questions_answered?: number
+          score?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          correct_answers?: number
+          created_at?: string | null
+          id?: string
+          match_id?: string
+          questions_answered?: number
+          score?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_players_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "arena_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ocr_uploads: {
         Row: {
           created_at: string
@@ -85,6 +192,69 @@ export type Database = {
           image_url?: string
           status?: Database["public"]["Enums"]["processing_status"]
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quiz_questions: {
+        Row: {
+          category: string
+          correct_answer: string
+          created_at: string | null
+          difficulty: string
+          id: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          question: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          correct_answer: string
+          created_at?: string | null
+          difficulty: string
+          id?: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          question: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          correct_answer?: string
+          created_at?: string | null
+          difficulty?: string
+          id?: string
+          option_a?: string
+          option_b?: string
+          option_c?: string
+          option_d?: string
+          question?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          earned_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          earned_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          earned_at?: string | null
+          id?: string
           user_id?: string
         }
         Relationships: []

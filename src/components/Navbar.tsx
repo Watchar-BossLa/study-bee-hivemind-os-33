@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Search, Menu, Command, BookOpen, Camera, Brain } from "lucide-react";
+import { Search, Menu, Command, BookOpen, Camera, Brain, Award } from "lucide-react";
 import LogoBee from './LogoBee';
 import CommandPalette from './CommandPalette';
 import {
@@ -18,7 +17,6 @@ const Navbar = () => {
   const [commandOpen, setCommandOpen] = useState(false);
   const location = useLocation();
   
-  // Keyboard shortcut for command palette
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -88,6 +86,20 @@ const Navbar = () => {
                     </div>
                     <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                       Get personalized help with Graph-RAG tutoring
+                    </p>
+                  </Link>
+                  <Link 
+                    to="/arena"
+                    className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${
+                      isActive('/arena') ? 'bg-accent' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Award className="h-4 w-4" />
+                      <span className="text-sm font-medium">Quiz Arena</span>
+                    </div>
+                    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                      Compete in real-time quiz battles
                     </p>
                   </Link>
                 </div>

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import NotImplemented from "./pages/NotImplemented";
 import OCRFlashcards from "./pages/OCRFlashcards";
 import GraphTutor from "./pages/GraphTutor";
+import Arena from "./pages/Arena";
 
 const queryClient = new QueryClient();
 
@@ -22,12 +22,9 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/courses" element={<Courses />} />
-          
-          {/* OCR Flashcards implementation */}
           <Route path="/ocr" element={<OCRFlashcards />} />
-          
-          {/* Graph-RAG Tutoring implementation */}
           <Route path="/tutor" element={<GraphTutor />} />
+          <Route path="/arena" element={<Arena />} /> {/* Add the new route */}
           
           {/* Placeholder routes for features mentioned in the spec */}
           <Route path="/flashcards" element={<NotImplemented />} />
