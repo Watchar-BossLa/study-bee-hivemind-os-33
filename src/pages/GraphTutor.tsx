@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import TutorChat from '@/components/tutor/TutorChat';
 import KnowledgeGraph from '@/components/tutor/KnowledgeGraph';
 import TutorHeader from '@/components/tutor/TutorHeader';
+import { Toaster } from '@/components/ui/toaster';
 
 const GraphTutor = () => {
   return (
