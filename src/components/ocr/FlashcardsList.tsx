@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,16 +20,18 @@ interface Flashcard {
 }
 
 interface FlashcardsListProps {
-  flashcards: Flashcard[];
+  uploadId?: string;
   emptyMessage?: string;
   onEdit?: (id: string, updatedCard: { question: string; answer: string }) => void;
 }
 
 const FlashcardsList: React.FC<FlashcardsListProps> = ({ 
-  flashcards, 
+  uploadId,
   emptyMessage = "No flashcards created yet. Use the camera to create some!",
   onEdit
 }) => {
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [loading, setLoading] = useState(false);
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   const [editingCard, setEditingCard] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<{ question: string; answer: string }>({
@@ -77,6 +79,33 @@ const FlashcardsList: React.FC<FlashcardsListProps> = ({
       [id]: !prev[id]
     }));
   };
+
+  useEffect(() => {
+    const fetchFlashcards = async () => {
+      setLoading(true);
+      try {
+        const query = supabase
+          .from('flashcards')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (uploadId) {
+          query.eq('upload_id', uploadId);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        setFlashcards(data || []);
+      } catch (error) {
+        console.error('Error fetching flashcards:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFlashcards();
+  }, [uploadId]);
 
   if (flashcards.length === 0) {
     return (

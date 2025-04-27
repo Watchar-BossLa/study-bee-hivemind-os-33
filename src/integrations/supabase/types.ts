@@ -9,7 +9,86 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      flashcards: {
+        Row: {
+          answer: string
+          consecutive_correct_answers: number | null
+          created_at: string
+          easiness_factor: number | null
+          id: string
+          last_reviewed_at: string | null
+          next_review_at: string | null
+          question: string
+          updated_at: string
+          upload_id: string | null
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          consecutive_correct_answers?: number | null
+          created_at?: string
+          easiness_factor?: number | null
+          id?: string
+          last_reviewed_at?: string | null
+          next_review_at?: string | null
+          question: string
+          updated_at?: string
+          upload_id?: string | null
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          consecutive_correct_answers?: number | null
+          created_at?: string
+          easiness_factor?: number | null
+          id?: string
+          last_reviewed_at?: string | null
+          next_review_at?: string | null
+          question?: string
+          updated_at?: string
+          upload_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "ocr_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ocr_uploads: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          image_url: string
+          status: Database["public"]["Enums"]["processing_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          image_url: string
+          status?: Database["public"]["Enums"]["processing_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          image_url?: string
+          status?: Database["public"]["Enums"]["processing_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +97,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      processing_status: "pending" | "processing" | "completed" | "error"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +212,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      processing_status: ["pending", "processing", "completed", "error"],
+    },
   },
 } as const

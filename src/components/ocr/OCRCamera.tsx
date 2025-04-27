@@ -1,11 +1,11 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Camera, X, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useOCRUpload } from '@/hooks/useOCRUpload';
 
 interface OCRCameraProps {
-  onCapture: (imageSrc: string) => void;
+  onCapture: (uploadId: string) => void;
 }
 
 const OCRCamera: React.FC<OCRCameraProps> = ({ onCapture }) => {
@@ -15,6 +15,7 @@ const OCRCamera: React.FC<OCRCameraProps> = ({ onCapture }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { uploadAndProcess, isUploading } = useOCRUpload();
 
   const startCamera = async () => {
     setIsLoading(true);
@@ -55,7 +56,7 @@ const OCRCamera: React.FC<OCRCameraProps> = ({ onCapture }) => {
     }
   };
 
-  const captureImage = () => {
+  const handleCapture = async () => {
     if (videoRef.current && canvasRef.current) {
       try {
         const video = videoRef.current;
@@ -63,34 +64,37 @@ const OCRCamera: React.FC<OCRCameraProps> = ({ onCapture }) => {
         const context = canvas.getContext('2d');
         
         if (context) {
-          // Set canvas dimensions to match video
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
           
-          // Draw video frame to canvas
           context.drawImage(video, 0, 0, canvas.width, canvas.height);
           
-          // Get base64 image data
-          const imageSrc = canvas.toDataURL('image/png');
+          const blob = await new Promise<Blob>((resolve) => {
+            canvasRef.current?.toBlob(
+              (blob) => blob && resolve(blob),
+              'image/jpeg',
+              0.95
+            );
+          });
           
-          // Pass image to parent component
-          onCapture(imageSrc);
+          const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
           
-          // Stop camera
+          const uploadId = await uploadAndProcess(file);
+          onCapture(uploadId);
+          
           stopCamera();
         }
       } catch (err) {
         console.error("Error capturing image:", err);
         toast({
           title: "Capture Error",
-          description: "Failed to capture image. Please try again.",
+          description: "Failed to process image. Please try again.",
           variant: "destructive",
         });
       }
     }
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopCamera();
@@ -147,7 +151,7 @@ const OCRCamera: React.FC<OCRCameraProps> = ({ onCapture }) => {
             <X className="mr-1 h-4 w-4" />
             Cancel
           </Button>
-          <Button onClick={captureImage}>
+          <Button onClick={handleCapture}>
             <Image className="mr-1 h-4 w-4" />
             Capture
           </Button>
