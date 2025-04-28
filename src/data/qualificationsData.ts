@@ -1,4 +1,3 @@
-
 import { SubjectArea, QualificationLevel } from '@/types/qualifications';
 
 // Qualification levels
@@ -329,6 +328,204 @@ export const subjectAreas: SubjectArea[] = [
           { id: "edu503", name: "Educational Leadership", credits: 15 },
           { id: "edu504", name: "Action Research in Education", credits: 15 },
           { id: "edu505", name: "Contemporary Issues in Education", credits: 15 }
+        ]
+      }
+    ]
+  },
+  {
+    id: "science",
+    name: "Natural Sciences",
+    description: "Comprehensive study of physical and life sciences including biology, chemistry, physics, and environmental science",
+    icon: "book",
+    modules: [
+      {
+        id: "sci-cert",
+        name: "Certificate in Science",
+        level: "certificate",
+        courses: [
+          { id: "sci101", name: "Introduction to Biology", credits: 5 },
+          { id: "sci102", name: "Basic Chemistry", credits: 5 },
+          { id: "sci103", name: "Physics Fundamentals", credits: 5 },
+          { id: "sci104", name: "Environmental Science Basics", credits: 5 }
+        ]
+      },
+      {
+        id: "sci-cvq",
+        name: "CVQ in Laboratory Science",
+        level: "cvq",
+        courses: [
+          { id: "sci201", name: "Laboratory Techniques", credits: 10 },
+          { id: "sci202", name: "Chemical Analysis", credits: 10 },
+          { id: "sci203", name: "Biological Sampling", credits: 10 },
+          { id: "sci204", name: "Lab Safety Protocols", credits: 10 }
+        ]
+      },
+      {
+        id: "sci-dip",
+        name: "Diploma in Applied Sciences",
+        level: "diploma",
+        courses: [
+          { id: "sci301", name: "Cell Biology", credits: 15 },
+          { id: "sci302", name: "Organic Chemistry", credits: 15 },
+          { id: "sci303", name: "Classical Mechanics", credits: 15 },
+          { id: "sci304", name: "Ecology", credits: 15 }
+        ]
+      },
+      {
+        id: "sci-bach",
+        name: "Bachelor of Science",
+        level: "bachelors",
+        courses: [
+          { id: "sci401", name: "Molecular Biology", credits: 20 },
+          { id: "sci402", name: "Physical Chemistry", credits: 20 },
+          { id: "sci403", name: "Quantum Physics", credits: 20 },
+          { id: "sci404", name: "Genetics", credits: 20 },
+          { id: "sci405", name: "Biochemistry", credits: 20 },
+          { id: "sci406", name: "Research Methods in Science", credits: 20 }
+        ]
+      },
+      {
+        id: "sci-mast",
+        name: "Master of Science",
+        level: "masters",
+        courses: [
+          { id: "sci501", name: "Advanced Research Methods", credits: 15 },
+          { id: "sci502", name: "Bioinformatics", credits: 15 },
+          { id: "sci503", name: "Environmental Analysis", credits: 15 },
+          { id: "sci504", name: "Scientific Computing", credits: 15 },
+          { id: "sci505", name: "Thesis Research", credits: 15 }
+        ]
+      }
+    ]
+  },
+  {
+    id: "medicine",
+    name: "Medicine & Healthcare",
+    description: "Study of medical sciences, healthcare management, and clinical practice",
+    icon: "graduation-cap",
+    modules: [
+      {
+        id: "med-cert",
+        name: "Certificate in Healthcare",
+        level: "certificate",
+        courses: [
+          { id: "med101", name: "Medical Terminology", credits: 5 },
+          { id: "med102", name: "Basic Anatomy", credits: 5 },
+          { id: "med103", name: "First Aid", credits: 5 },
+          { id: "med104", name: "Healthcare Ethics", credits: 5 }
+        ]
+      },
+      {
+        id: "med-cvq",
+        name: "CVQ in Healthcare Services",
+        level: "cvq",
+        courses: [
+          { id: "med201", name: "Patient Care", credits: 10 },
+          { id: "med202", name: "Medical Records", credits: 10 },
+          { id: "med203", name: "Clinical Procedures", credits: 10 },
+          { id: "med204", name: "Healthcare Safety", credits: 10 }
+        ]
+      },
+      {
+        id: "med-dip",
+        name: "Diploma in Health Sciences",
+        level: "diploma",
+        courses: [
+          { id: "med301", name: "Human Anatomy", credits: 15 },
+          { id: "med302", name: "Physiology", credits: 15 },
+          { id: "med303", name: "Pharmacology", credits: 15 },
+          { id: "med304", name: "Clinical Practice", credits: 15 }
+        ]
+      },
+      {
+        id: "med-bach",
+        name: "Bachelor of Medicine",
+        level: "bachelors",
+        courses: [
+          { id: "med401", name: "Clinical Medicine", credits: 20 },
+          { id: "med402", name: "Surgery", credits: 20 },
+          { id: "med403", name: "Pathology", credits: 20 },
+          { id: "med404", name: "Internal Medicine", credits: 20 },
+          { id: "med405", name: "Pediatrics", credits: 20 },
+          { id: "med406", name: "Medical Research", credits: 20 }
+        ]
+      },
+      {
+        id: "med-mast",
+        name: "Master of Public Health",
+        level: "masters",
+        courses: [
+          { id: "med501", name: "Epidemiology", credits: 15 },
+          { id: "med502", name: "Healthcare Management", credits: 15 },
+          { id: "med503", name: "Global Health", credits: 15 },
+          { id: "med504", name: "Health Policy", credits: 15 },
+          { id: "med505", name: "Research Methods", credits: 15 }
+        ]
+      }
+    ]
+  },
+  {
+    id: "engineering",
+    name: "Engineering",
+    description: "Study of various engineering disciplines including mechanical, electrical, civil, and chemical engineering",
+    icon: "book",
+    modules: [
+      {
+        id: "eng-cert",
+        name: "Certificate in Engineering",
+        level: "certificate",
+        courses: [
+          { id: "eng101", name: "Engineering Mathematics", credits: 5 },
+          { id: "eng102", name: "Technical Drawing", credits: 5 },
+          { id: "eng103", name: "Workshop Practice", credits: 5 },
+          { id: "eng104", name: "Materials Science", credits: 5 }
+        ]
+      },
+      {
+        id: "eng-cvq",
+        name: "CVQ in Engineering Technology",
+        level: "cvq",
+        courses: [
+          { id: "eng201", name: "CAD Fundamentals", credits: 10 },
+          { id: "eng202", name: "Electronics Basics", credits: 10 },
+          { id: "eng203", name: "Mechanical Systems", credits: 10 },
+          { id: "eng204", name: "Engineering Safety", credits: 10 }
+        ]
+      },
+      {
+        id: "eng-dip",
+        name: "Diploma in Engineering",
+        level: "diploma",
+        courses: [
+          { id: "eng301", name: "Structural Analysis", credits: 15 },
+          { id: "eng302", name: "Circuit Theory", credits: 15 },
+          { id: "eng303", name: "Thermodynamics", credits: 15 },
+          { id: "eng304", name: "Control Systems", credits: 15 }
+        ]
+      },
+      {
+        id: "eng-bach",
+        name: "Bachelor of Engineering",
+        level: "bachelors",
+        courses: [
+          { id: "eng401", name: "Advanced Mechanics", credits: 20 },
+          { id: "eng402", name: "Power Systems", credits: 20 },
+          { id: "eng403", name: "Manufacturing Processes", credits: 20 },
+          { id: "eng404", name: "Design Engineering", credits: 20 },
+          { id: "eng405", name: "Industrial Automation", credits: 20 },
+          { id: "eng406", name: "Engineering Project", credits: 20 }
+        ]
+      },
+      {
+        id: "eng-mast",
+        name: "Master of Engineering",
+        level: "masters",
+        courses: [
+          { id: "eng501", name: "Advanced Engineering Mathematics", credits: 15 },
+          { id: "eng502", name: "Robotics and AI", credits: 15 },
+          { id: "eng503", name: "Sustainable Engineering", credits: 15 },
+          { id: "eng504", name: "Engineering Research", credits: 15 },
+          { id: "eng505", name: "Project Management", credits: 15 }
         ]
       }
     ]
