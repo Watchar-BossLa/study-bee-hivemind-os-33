@@ -35,15 +35,20 @@ export const useArenaStats = () => {
         .limit(10);
 
       if (data) {
-        const formattedLeaderboard: LeaderboardEntry[] = data.map((entry) => ({
-          user_id: entry.user_id,
-          username: entry.user_id.substring(0, 8),
-          matches_played: entry.matches_played,
-          matches_won: entry.matches_won,
-          total_score: entry.total_score,
-          highest_score: entry.highest_score,
-          win_rate: entry.matches_played > 0 ? (entry.matches_won / entry.matches_played) : 0
-        }));
+        const formattedLeaderboard: LeaderboardEntry[] = data.map((entry) => {
+          // Calculate win rate ensuring it's included for each entry
+          const winRate = entry.matches_played > 0 ? (entry.matches_won / entry.matches_played) : 0;
+          
+          return {
+            user_id: entry.user_id,
+            username: entry.user_id.substring(0, 8),
+            matches_played: entry.matches_played,
+            matches_won: entry.matches_won,
+            total_score: entry.total_score,
+            highest_score: entry.highest_score,
+            win_rate: winRate
+          };
+        });
         
         setLeaderboard(formattedLeaderboard);
       }

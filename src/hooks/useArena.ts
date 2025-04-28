@@ -5,6 +5,7 @@ import { useArenaQuestion } from './useArenaQuestion';
 import { useArenaStats } from './useArenaStats';
 import { useArenaAchievements } from './useArenaAchievements';
 import { supabase } from '@/integrations/supabase/client';
+import { QuizAnswer } from '@/types/arena';
 
 export const useArena = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -67,7 +68,8 @@ export const useArena = () => {
           if (currentQuestionIndex < questions.length - 1) {
             // Move to next question when time runs out
             if (selectedAnswer === null) {
-              answerQuestion('x'); // 'x' represents a timeout/no answer
+              // Fixed QuizAnswer type by using 'none' instead of 'x'
+              answerQuestion('none'); 
             }
             return 15;
           } else {
@@ -118,8 +120,12 @@ export const useArena = () => {
       await awardAchievement(userId, 'high-score');
     }
     
-    // Quick responder achievement
-    const averageResponseTime = playerData.total_response_time / playerData.questions_answered;
+    // Quick responder achievement - safely handle potentially missing property
+    const totalResponseTime = playerData.total_response_time || 0;
+    const averageResponseTime = playerData.questions_answered > 0 ? 
+      totalResponseTime / playerData.questions_answered : 
+      0;
+      
     if (averageResponseTime <= 5 && playerData.questions_answered >= 3) {
       await awardAchievement(userId, 'quick-responder');
     }

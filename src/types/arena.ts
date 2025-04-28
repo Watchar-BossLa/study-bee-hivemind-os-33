@@ -10,7 +10,11 @@ export interface QuizQuestion {
   difficulty: 'easy' | 'medium' | 'hard';
   category: string;
   subject?: string;
+  last_used_at?: string;
+  times_used?: number;
 }
+
+export type QuizAnswer = 'a' | 'b' | 'c' | 'd' | 'none';
 
 export interface MatchPlayer {
   id: string;
@@ -30,6 +34,8 @@ export interface ArenaMatch {
   start_time: string | null;
   end_time: string | null;
   subject_focus?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface ArenaStats {
@@ -62,4 +68,36 @@ export interface Achievement {
   earned: boolean;
   earned_at?: string;
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+}
+
+// Database types for type safety with Supabase responses
+export interface DbMatchPlayer {
+  id: string;
+  match_id: string;
+  user_id: string;
+  score: number;
+  correct_answers: number;
+  questions_answered: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+  total_response_time?: number;
+  streak?: number;
+}
+
+export interface DbArenaMatch {
+  id: string;
+  status: string;
+  start_time: string | null;
+  end_time: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  subject_focus?: string;
+}
+
+export interface UpdatePlayerProgressParams {
+  match_id_param: string;
+  user_id_param: string;
+  score_to_add: number;
+  is_correct: boolean;
+  response_time_param: number;
 }

@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import type { ArenaMatch, MatchPlayer } from '@/types/arena';
+import type { ArenaMatch, MatchPlayer, DbArenaMatch, DbMatchPlayer } from '@/types/arena';
 
 export const useArenaMatch = () => {
   const [currentMatch, setCurrentMatch] = useState<ArenaMatch | null>(null);
@@ -97,12 +97,16 @@ export const useArenaMatch = () => {
       .single();
     
     if (data) {
+      const dbMatch = data as DbArenaMatch;
+      
       const typedMatch: ArenaMatch = {
-        id: data.id,
-        status: data.status as 'waiting' | 'active' | 'completed',
-        start_time: data.start_time,
-        end_time: data.end_time,
-        subject_focus: data.subject_focus,
+        id: dbMatch.id,
+        status: dbMatch.status as 'waiting' | 'active' | 'completed',
+        start_time: dbMatch.start_time,
+        end_time: dbMatch.end_time,
+        subject_focus: dbMatch.subject_focus,
+        created_at: dbMatch.created_at,
+        updated_at: dbMatch.updated_at
       };
       
       setCurrentMatch(typedMatch);
@@ -117,7 +121,7 @@ export const useArenaMatch = () => {
     
     if (data) {
       // Convert database response to MatchPlayer type
-      const typedPlayers: MatchPlayer[] = data.map(player => ({
+      const typedPlayers: MatchPlayer[] = data.map((player: DbMatchPlayer) => ({
         id: player.id,
         match_id: player.match_id,
         user_id: player.user_id,

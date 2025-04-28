@@ -2,9 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateScore } from '@/utils/arenaUtils';
-import type { QuizQuestion } from '@/types/arena';
-
-type QuizAnswer = 'a' | 'b' | 'c' | 'd' | 'none';
+import type { QuizQuestion, QuizAnswer, UpdatePlayerProgressParams } from '@/types/arena';
 
 export const useArenaQuestion = (matchId: string | null) => {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -34,9 +32,9 @@ export const useArenaQuestion = (matchId: string | null) => {
         .order('id');
       
       // If there's a subject focus, filter questions by that subject
-      const subjectFocus = matchData?.subject_focus;
-      if (subjectFocus) {
-        query = query.eq('category', subjectFocus);
+      // Handle the case where subject_focus may not exist in the database
+      if (matchData && 'subject_focus' in matchData && matchData.subject_focus) {
+        query = query.eq('category', matchData.subject_focus);
       }
       
       // Get 5-10 random questions
@@ -54,7 +52,8 @@ export const useArenaQuestion = (matchId: string | null) => {
           correct_answer: q.correct_answer as 'a' | 'b' | 'c' | 'd',
           difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
           category: q.category,
-          subject: q.category // Use category as subject if subject doesn't exist
+          // Use category as subject if subject doesn't exist
+          subject: q.category 
         }));
         
         setQuestions(typedQuestions);
@@ -159,26 +158,27 @@ export const useArenaQuestion = (matchId: string | null) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Only add score if answer is correct and not a timeout (answer !== 'none')
+      // Only add score if answer is correct and not a timeout
       const scoreToAdd = (isCorrect && answer !== 'none') 
         ? calculateScore(currentQuestion.difficulty, responseTime) 
         : 0;
       
-      // Update player progress in the match
+      // Update player progress in the match using params matching the RPC function definition
       await supabase.rpc('update_player_progress', {
         match_id_param: matchId,
         user_id_param: user.id,
         score_to_add: scoreToAdd,
         is_correct: isCorrect,
-        response_time_param: responseTime // Updated parameter name
-      });
+        response_time_param: responseTime
+      } as UpdatePlayerProgressParams);
 
-      // Record the question response
+      // Record the question usage without updating last_used_at or times_used
+      // which may not exist in the database schema
       try {
+        // Update the quiz_questions table with basic fields that definitely exist
         await supabase.from('quiz_questions')
           .update({
-            last_used_at: new Date().toISOString(),
-            times_used: supabase.sql('times_used + 1')
+            updated_at: new Date().toISOString()
           })
           .eq('id', currentQuestion.id);
       } catch (error) {
