@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MessageType } from '../types/chat';
 import { quorumForge } from '../services/QuorumForge';
@@ -5,11 +6,12 @@ import { useToast } from '@/hooks/use-toast';
 import { learningPathService } from '../services/LearningPathService';
 import { llmRouter } from '../services/LLMRouter';
 import { RouterRequest } from '../types/router';
+import { allSpecializedAgents } from '../services/SpecializedAgents';
 
 const initialMessages: MessageType[] = [
   {
     id: '1',
-    content: 'Hello! I\'m your AI tutor powered by QuorumForge. I can help you understand various subjects using a knowledge graph to provide context-rich explanations. What would you like to learn about today?',
+    content: 'Hello! I\'m your AI tutor powered by QuorumForge. I can help you understand various subjects using specialized AI agents and a knowledge graph to provide context-rich explanations. What would you like to learn about today?',
     role: 'assistant',
     timestamp: new Date(Date.now() - 60000),
     modelUsed: 'QuorumForge OS',
@@ -24,6 +26,8 @@ interface ChatSession {
   activePathId?: string;
   complexity: 'low' | 'medium' | 'high';
   userSkillLevel: 'beginner' | 'intermediate' | 'advanced';
+  primaryAgents: string[];
+  preferredModality?: 'text' | 'visual' | 'interactive';
 }
 
 export const useTutorChat = () => {
@@ -38,14 +42,17 @@ export const useTutorChat = () => {
     topics: [],
     modelUse: {},
     complexity: 'medium',
-    userSkillLevel: 'intermediate'
+    userSkillLevel: 'intermediate',
+    primaryAgents: ['content-expert', 'learning-strategist']
   });
   const [modelPerformance, setModelPerformance] = useState<Map<string, any>>(new Map());
+  const [agentPerformance, setAgentPerformance] = useState<Map<string, any>>(new Map());
   const { toast } = useToast();
 
   useEffect(() => {
     const updateModelPerformance = () => {
       setModelPerformance(llmRouter.getPerformanceMetrics());
+      setAgentPerformance(quorumForge.getAllAgentPerformanceMetrics());
     };
     
     updateModelPerformance();
@@ -59,10 +66,11 @@ export const useTutorChat = () => {
     setProcessingProgress(0);
     const steps = [
       "Analyzing query complexity",
-      "Selecting optimal LLM model",
-      "Routing to specialized agent council",
+      "Selecting optimal agent council",
+      "Routing to specialized AI experts",
       "Retrieving knowledge graph nodes",
-      "Generating personalized response"
+      "Coordinating multi-agent response",
+      "Generating personalized explanation"
     ];
     
     let step = 0;
@@ -81,10 +89,10 @@ export const useTutorChat = () => {
   const assessComplexity = (message: string): 'low' | 'medium' | 'high' => {
     const wordCount = message.split(/\s+/).length;
     
-    const complexTerms = ['explain', 'compare', 'analyze', 'evaluate', 'synthesize'];
+    const complexTerms = ['explain', 'compare', 'analyze', 'evaluate', 'synthesize', 'why', 'how'];
     const hasComplexTerms = complexTerms.some(term => message.toLowerCase().includes(term));
     
-    const complexSubjects = ['quantum', 'calculus', 'algorithm', 'theorem', 'philosophy'];
+    const complexSubjects = ['quantum', 'calculus', 'algorithm', 'theorem', 'philosophy', 'genetics'];
     const hasComplexSubject = complexSubjects.some(subject => message.toLowerCase().includes(subject));
     
     if (wordCount > 25 || hasComplexSubject) {
@@ -118,6 +126,28 @@ export const useTutorChat = () => {
         }));
       }
       
+      // Determine if we should suggest a specialized learning modality
+      let suggestedModality: 'text' | 'visual' | 'interactive' | undefined;
+      
+      if (userMessage.content.toLowerCase().includes('diagram') || 
+          userMessage.content.toLowerCase().includes('visual') ||
+          userMessage.content.toLowerCase().includes('picture') ||
+          userMessage.content.toLowerCase().includes('graph')) {
+        suggestedModality = 'visual';
+      } else if (userMessage.content.toLowerCase().includes('practice') ||
+                userMessage.content.toLowerCase().includes('exercise') ||
+                userMessage.content.toLowerCase().includes('try') ||
+                userMessage.content.toLowerCase().includes('interactive')) {
+        suggestedModality = 'interactive';
+      }
+      
+      if (suggestedModality && suggestedModality !== chatMetadata.preferredModality) {
+        setChatMetadata(prev => ({
+          ...prev,
+          preferredModality: suggestedModality
+        }));
+      }
+      
       const interaction = await quorumForge.processInteraction(
         userMessage.content,
         mockUserId,
@@ -127,7 +157,8 @@ export const useTutorChat = () => {
           userSkillLevel: chatMetadata.userSkillLevel,
           topicId: topics[0],
           additionalContext: messages.map(m => m.content).join(' '),
-          userId: mockUserId
+          userId: mockUserId,
+          preferredModality: chatMetadata.preferredModality
         }
       );
       
@@ -136,17 +167,33 @@ export const useTutorChat = () => {
         interaction.agentResponses[0]
       );
       
+      // Track which agents contributed to the response
+      const contributingAgents = interaction.agentResponses
+        .sort((a, b) => b.confidenceScore - a.confidenceScore)
+        .map(resp => {
+          const agent = allSpecializedAgents.find(a => a.id === resp.agentId);
+          return agent?.name || resp.agentId;
+        });
+      
       setChatMetadata(prev => {
         const updatedModelUse = {...prev.modelUse};
         const modelId = bestResponse.modelUsed;
         updatedModelUse[modelId] = (updatedModelUse[modelId] || 0) + 1;
-        return {...prev, modelUse: updatedModelUse};
+        
+        // Update primary agents based on who contributed most
+        const primaryAgents = interaction.agentResponses
+          .sort((a, b) => b.confidenceScore - a.confidenceScore)
+          .slice(0, 2)
+          .map(resp => resp.agentId);
+        
+        return {
+          ...prev, 
+          modelUse: updatedModelUse,
+          primaryAgents: primaryAgents.length > 0 ? primaryAgents : prev.primaryAgents
+        };
       });
       
-      const agentNames = interaction.agentResponses.map(
-        resp => quorumForge.getAgents().find(a => a.id === resp.agentId)?.name
-      );
-      
+      // Determine if we should recommend a learning path
       if (topics.length > 0) {
         const recommendedPaths = topics.flatMap(
           topic => learningPathService.getPathsByTopic(topic)
@@ -165,6 +212,12 @@ export const useTutorChat = () => {
         }
       }
       
+      // Identify related knowledge graph nodes
+      const relatedNodes = identifyKnowledgeGraphNodes(userMessage.content, topics);
+      
+      // Suggest follow-up questions based on the context
+      const followUpQuestions = generateFollowUpQuestions(userMessage.content, topics);
+      
       const promptForFeedback = Math.random() > 0.7;
       
       setMessages(prevMessages => {
@@ -180,11 +233,20 @@ export const useTutorChat = () => {
             timestamp: new Date(),
             modelUsed: bestResponse.modelUsed,
             relatedTopics: topics,
-            agentContributors: agentNames.filter(Boolean) as string[],
+            agentContributors: contributingAgents.filter(Boolean) as string[],
             loading: false,
             complexity: messageComplexity,
             processingTime: bestResponse.processingTimeMs,
-            requestFeedback: promptForFeedback
+            requestFeedback: promptForFeedback,
+            agentAnalysis: {
+              primaryDomain: topics[0] || undefined,
+              confidenceScores: interaction.agentResponses.reduce((scores, resp) => {
+                scores[resp.agentId] = resp.confidenceScore;
+                return scores;
+              }, {} as Record<string, number>),
+              recommendedFollowup: followUpQuestions
+            },
+            knowledgeGraphNodes: relatedNodes
           };
         }
         
@@ -288,6 +350,27 @@ export const useTutorChat = () => {
     
     llmRouter.logSelection(message.modelUsed, routerRequest, rating > 3, message.processingTime, rating);
     
+    // Record feedback for contributing agents
+    if (message.agentContributors?.length && message.agentAnalysis?.confidenceScores) {
+      const agentFeedback: Record<string, number> = {};
+      
+      // Find agent IDs from contributor names
+      message.agentContributors.forEach(agentName => {
+        const agent = allSpecializedAgents.find(a => a.name === agentName);
+        if (agent) {
+          agentFeedback[agent.id] = rating;
+        }
+      });
+      
+      // Record the feedback with QuorumForge
+      quorumForge.recordFeedback(
+        message.id,
+        'user-123', // mockUserId
+        rating,
+        agentFeedback
+      );
+    }
+    
     setMessages(prevMessages => {
       return prevMessages.map(m => {
         if (m.id === messageId) {
@@ -303,7 +386,7 @@ export const useTutorChat = () => {
     
     toast({
       title: "Feedback Recorded",
-      description: "Thank you for your feedback! It helps improve our responses.",
+      description: "Thank you for your feedback! It helps improve our agents and responses.",
     });
   };
 
@@ -315,6 +398,7 @@ export const useTutorChat = () => {
     activePath,
     chatMetadata,
     modelPerformance,
+    agentPerformance,
     setInput,
     handleSend,
     setActivePath,
@@ -329,10 +413,44 @@ function extractTopicsFromMessage(message: string): string[] {
     'Mitochondria', 'ATP', 'Cellular Respiration', 'Krebs Cycle',
     'Electron Transport', 'Glycolysis', 'Cell Biology', 'DNA',
     'RNA', 'Protein Synthesis', 'Genetics', 'Evolution',
-    'Natural Selection'
+    'Natural Selection', 'Algebra', 'Calculus', 'Statistics',
+    'Geometry', 'Probability', 'Physics', 'Chemistry',
+    'Literature', 'Grammar', 'History', 'Philosophy',
+    'Programming', 'Computer Science'
   ];
   
   return potentialTopics.filter(topic => 
     lowerMessage.includes(topic.toLowerCase())
   );
+}
+
+function identifyKnowledgeGraphNodes(message: string, topics: string[]): string[] {
+  // In a real implementation, this would query the knowledge graph
+  // For now, we'll just return the topics as nodes
+  return topics.map(t => `node-${t.toLowerCase().replace(/\s+/g, '-')}`);
+}
+
+function generateFollowUpQuestions(message: string, topics: string[]): string[] {
+  // Generate follow-up questions based on the topics and message content
+  const followUps: string[] = [];
+  
+  // Add topic-specific follow-ups
+  topics.forEach(topic => {
+    if (topic.toLowerCase() === 'mitochondria' || topic.toLowerCase() === 'atp') {
+      followUps.push("How does the electron transport chain contribute to ATP production?");
+    } else if (topic.toLowerCase() === 'dna' || topic.toLowerCase() === 'rna') {
+      followUps.push("What are the key differences between DNA and RNA?");
+    } else if (topic.toLowerCase() === 'evolution' || topic.toLowerCase() === 'natural selection') {
+      followUps.push("What are some examples of natural selection in action?");
+    }
+  });
+  
+  // Add generic follow-ups if needed
+  if (followUps.length === 0) {
+    followUps.push("Would you like me to explain this topic in more detail?");
+    followUps.push("Would you like to see a visual representation of this concept?");
+  }
+  
+  // Limit to 3 follow-up questions
+  return followUps.slice(0, 3);
 }

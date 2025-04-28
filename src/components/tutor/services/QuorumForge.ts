@@ -1,3 +1,4 @@
+
 import { BaseAgent, SpecializedAgent, UserInteraction } from '../types/agents';
 import { CouncilDecision } from '../types/councils';
 import { LLMRouter } from './LLMRouter';
@@ -5,50 +6,7 @@ import { CouncilService } from './CouncilService';
 import { DeliberationService } from './DeliberationService';
 import { InteractionService } from './InteractionService';
 import { AgentService } from './AgentService';
-
-// Specialized learning agents
-export const specializedAgents: SpecializedAgent[] = [
-  {
-    id: 'content-expert',
-    name: 'ContentExpertGPT',
-    role: 'Content Expert',
-    capabilities: ['knowledge-validation', 'fact-checking', 'content-creation'],
-    status: 'idle',
-    domain: 'Subject Matter',
-    expertise: ['curriculum-alignment', 'academic-standards', 'content-accuracy'],
-    performance: { accuracy: 0.95, responseTime: 1200, userFeedback: 4.8 }
-  },
-  {
-    id: 'learning-strategist',
-    name: 'LearningStrategistGPT',
-    role: 'Learning Strategist',
-    capabilities: ['learning-path-design', 'difficulty-assessment', 'prerequisite-analysis'],
-    status: 'idle',
-    domain: 'Pedagogy',
-    expertise: ['learning-theory', 'cognitive-load', 'scaffolding'],
-    performance: { accuracy: 0.92, responseTime: 800, userFeedback: 4.7 }
-  },
-  {
-    id: 'engagement-specialist',
-    name: 'EngagementSpecialistGPT',
-    role: 'Engagement Specialist',
-    capabilities: ['motivation-analysis', 'engagement-tactics', 'feedback-optimization'],
-    status: 'idle',
-    domain: 'User Experience',
-    expertise: ['gamification', 'reinforcement', 'flow-state'],
-    performance: { accuracy: 0.89, responseTime: 600, userFeedback: 4.9 }
-  },
-  {
-    id: 'assessment-expert',
-    name: 'AssessmentExpertGPT',
-    role: 'Assessment Expert',
-    capabilities: ['question-generation', 'answer-validation', 'difficulty-calibration'],
-    status: 'idle',
-    domain: 'Evaluation',
-    expertise: ['bloom-taxonomy', 'assessment-design', 'knowledge-testing'],
-    performance: { accuracy: 0.94, responseTime: 900, userFeedback: 4.6 }
-  }
-];
+import { allSpecializedAgents } from './SpecializedAgents';
 
 export class QuorumForge {
   private agentService: AgentService;
@@ -57,7 +15,7 @@ export class QuorumForge {
   private interactionService: InteractionService;
   
   constructor(
-    agents: SpecializedAgent[] = specializedAgents, 
+    agents: SpecializedAgent[] = allSpecializedAgents, 
     router: LLMRouter = new LLMRouter()
   ) {
     this.agentService = new AgentService(agents);
@@ -92,7 +50,11 @@ export class QuorumForge {
     userId: string,
     context: Record<string, any>
   ): Promise<UserInteraction> {
-    const councilId = this.councilService.determineCouncilForMessage(message);
+    // Check if there's a best performing council for similar queries
+    const bestCouncilId = this.councilService.getBestCouncilForSimilarQuery(message);
+    
+    // If a best council was found, use it; otherwise determine based on message
+    const councilId = bestCouncilId || this.councilService.determineCouncilForMessage(message);
     const council = this.councilService.getCouncil(councilId);
     
     if (!council) {
@@ -135,6 +97,34 @@ export class QuorumForge {
 
   public getRecentInteractions(limit: number = 10): UserInteraction[] {
     return this.interactionService.getRecentInteractions(limit);
+  }
+  
+  public getAgentPerformanceMetrics(agentId: string) {
+    return this.interactionService.getAgentPerformanceMetrics(agentId);
+  }
+  
+  public getAllAgentPerformanceMetrics() {
+    return this.interactionService.getAllAgentPerformanceMetrics();
+  }
+  
+  public recordFeedback(
+    interactionId: string, 
+    userId: string, 
+    rating: number, 
+    agentFeedback?: Record<string, number>,
+    comments?: string
+  ) {
+    this.interactionService.recordUserFeedback(
+      interactionId,
+      userId,
+      rating,
+      agentFeedback,
+      comments
+    );
+  }
+  
+  public getUserTopInterests(userId: string, limit: number = 5) {
+    return this.interactionService.getUserTopInterests(userId, limit);
   }
 }
 

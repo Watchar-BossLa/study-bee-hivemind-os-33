@@ -26,6 +26,17 @@ export interface SpecializedAgent extends BaseAgent {
     responseTime: number;
     userFeedback: number;
   };
+  adaptability?: number; // 0-1 score for how well the agent adapts to new domains
+  specializationDepth?: number; // 0-1 score for depth of specialization
+  collaborationScore?: number; // 0-1 score for agent collaboration effectiveness
+  performanceHistory?: {
+    lastInteractions: Array<{
+      timestamp: Date;
+      confidenceScore: number;
+      successRating?: number; // User rating if available
+      topicId: string;
+    }>;
+  };
 }
 
 export interface CouncilVote {
@@ -67,4 +78,26 @@ export interface UserInteraction {
     confidenceScore: number;
     processingTimeMs: number;
   }[];
+  userFeedback?: {
+    rating: number;
+    comments?: string;
+    helpfulAgents?: string[];
+  };
+}
+
+export interface AgentPerformanceMetrics {
+  overallAccuracy: number;
+  userFeedbackAverage: number;
+  responseTimeAverage: number;
+  domainSpecificPerformance: Record<string, number>;
+  topicPerformance: Record<string, number>;
+  improvementRate: number;
+  lastUpdated: Date;
+}
+
+export interface AgentCollaboration {
+  primaryAgentId: string;
+  secondaryAgentIds: string[];
+  synergisticTopics: string[];
+  collaborativeScore: number;
 }

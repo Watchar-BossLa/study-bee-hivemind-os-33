@@ -10,6 +10,9 @@ export type RouterRequest = {
   preferredModality?: 'text' | 'visual' | 'interactive';
   previousSuccess?: Record<string, number>;
   topicId?: string;
+  domain?: string;
+  agentSpecialization?: string[];
+  adaptivePathId?: string;
 };
 
 export interface ModelSelectionResult {
@@ -17,4 +20,14 @@ export interface ModelSelectionResult {
   confidence: number;
   fallbackOptions: string[];
   reasoningTrace: string[];
+  estimatedCost?: number;
+  estimatedLatency?: number;
+  specializedCapabilities?: string[];
+}
+
+export interface AgentSelectionResult {
+  agentIds: string[];
+  confidence: number;
+  reasoningTrace: string[];
+  expertiseMatch: Record<string, number>;
 }
