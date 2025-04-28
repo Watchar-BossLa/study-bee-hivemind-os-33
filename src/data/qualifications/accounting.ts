@@ -1,3 +1,4 @@
+
 import { SubjectArea, AccountingQualification } from '@/types/qualifications';
 
 export const accountingSubjectArea: SubjectArea = {
@@ -62,35 +63,8 @@ export const accountingSubjectArea: SubjectArea = {
         { id: "acct503", name: "International Taxation", credits: 15 },
         { id: "acct504", name: "Forensic Accounting", credits: 15 },
         { id: "acct505", name: "Research Methods in Accounting", credits: 15 }
-      },
-      {
-        id: "acca",
-        name: "ACCA Qualification",
-        level: "professional",
-        courses: [
-          { id: "acca-f1", name: "Accountant in Business", credits: 10 },
-          { id: "acca-f2", name: "Management Accounting", credits: 10 },
-          { id: "acca-f3", name: "Financial Accounting", credits: 10 },
-          { id: "acca-f4", name: "Corporate and Business Law", credits: 10 },
-          { id: "acca-f5", name: "Performance Management", credits: 10 },
-          { id: "acca-f6", name: "Taxation", credits: 10 },
-          { id: "acca-f7", name: "Financial Reporting", credits: 10 },
-          { id: "acca-f8", name: "Audit and Assurance", credits: 10 },
-          { id: "acca-f9", name: "Financial Management", credits: 10 }
-        ]
-      },
-      {
-        id: "cpa",
-        name: "CPA Certification",
-        level: "professional",
-        courses: [
-          { id: "cpa-aud", name: "Auditing and Attestation", credits: 15 },
-          { id: "cpa-bec", name: "Business Environment and Concepts", credits: 15 },
-          { id: "cpa-far", name: "Financial Accounting and Reporting", credits: 15 },
-          { id: "cpa-reg", name: "Regulation", credits: 15 }
-        ]
-      }
-    ]
+      ]
+    }
   ]
 };
 
