@@ -9,12 +9,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { signInWithEmail, signUpWithEmail } from "@/lib/auth";
 import { useAuth } from "@/components/auth/AuthContext";
 import LogoBee from "@/components/LogoBee";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -29,11 +32,34 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setAuthError(null);
     
     try {
-      await signInWithEmail(email, password);
+      console.log("Attempting to sign in with:", { email });
+      const { user, session, error } = await signInWithEmail(email, password);
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (!session) {
+        throw new Error("No session returned after sign-in");
+      }
+      
+      console.log("Sign in successful, session:", session?.expires_at);
       navigate("/");
     } catch (error: any) {
+      console.error("Sign in error:", error);
+      
+      // Set a more specific error message
+      if (error.message.includes("Invalid login credentials")) {
+        setAuthError("Invalid email or password. Please try again.");
+      } else if (error.message.includes("Email not confirmed")) {
+        setAuthError("Please check your email and confirm your account first.");
+      } else {
+        setAuthError(error.message || "Failed to sign in. Please try again.");
+      }
+      
       toast({
         title: "Error signing in",
         description: error.message || "Please check your credentials and try again.",
@@ -47,15 +73,41 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setAuthError(null);
     
     try {
-      await signUpWithEmail(email, password, { full_name: fullName });
+      console.log("Attempting to sign up with:", { email, fullName });
+      const { user, session, error } = await signUpWithEmail(email, password, { full_name: fullName });
+      
+      if (error) {
+        throw error;
+      }
+      
       toast({
         title: "Account created",
         description: "Check your email to verify your account.",
       });
-      navigate("/");
+      
+      // If email confirmation is required
+      if (!session) {
+        toast({
+          title: "Verification required",
+          description: "Please check your email to confirm your account before signing in.",
+        });
+      } else {
+        // If email confirmation is not required, navigate to home
+        navigate("/");
+      }
     } catch (error: any) {
+      console.error("Sign up error:", error);
+      
+      // Set a more specific error message
+      if (error.message.includes("already registered")) {
+        setAuthError("This email is already registered. Try signing in instead.");
+      } else {
+        setAuthError(error.message || "Failed to create account. Please try again.");
+      }
+      
       toast({
         title: "Error creating account",
         description: error.message || "Please check your information and try again.",
@@ -82,6 +134,14 @@ const Auth = () => {
           </CardHeader>
           
           <CardContent>
+            {authError && (
+              <Alert variant="destructive" className="mb-4">
+                <ExclamationTriangleIcon className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{authError}</AlertDescription>
+              </Alert>
+            )}
+            
             <Tabs defaultValue="signin">
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -158,6 +218,7 @@ const Auth = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       disabled={isLoading}
+                      minLength={6}
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>

@@ -20,31 +20,64 @@ export async function getCurrentUser() {
 
 // Sign in with email and password
 export async function signInWithEmail(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  console.log("Attempting to sign in with email:", email);
+  
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (error) throw error;
-  return data;
+    if (error) {
+      console.error("Sign-in error:", error);
+      throw error;
+    }
+    
+    console.log("Sign-in successful for:", email);
+    return data;
+  } catch (error: any) {
+    console.error("Error during sign in:", error.message);
+    throw error;
+  }
 }
 
 // Sign up with email and password
 export async function signUpWithEmail(email: string, password: string, userData: Record<string, any> = {}) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: userData,
-    },
-  });
+  console.log("Attempting to sign up with email:", email);
+  
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: userData,
+      },
+    });
 
-  if (error) throw error;
-  return data;
+    if (error) {
+      console.error("Sign-up error:", error);
+      throw error;
+    }
+    
+    console.log("Sign-up successful for:", email, "Email verification required:", !data.session);
+    return data;
+  } catch (error: any) {
+    console.error("Error during sign up:", error.message);
+    throw error;
+  }
 }
 
 // Sign out
 export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Sign-out error:", error);
+      throw error;
+    }
+    console.log("Sign-out successful");
+  } catch (error: any) {
+    console.error("Error during sign out:", error.message);
+    throw error;
+  }
 }
