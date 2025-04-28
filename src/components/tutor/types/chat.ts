@@ -8,4 +8,8 @@ export interface MessageType {
   relatedTopics?: string[];
   agentContributors?: string[];
   loading?: boolean;
+  complexity?: 'low' | 'medium' | 'high';
+  processingTime?: number;
+  userRating?: number;
+  requestFeedback?: boolean;
 }

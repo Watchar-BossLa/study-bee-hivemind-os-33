@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { MessageType } from '../types/chat';
 import { quorumForge } from '../services/QuorumForge';
 import { useToast } from '@/hooks/use-toast';
 import { learningPathService } from '../services/LearningPathService';
 import { llmRouter } from '../services/LLMRouter';
+import { RouterRequest } from '../types/router';
 
 const initialMessages: MessageType[] = [
   {
@@ -43,16 +43,13 @@ export const useTutorChat = () => {
   const [modelPerformance, setModelPerformance] = useState<Map<string, any>>(new Map());
   const { toast } = useToast();
 
-  // Fetch and update model performance data periodically
   useEffect(() => {
     const updateModelPerformance = () => {
       setModelPerformance(llmRouter.getPerformanceMetrics());
     };
     
-    // Update initially
     updateModelPerformance();
     
-    // Then update every 60 seconds
     const intervalId = setInterval(updateModelPerformance, 60000);
     
     return () => clearInterval(intervalId);
@@ -81,15 +78,12 @@ export const useTutorChat = () => {
     }, 800);
   };
 
-  // Determine complexity level based on message content
   const assessComplexity = (message: string): 'low' | 'medium' | 'high' => {
     const wordCount = message.split(/\s+/).length;
     
-    // Check for indicators of complexity
     const complexTerms = ['explain', 'compare', 'analyze', 'evaluate', 'synthesize'];
     const hasComplexTerms = complexTerms.some(term => message.toLowerCase().includes(term));
     
-    // Check for specific subject indicators
     const complexSubjects = ['quantum', 'calculus', 'algorithm', 'theorem', 'philosophy'];
     const hasComplexSubject = complexSubjects.some(subject => message.toLowerCase().includes(subject));
     
@@ -104,23 +98,18 @@ export const useTutorChat = () => {
 
   const completeResponse = async () => {
     try {
-      // Generate a unique user ID (would normally come from auth)
       const mockUserId = 'user-123';
       
-      // Find the latest user message
       const userMessage = messages.find(m => m.loading === undefined && m.role === 'user');
       if (!userMessage) return;
       
-      // Assess message complexity
       const messageComplexity = assessComplexity(userMessage.content);
       
-      // Update session metadata with complexity assessment
       setChatMetadata(prev => ({
         ...prev,
         complexity: messageComplexity
       }));
       
-      // Extract topics for context
       const topics = extractTopicsFromMessage(userMessage.content);
       if (topics.length > 0) {
         setChatMetadata(prev => ({
@@ -129,7 +118,6 @@ export const useTutorChat = () => {
         }));
       }
       
-      // Use our QuorumForge system to process the user's message with enhanced context
       const interaction = await quorumForge.processInteraction(
         userMessage.content,
         mockUserId,
@@ -143,13 +131,11 @@ export const useTutorChat = () => {
         }
       );
       
-      // Find the highest confidence response
       const bestResponse = interaction.agentResponses.reduce(
         (best, current) => current.confidenceScore > best.confidenceScore ? current : best,
         interaction.agentResponses[0]
       );
       
-      // Update model usage metrics
       setChatMetadata(prev => {
         const updatedModelUse = {...prev.modelUse};
         const modelId = bestResponse.modelUsed;
@@ -157,35 +143,29 @@ export const useTutorChat = () => {
         return {...prev, modelUse: updatedModelUse};
       });
       
-      // Create our final response
       const agentNames = interaction.agentResponses.map(
         resp => quorumForge.getAgents().find(a => a.id === resp.agentId)?.name
       );
       
-      // Check for learning path recommendations
       if (topics.length > 0) {
         const recommendedPaths = topics.flatMap(
           topic => learningPathService.getPathsByTopic(topic)
         );
         
-        // If we found a relevant learning path, suggest it
         if (recommendedPaths.length > 0) {
-          const path = recommendedPaths[0]; // Take the first matching path
+          const path = recommendedPaths[0];
           
-          // Show a toast with the recommendation
           toast({
             title: "Learning Path Recommended",
             description: `The "${path.name}" learning path is recommended based on your question.`,
           });
           
-          // Update active path
           setActivePath(path.id);
           setChatMetadata(prev => ({...prev, activePathId: path.id}));
         }
       }
       
-      // Add user rating capability
-      const promptForFeedback = Math.random() > 0.7; // 30% chance to ask for feedback
+      const promptForFeedback = Math.random() > 0.7;
       
       setMessages(prevMessages => {
         const newMessages = [...prevMessages];
@@ -211,14 +191,12 @@ export const useTutorChat = () => {
         return newMessages;
       });
       
-      // If we've had several exchanges, try to assess user skill level
       if (messages.length > 6) {
         assessUserSkillLevel();
       }
     } catch (error) {
       console.error('Error processing with QuorumForge:', error);
       
-      // Handle the error by providing an error message
       setMessages(prevMessages => {
         const newMessages = [...prevMessages];
         const loadingMessageIndex = newMessages.findIndex(msg => msg.loading);
@@ -242,11 +220,9 @@ export const useTutorChat = () => {
     }
   };
 
-  // Assess user skill level based on interaction history
   const assessUserSkillLevel = () => {
     const userMessages = messages.filter(m => m.role === 'user');
     
-    // Calculate average word length and message length
     const avgWordLength = userMessages.reduce((sum, msg) => 
       sum + msg.content.split(/\s+/).reduce((wSum, w) => wSum + w.length, 0) / 
             msg.content.split(/\s+/).length, 0) / userMessages.length;
@@ -254,12 +230,10 @@ export const useTutorChat = () => {
     const avgMessageLength = userMessages.reduce((sum, msg) => 
       sum + msg.content.length, 0) / userMessages.length;
     
-    // Check for use of technical terminology
     const technicalTerms = ['therefore', 'furthermore', 'however', 'specifically', 'consequently'];
     const technicalTermUse = userMessages.reduce((count, msg) => 
       count + technicalTerms.filter(term => msg.content.toLowerCase().includes(term)).length, 0);
     
-    // Determine skill level
     let newSkillLevel: 'beginner' | 'intermediate' | 'advanced' = 'intermediate';
     
     if (avgWordLength > 6 && avgMessageLength > 100 && technicalTermUse > 2) {
@@ -268,7 +242,6 @@ export const useTutorChat = () => {
       newSkillLevel = 'beginner';
     }
     
-    // Update skill level if different
     if (newSkillLevel !== chatMetadata.userSkillLevel) {
       setChatMetadata(prev => ({...prev, userSkillLevel: newSkillLevel}));
       console.log(`Updated user skill level to ${newSkillLevel}`);
@@ -298,28 +271,23 @@ export const useTutorChat = () => {
     setIsLoading(true);
     simulateProcessing();
   };
-  
-  // Handle user feedback on response quality
+
   const handleResponseFeedback = (messageId: string, rating: number) => {
-    // Find the message
     const message = messages.find(m => m.id === messageId);
     if (!message || !message.modelUsed) return;
     
-    // Log the feedback
     console.log(`User rated response ${messageId} with model ${message.modelUsed} as ${rating}/5`);
     
-    // Update model metrics with user feedback
     const routerRequest: RouterRequest = {
       query: message.content || '',
       task: 'tutor',
-      complexity: (message.complexity as any) || 'medium',
+      complexity: (message.complexity as 'low' | 'medium' | 'high') || 'medium',
       urgency: 'medium',
       costSensitivity: 'medium'
     };
     
     llmRouter.logSelection(message.modelUsed, routerRequest, rating > 3, message.processingTime, rating);
     
-    // Update message to show feedback was received
     setMessages(prevMessages => {
       return prevMessages.map(m => {
         if (m.id === messageId) {
@@ -333,7 +301,6 @@ export const useTutorChat = () => {
       });
     });
     
-    // Show a thank you toast
     toast({
       title: "Feedback Recorded",
       description: "Thank you for your feedback! It helps improve our responses.",
@@ -356,10 +323,7 @@ export const useTutorChat = () => {
   };
 };
 
-// Helper function to extract potential topics from a message
 function extractTopicsFromMessage(message: string): string[] {
-  // This is a simplified implementation - in a real system,
-  // this would use NLP/entity extraction to identify topics
   const lowerMessage = message.toLowerCase();
   const potentialTopics = [
     'Mitochondria', 'ATP', 'Cellular Respiration', 'Krebs Cycle',
