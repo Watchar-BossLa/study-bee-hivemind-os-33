@@ -1,34 +1,21 @@
 
-import { useState, useEffect } from 'react';
-import { MessageType } from '../types/chat';
+import { useEffect, useCallback } from 'react';
 import { quorumForge } from '../services/QuorumForge';
-import { useToast } from '@/hooks/use-toast';
 import { learningPathService } from '../services/LearningPathService';
 import { llmRouter } from '../services/LLMRouter';
-import { RouterRequest } from '../types/router';
 import { useSkillLevelAssessment } from './useSkillLevelAssessment';
 import { useChatMetadata } from './useChatMetadata';
+import { useMessages } from './useMessages';
+import { useProcessingSimulation } from './useProcessingSimulation';
+import { useFeedbackHandler } from './useFeedbackHandler';
+import { useToast } from '@/hooks/use-toast';
 import { 
   extractTopicsFromMessage, 
   generateFollowUpQuestions, 
   identifyKnowledgeGraphNodes 
 } from '../utils/topicUtils';
 
-const initialMessages: MessageType[] = [
-  {
-    id: '1',
-    content: 'Hello! I\'m your AI tutor powered by QuorumForge. I can help you understand various subjects using specialized AI agents and a knowledge graph to provide context-rich explanations. What would you like to learn about today?',
-    role: 'assistant',
-    timestamp: new Date(Date.now() - 60000),
-    modelUsed: 'QuorumForge OS',
-  },
-];
-
 export const useTutorChat = () => {
-  const [messages, setMessages] = useState<MessageType[]>(initialMessages);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [processingProgress, setProcessingProgress] = useState(0);
   const [activePath, setActivePath] = useState<string | null>(null);
   const [modelPerformance, setModelPerformance] = useState<Map<string, any>>(new Map());
   const [agentPerformance, setAgentPerformance] = useState<Map<string, any>>(new Map());
@@ -36,85 +23,20 @@ export const useTutorChat = () => {
   const { toast } = useToast();
   const { skillLevel, assessSkillLevel } = useSkillLevelAssessment();
   const { metadata, updateMetadata, addTopic, updateModelUse } = useChatMetadata();
+  const { 
+    messages, 
+    input, 
+    isLoading, 
+    processingProgress,
+    setInput,
+    setIsLoading,
+    setProcessingProgress,
+    addMessage,
+    updateMessage,
+    setMessages
+  } = useMessages();
 
-  useEffect(() => {
-    const updateModelPerformance = () => {
-      setModelPerformance(llmRouter.getPerformanceMetrics());
-      setAgentPerformance(quorumForge.getAllAgentPerformanceMetrics());
-    };
-    
-    updateModelPerformance();
-    const intervalId = setInterval(updateModelPerformance, 60000);
-    return () => clearInterval(intervalId);
-  }, []);
-
-  const simulateProcessing = () => {
-    setProcessingProgress(0);
-    const steps = [
-      "Analyzing query complexity",
-      "Selecting optimal agent council",
-      "Routing to specialized AI experts",
-      "Retrieving knowledge graph nodes",
-      "Coordinating multi-agent response",
-      "Generating personalized explanation"
-    ];
-    
-    let step = 0;
-    const interval = setInterval(() => {
-      if (step < steps.length) {
-        const progress = Math.round(((step + 1) / steps.length) * 100);
-        setProcessingProgress(progress);
-        step++;
-      } else {
-        clearInterval(interval);
-        completeResponse();
-      }
-    }, 800);
-  };
-
-  const handleResponseFeedback = (messageId: string, rating: number) => {
-    const message = messages.find(m => m.id === messageId);
-    if (!message || !message.modelUsed) return;
-    
-    const routerRequest: RouterRequest = {
-      query: message.content || '',
-      task: 'tutor',
-      complexity: (message.complexity as 'low' | 'medium' | 'high') || 'medium',
-      urgency: 'medium',
-      costSensitivity: 'medium'
-    };
-    
-    llmRouter.logSelection(message.modelUsed, routerRequest, rating > 3, message.processingTime, rating);
-    
-    if (message.agentContributors?.length && message.agentAnalysis?.confidenceScores) {
-      const agentFeedback: Record<string, number> = {};
-      message.agentContributors.forEach(agentName => {
-        agentFeedback[agentName] = rating;
-      });
-      
-      quorumForge.recordFeedback(
-        message.id,
-        'user-123',
-        rating,
-        agentFeedback
-      );
-    }
-    
-    setMessages(prevMessages => 
-      prevMessages.map(m => 
-        m.id === messageId ? 
-          { ...m, userRating: rating, requestFeedback: false } : 
-          m
-      )
-    );
-    
-    toast({
-      title: "Feedback Recorded",
-      description: "Thank you for your feedback! It helps improve our agents and responses.",
-    });
-  };
-
-  const completeResponse = async () => {
+  const completeResponse = useCallback(async () => {
     try {
       const userMessage = messages.find(m => m.loading === undefined && m.role === 'user');
       if (!userMessage) return;
@@ -168,36 +90,27 @@ export const useTutorChat = () => {
       const followUpQuestions = generateFollowUpQuestions(userMessage.content, topics);
       const promptForFeedback = Math.random() > 0.7;
 
-      setMessages(prevMessages => {
-        const newMessages = [...prevMessages];
-        const loadingMessageIndex = newMessages.findIndex(msg => msg.loading);
-        
-        if (loadingMessageIndex !== -1) {
-          newMessages[loadingMessageIndex] = {
-            id: newMessages[loadingMessageIndex].id,
-            content: bestResponse.response + (promptForFeedback ? 
-              "\n\nWas this response helpful? You can rate it to help improve future responses." : ""),
-            role: 'assistant',
-            timestamp: new Date(),
-            modelUsed: bestResponse.modelUsed,
-            relatedTopics: topics,
-            agentContributors: contributingAgents,
-            loading: false,
-            complexity: messageComplexity,
-            processingTime: bestResponse.processingTimeMs,
-            requestFeedback: promptForFeedback,
-            agentAnalysis: {
-              primaryDomain: topics[0] || undefined,
-              confidenceScores: interaction.agentResponses.reduce((scores, resp) => {
-                scores[resp.agentId] = resp.confidenceScore;
-                return scores;
-              }, {} as Record<string, number>),
-              recommendedFollowup: followUpQuestions
-            },
-            knowledgeGraphNodes: relatedNodes
-          };
-        }
-        return newMessages;
+      updateMessage(messages[messages.length - 1].id, {
+        content: bestResponse.response + (promptForFeedback ? 
+          "\n\nWas this response helpful? You can rate it to help improve future responses." : ""),
+        role: 'assistant',
+        timestamp: new Date(),
+        modelUsed: bestResponse.modelUsed,
+        relatedTopics: topics,
+        agentContributors: contributingAgents,
+        loading: false,
+        complexity: messageComplexity,
+        processingTime: bestResponse.processingTimeMs,
+        requestFeedback: promptForFeedback,
+        agentAnalysis: {
+          primaryDomain: topics[0] || undefined,
+          confidenceScores: interaction.agentResponses.reduce((scores, resp) => {
+            scores[resp.agentId] = resp.confidenceScore;
+            return scores;
+          }, {} as Record<string, number>),
+          recommendedFollowup: followUpQuestions
+        },
+        knowledgeGraphNodes: relatedNodes
       });
 
       if (messages.length > 6) {
@@ -206,63 +119,53 @@ export const useTutorChat = () => {
     } catch (error) {
       console.error('Error processing with QuorumForge:', error);
       
-      setMessages(prevMessages => {
-        const newMessages = [...prevMessages];
-        const loadingMessageIndex = newMessages.findIndex(msg => msg.loading);
-        
-        if (loadingMessageIndex !== -1) {
-          newMessages[loadingMessageIndex] = {
-            id: newMessages[loadingMessageIndex].id,
-            content: "I apologize, but I encountered an issue processing your request. Please try again.",
-            role: 'assistant',
-            timestamp: new Date(),
-            modelUsed: 'System',
-            loading: false,
-          };
-        }
-        return newMessages;
+      updateMessage(messages[messages.length - 1].id, {
+        content: "I apologize, but I encountered an issue processing your request. Please try again.",
+        role: 'assistant',
+        timestamp: new Date(),
+        modelUsed: 'System',
+        loading: false
       });
     } finally {
       setIsLoading(false);
       setProcessingProgress(100);
     }
-  };
+  }, [messages, activePath, metadata, updateMetadata, addTopic, updateModelUse, toast, assessSkillLevel, setIsLoading, setProcessingProgress]);
 
-  const assessComplexity = (message: string): 'low' | 'medium' | 'high' => {
-    const wordCount = message.split(/\s+/).length;
-    const complexTerms = ['explain', 'compare', 'analyze', 'evaluate', 'synthesize', 'why', 'how'];
-    const hasComplexTerms = complexTerms.some(term => message.toLowerCase().includes(term));
-    const complexSubjects = ['quantum', 'calculus', 'algorithm', 'theorem', 'philosophy', 'genetics'];
-    const hasComplexSubject = complexSubjects.some(subject => message.toLowerCase().includes(subject));
+  const { simulateProcessing } = useProcessingSimulation(setProcessingProgress, completeResponse);
+  const { handleResponseFeedback } = useFeedbackHandler(messages, setMessages);
+
+  useEffect(() => {
+    const updateModelPerformance = () => {
+      setModelPerformance(llmRouter.getPerformanceMetrics());
+      setAgentPerformance(quorumForge.getAllAgentPerformanceMetrics());
+    };
     
-    if (wordCount > 25 || hasComplexSubject) {
-      return 'high';
-    } else if (wordCount > 10 || hasComplexTerms) {
-      return 'medium';
-    } else {
-      return 'low';
-    }
-  };
+    updateModelPerformance();
+    const intervalId = setInterval(updateModelPerformance, 60000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleSend = () => {
     if (!input.trim()) return;
     
-    const userMessage: MessageType = {
+    const userMessage = {
       id: Date.now().toString(),
       content: input.trim(),
-      role: 'user',
+      role: 'user' as const,
       timestamp: new Date(),
     };
     
-    const loadingMessage: MessageType = {
+    const loadingMessage = {
       id: (Date.now() + 1).toString(),
       content: '',
-      role: 'assistant',
+      role: 'assistant' as const,
       timestamp: new Date(),
       loading: true,
     };
     
-    setMessages([...messages, userMessage, loadingMessage]);
+    addMessage(userMessage);
+    addMessage(loadingMessage);
     setInput('');
     setIsLoading(true);
     simulateProcessing();
@@ -282,4 +185,20 @@ export const useTutorChat = () => {
     setActivePath,
     handleResponseFeedback
   };
+};
+
+const assessComplexity = (message: string): 'low' | 'medium' | 'high' => {
+  const wordCount = message.split(/\s+/).length;
+  const complexTerms = ['explain', 'compare', 'analyze', 'evaluate', 'synthesize', 'why', 'how'];
+  const hasComplexTerms = complexTerms.some(term => message.toLowerCase().includes(term));
+  const complexSubjects = ['quantum', 'calculus', 'algorithm', 'theorem', 'philosophy', 'genetics'];
+  const hasComplexSubject = complexSubjects.some(subject => message.toLowerCase().includes(subject));
+  
+  if (wordCount > 25 || hasComplexSubject) {
+    return 'high';
+  } else if (wordCount > 10 || hasComplexTerms) {
+    return 'medium';
+  } else {
+    return 'low';
+  }
 };
