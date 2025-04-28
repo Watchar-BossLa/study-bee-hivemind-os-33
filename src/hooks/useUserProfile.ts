@@ -33,19 +33,32 @@ export function useUserProfile() {
     }
     
     // Transform the data to match our UserProfile type
-    // Handle learning_preferences properly by ensuring it's an array
+    // Handle learning_preferences properly by ensuring it's an array of strings
     const profile: UserProfile = {
       ...data,
-      learning_preferences: data.learning_preferences 
-        ? Array.isArray(data.learning_preferences) 
-          ? data.learning_preferences 
-          : typeof data.learning_preferences === 'string'
-            ? [data.learning_preferences]
-            : null
-        : null
+      learning_preferences: transformToStringArray(data.learning_preferences)
     };
     
     return profile;
+  };
+
+  // Helper function to transform Json to string[]
+  const transformToStringArray = (value: Json | null): string[] | null => {
+    if (value === null) return null;
+    
+    if (Array.isArray(value)) {
+      // If it's already an array, map each item to string
+      return value.map(item => String(item));
+    } else if (typeof value === 'string') {
+      // If it's a single string, wrap it in an array
+      return [value];
+    } else if (typeof value === 'object' && value !== null) {
+      // If it's an object, convert its values to an array of strings
+      return Object.values(value).map(item => String(item));
+    } else {
+      // For any other type (number, boolean), convert to string and wrap in array
+      return [String(value)];
+    }
   };
 
   const updateProfile = async (profile: Partial<Omit<UserProfile, 'id'>>) => {
@@ -66,13 +79,7 @@ export function useUserProfile() {
     // Transform the response data to match our UserProfile type
     const updatedProfile: UserProfile = {
       ...data,
-      learning_preferences: data.learning_preferences 
-        ? Array.isArray(data.learning_preferences) 
-          ? data.learning_preferences 
-          : typeof data.learning_preferences === 'string'
-            ? [data.learning_preferences]
-            : null
-        : null
+      learning_preferences: transformToStringArray(data.learning_preferences)
     };
     
     return updatedProfile;
