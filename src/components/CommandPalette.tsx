@@ -10,7 +10,7 @@ import {
   CommandItem,
   CommandSeparator,
 } from '@/components/ui/command';
-import { Book, Search, Brain, Camera, Users, Award } from 'lucide-react';
+import { Book, Search, Brain, Camera, Users, Award, Home, GraduationCap } from 'lucide-react';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -32,6 +32,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, setOpen }) => {
         <CommandEmpty>No results found.</CommandEmpty>
         
         <CommandGroup heading="Core Features">
+          <CommandItem
+            onSelect={() => runCommand(() => navigate('/'))}
+          >
+            <Home className="mr-2 h-4 w-4" />
+            <span>Dashboard</span>
+            <span className="ml-auto text-xs text-muted-foreground">Home page</span>
+          </CommandItem>
           <CommandItem
             onSelect={() => runCommand(() => navigate('/courses'))}
           >
@@ -58,9 +65,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, setOpen }) => {
         <CommandSeparator />
         
         <CommandGroup heading="Quick Access">
-          <CommandItem onSelect={() => runCommand(() => navigate('/'))}>
-            <Search className="mr-2 h-4 w-4" />
-            <span>Search All Content</span>
+          <CommandItem onSelect={() => runCommand(() => navigate('/qualifications'))}>
+            <GraduationCap className="mr-2 h-4 w-4" />
+            <span>Qualifications</span>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate('/arena'))}>
             <Users className="mr-2 h-4 w-4" />
@@ -69,6 +76,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, setOpen }) => {
           <CommandItem onSelect={() => runCommand(() => navigate('/spaced-repetition'))}>
             <Award className="mr-2 h-4 w-4" />
             <span>Spaced Repetition</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => navigate('/'))}>
+            <Search className="mr-2 h-4 w-4" />
+            <span>Search All Content</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>

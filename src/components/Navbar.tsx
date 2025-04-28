@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Search, Menu, Command, BookOpen, Camera, Brain, Award } from "lucide-react";
+import { Search, Menu, Command, BookOpen, Camera, Brain, Award, Home } from "lucide-react";
 import LogoBee from './LogoBee';
 import CommandPalette from './CommandPalette';
 import {
@@ -34,9 +35,18 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-lg">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <Link to="/" aria-label="Home">
             <LogoBee />
+          </Link>
+          
+          {/* Add explicit Home link for dashboard */}
+          <Link 
+            to="/" 
+            className={`hidden md:flex items-center gap-1 text-sm font-medium ${isActive('/') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <Home className="h-4 w-4" />
+            <span>Dashboard</span>
           </Link>
         </div>
         
@@ -104,6 +114,16 @@ const Navbar = () => {
                   </Link>
                 </div>
               </NavigationMenuContent>
+            </NavigationMenuItem>
+            
+            {/* Add Qualifications to main navigation */}
+            <NavigationMenuItem>
+              <Link 
+                to="/qualifications" 
+                className={`flex items-center gap-1 px-4 py-2 text-sm font-medium ${isActive('/qualifications') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                Qualifications
+              </Link>
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
