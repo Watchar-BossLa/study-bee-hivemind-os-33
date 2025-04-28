@@ -14,14 +14,15 @@ class OpenSourceLLMService {
       this.isInitializing = true;
       console.log('Initializing LLM pipeline...');
       
-      // Create the pipeline with correct options
+      const options = {
+        revision: 'main',
+        device: 'webgpu' 
+      };
+      
       this.textGeneration = await pipeline(
         'text-generation',
         this.model,
-        { 
-          revision: 'main',
-          quantized: false // Remove the 'task' property that doesn't exist
-        }
+        options
       );
       
       console.log('LLM pipeline initialized successfully');
@@ -62,7 +63,6 @@ class OpenSourceLLMService {
         do_sample: true
       });
 
-      // Handle the result correctly based on its structure
       if (Array.isArray(result)) {
         return result[0]?.generated_text || prompt;
       } else {
