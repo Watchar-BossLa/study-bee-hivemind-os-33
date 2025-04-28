@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import LogoBee from './LogoBee';
 import CommandPalette from './CommandPalette';
-import { NavigationMenu, NavigationMenuList } from "@/components/ui/navigation-menu";
+import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from "@/components/ui/navigation-menu";
 import { NavLinks } from './navbar/NavLinks';
 import { LearnMenu } from './navbar/LearnMenu';
 import { NavActions } from './navbar/NavActions';
