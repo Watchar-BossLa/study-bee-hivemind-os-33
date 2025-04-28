@@ -1,42 +1,46 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
 const HeroSection = () => {
   return (
-    <div className="bg-gradient-to-b from-bee-light to-white pt-16 pb-24 relative overflow-hidden">
-      <div className="absolute inset-0 honeycomb-pattern opacity-50"></div>
-      <div className="container relative mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
-        <div className="space-y-8">
-          <div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-              Learn <span className="text-bee-amber animate-pulse-subtle">Smarter</span>
+    <div className="bg-gradient-to-b from-bee-light to-white pt-20 pb-28 relative overflow-hidden">
+      <div className="absolute inset-0 honeycomb-pattern opacity-40"></div>
+      <div className="container relative mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+        <div className="space-y-10">
+          <div className="space-y-8">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]">
+              Learn <span className="text-bee-amber animate-pulse-subtle bg-gradient-to-r from-bee-amber to-bee-honey bg-clip-text text-transparent">Smarter</span>
             </h1>
-            <p className="mt-6 text-xl text-muted-foreground">
+            <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">
               Study Bee uses AI and spaced repetition to help you master any subject. Create flashcards instantly, get AI tutoring, and track your progress.
             </p>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button size="lg" className="group">
+          <div className="flex flex-col sm:flex-row gap-5">
+            <Button size="lg" className="group text-base">
               Get Started Free
               <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Button>
-            <Button size="lg" variant="outline">
+            <Button size="lg" variant="outline" className="text-base">
               Explore Courses
             </Button>
           </div>
           
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex -space-x-2">
+          <div className="flex items-center gap-5 text-sm">
+            <div className="flex -space-x-3">
               {[1, 2, 3, 4].map((n) => (
-                <div key={n} className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs font-medium">
+                <div 
+                  key={n} 
+                  className="w-10 h-10 rounded-full bg-white/90 shadow-sm border-2 border-white flex items-center justify-center text-sm font-medium"
+                >
                   {n}
                 </div>
               ))}
             </div>
-            <p>
-              <span className="font-semibold">10,000+</span> students already learning
+            <p className="text-muted-foreground">
+              <span className="font-semibold text-foreground">10,000+</span> students already learning
             </p>
           </div>
         </div>
