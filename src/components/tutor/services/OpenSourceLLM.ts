@@ -1,8 +1,8 @@
 
-import { pipeline, type Pipeline } from '@huggingface/transformers';
+import { pipeline } from '@huggingface/transformers';
 
 class OpenSourceLLMService {
-  private textGeneration: Pipeline | null = null;
+  private textGeneration: any = null;
   private apiKey: string | null = null;
   private model = 'HuggingFaceH4/zephyr-7b-beta';
   private isInitializing = false;
