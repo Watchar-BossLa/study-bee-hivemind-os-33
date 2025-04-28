@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Search, Menu, Command, BookOpen, Camera, Brain, Award, Home } from "lucide-react";
 import LogoBee from './LogoBee';
 import CommandPalette from './CommandPalette';
+import { ThemeToggle } from './theme/ThemeToggle';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -40,7 +40,6 @@ const Navbar = () => {
             <LogoBee />
           </Link>
           
-          {/* Add explicit Home link for dashboard */}
           <Link 
             to="/" 
             className={`hidden md:flex items-center gap-1 text-sm font-medium ${isActive('/') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
@@ -116,7 +115,6 @@ const Navbar = () => {
               </NavigationMenuContent>
             </NavigationMenuItem>
             
-            {/* Add Qualifications to main navigation */}
             <NavigationMenuItem>
               <Link 
                 to="/qualifications" 
@@ -129,6 +127,7 @@ const Navbar = () => {
         </NavigationMenu>
         
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Button 
             variant="ghost" 
             size="icon" 
