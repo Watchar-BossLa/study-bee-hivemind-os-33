@@ -67,7 +67,9 @@ const CourseContent = () => {
                   <span className="text-sm text-muted-foreground">
                     {course.credits} credits
                   </span>
-                  <Button>Start Learning</Button>
+                  <Button onClick={() => navigate(`/learn/${subjectId}/${moduleId}/${course.id}`)}>
+                    Start Learning
+                  </Button>
                 </div>
               </CardContent>
             </Card>
