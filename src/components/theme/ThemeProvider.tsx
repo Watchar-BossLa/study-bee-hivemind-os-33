@@ -1,6 +1,4 @@
 
-"use client"
-
 import { createContext, useContext, useEffect, useState } from "react"
 
 type Theme = "light" | "dark" | "system" | "dynamic"
@@ -43,11 +41,6 @@ export function ThemeProvider({
         : "light"
       root.classList.add(systemTheme)
     } else if (theme === "dynamic") {
-      const isDaytime = () => {
-        const hours = new Date().getHours()
-        return hours >= 6 && hours < 18
-      }
-      
       const baseTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light"
@@ -61,8 +54,19 @@ export function ThemeProvider({
         root.classList.add(currentBaseTheme)
       }
 
+      // Initial check
+      checkTime()
+      
+      // Listen for system theme changes
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+      mediaQuery.addEventListener("change", checkTime)
+
       const interval = setInterval(checkTime, 60000) // Check every minute
-      return () => clearInterval(interval)
+      
+      return () => {
+        clearInterval(interval)
+        mediaQuery.removeEventListener("change", checkTime)
+      }
     } else {
       root.classList.add(theme)
     }
