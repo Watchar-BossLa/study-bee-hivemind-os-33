@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
+import { Line, LineChart, XAxis, YAxis } from "recharts";
 
 interface PerformanceChartProps {
   data: Array<{
@@ -19,6 +19,17 @@ const PerformanceChart = ({ data }: PerformanceChartProps) => {
     subject: item.subject_id,
   })) || [];
 
+  // Define chart configuration with color theme
+  const chartConfig: ChartConfig = {
+    score: {
+      label: "Score",
+      theme: {
+        light: "#10b981",
+        dark: "#10b981"
+      }
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -26,7 +37,7 @@ const PerformanceChart = ({ data }: PerformanceChartProps) => {
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">
-          <ChartContainer>
+          <ChartContainer config={chartConfig}>
             <LineChart data={chartData}>
               <XAxis dataKey="name" />
               <YAxis domain={[0, 100]} />

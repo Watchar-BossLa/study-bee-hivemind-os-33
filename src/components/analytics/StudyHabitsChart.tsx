@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
+import { Bar, BarChart, XAxis, YAxis } from "recharts";
 
 interface StudyHabitsChartProps {
   data: Array<{
@@ -19,6 +19,17 @@ const StudyHabitsChart = ({ data }: StudyHabitsChartProps) => {
     sessions: item.sessions_completed,
   })) || [];
 
+  // Define chart configuration with color theme
+  const chartConfig: ChartConfig = {
+    minutes: {
+      label: "Study Minutes",
+      theme: {
+        light: "#3b82f6",
+        dark: "#3b82f6"
+      }
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -26,7 +37,7 @@ const StudyHabitsChart = ({ data }: StudyHabitsChartProps) => {
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">
-          <ChartContainer>
+          <ChartContainer config={chartConfig}>
             <BarChart data={chartData}>
               <XAxis dataKey="name" />
               <YAxis />
