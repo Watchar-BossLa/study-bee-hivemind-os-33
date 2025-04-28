@@ -38,7 +38,7 @@ const QualificationCard = ({ module, subjectId, qualificationLevel }: Qualificat
         <div className="flex items-start justify-between">
           <div>
             <Badge variant="outline" className="mb-2">
-              {module.level === 'professional' ? 'Professional' : qualificationLevel?.name}
+              {module.level === 'professional' ? 'Professional' : qualificationLevel?.name || module.level}
             </Badge>
             <CardTitle>{module.name}</CardTitle>
             {module.description && (

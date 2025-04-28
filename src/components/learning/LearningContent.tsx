@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Book, Check, Video, FileText, Clock, Users, Award } from 'lucide-react';
 import { subjectAreas } from '@/data/qualifications';
 import CourseSection from './components/CourseSection';
-import { LearningDialog } from './LearningDialog';
+import LearningDialog from './LearningDialog';
 
 interface LearningContentProps {
   subjectId?: string;
@@ -26,7 +25,6 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
   const [progress, setProgress] = useState(0);
   
-  // Mock course data
   const [courseData, setCourseData] = useState<{
     title: string;
     description: string;
@@ -50,13 +48,11 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
   
   useEffect(() => {
     if (sid && mid && cid) {
-      // Find actual course information from our data
       const subject = subjectAreas.find(s => s.id === sid);
       const module = subject?.modules.find(m => m.id === mid);
       const course = module?.courses.find(c => c.id === cid);
       
       if (course) {
-        // Generate mock detailed content for the course
         const mockCourseData = {
           title: course.name,
           description: course.description || 'This course provides comprehensive coverage of key concepts and practices.',
@@ -190,7 +186,6 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
         
         setCourseData(mockCourseData);
         
-        // Calculate progress based on completed lessons
         const totalLessons = mockCourseData.sections.reduce((sum, section) => sum + section.lessons.length, 0);
         const completedLessons = mockCourseData.sections.reduce((sum, section) => 
           sum + section.lessons.filter(lesson => lesson.completed).length, 0);
@@ -210,7 +205,6 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
   
   const handleCompleteLesson = () => {
     if (selectedLesson && courseData) {
-      // Mark the lesson as completed
       const updatedCourseData = {
         ...courseData,
         sections: courseData.sections.map(section => ({
@@ -223,14 +217,12 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
       
       setCourseData(updatedCourseData);
       
-      // Recalculate progress
       const totalLessons = updatedCourseData.sections.reduce((sum, section) => sum + section.lessons.length, 0);
       const completedLessons = updatedCourseData.sections.reduce((sum, section) => 
         sum + section.lessons.filter(lesson => lesson.completed).length, 0);
       
       setProgress(Math.round((completedLessons / totalLessons) * 100));
       
-      // Close the dialog
       setSelectedLesson(null);
     }
   };
@@ -248,7 +240,6 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
   
   return (
     <div className="space-y-8">
-      {/* Course Header */}
       <div>
         <h1 className="text-3xl font-bold">{courseData.title}</h1>
         <p className="text-muted-foreground mt-2">{courseData.description}</p>
@@ -269,7 +260,6 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
         </div>
       </div>
       
-      {/* Progress Bar */}
       <Card>
         <CardHeader>
           <CardTitle>Your Progress</CardTitle>
@@ -292,7 +282,6 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
         </CardContent>
       </Card>
       
-      {/* Course Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-3 mb-8">
           <TabsTrigger value="content">Course Content</TabsTrigger>
@@ -358,7 +347,6 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
         </TabsContent>
       </Tabs>
       
-      {/* Learning Dialog */}
       {selectedLesson && (
         <LearningDialog
           lesson={selectedLesson}

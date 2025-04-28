@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { calculateScore } from '@/utils/arenaUtils';
 import type { QuizQuestion } from '@/types/arena';
 
+type QuizAnswer = 'a' | 'b' | 'c' | 'd' | 'none';
+
 export const useArenaQuestion = (matchId: string | null) => {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -22,7 +24,7 @@ export const useArenaQuestion = (matchId: string | null) => {
       // First check if match has a subject focus
       const { data: matchData } = await supabase
         .from('arena_matches')
-        .select('subject_focus')
+        .select('*')
         .eq('id', matchId)
         .single();
       
@@ -32,8 +34,9 @@ export const useArenaQuestion = (matchId: string | null) => {
         .order('id');
       
       // If there's a subject focus, filter questions by that subject
-      if (matchData?.subject_focus) {
-        query = query.eq('subject', matchData.subject_focus);
+      const subjectFocus = matchData?.subject_focus;
+      if (subjectFocus) {
+        query = query.eq('category', subjectFocus);
       }
       
       // Get 5-10 random questions
@@ -51,7 +54,7 @@ export const useArenaQuestion = (matchId: string | null) => {
           correct_answer: q.correct_answer as 'a' | 'b' | 'c' | 'd',
           difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
           category: q.category,
-          subject: q.subject || 'general'
+          subject: q.category // Use category as subject if subject doesn't exist
         }));
         
         setQuestions(typedQuestions);
@@ -144,20 +147,20 @@ export const useArenaQuestion = (matchId: string | null) => {
     }
   };
 
-  const answerQuestion = async (answer: 'a' | 'b' | 'c' | 'd' | 'x') => {
+  const answerQuestion = async (answer: QuizAnswer) => {
     if (!matchId || selectedAnswer || currentQuestionIndex >= questions.length) return;
     
     setSelectedAnswer(answer);
     const currentQuestion = questions[currentQuestionIndex];
-    const isCorrect = answer === currentQuestion.correct_answer;
+    const isCorrect = answer !== 'none' && answer === currentQuestion.correct_answer;
     const responseTime = 15 - timeLeft; // Calculate response time
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Only add score if answer is correct and not a timeout (answer !== 'x')
-      const scoreToAdd = (isCorrect && answer !== 'x') 
+      // Only add score if answer is correct and not a timeout (answer !== 'none')
+      const scoreToAdd = (isCorrect && answer !== 'none') 
         ? calculateScore(currentQuestion.difficulty, responseTime) 
         : 0;
       
@@ -166,21 +169,21 @@ export const useArenaQuestion = (matchId: string | null) => {
         match_id_param: matchId,
         user_id_param: user.id,
         score_to_add: scoreToAdd,
-        is_correct: isCorrect && answer !== 'x',
-        response_time: responseTime
+        is_correct: isCorrect,
+        response_time_param: responseTime // Updated parameter name
       });
 
-      // Also record this question response in the user_responses table for analytics
-      await supabase.from('user_quiz_responses').insert({
-        user_id: user.id,
-        match_id: matchId,
-        question_id: currentQuestion.id,
-        selected_answer: answer,
-        is_correct: isCorrect && answer !== 'x',
-        response_time: responseTime,
-        difficulty: currentQuestion.difficulty,
-        subject: currentQuestion.subject
-      });
+      // Record the question response
+      try {
+        await supabase.from('quiz_questions')
+          .update({
+            last_used_at: new Date().toISOString(),
+            times_used: supabase.sql('times_used + 1')
+          })
+          .eq('id', currentQuestion.id);
+      } catch (error) {
+        console.error('Error updating question usage stats:', error);
+      }
 
       // Move to next question after a delay
       setTimeout(() => {

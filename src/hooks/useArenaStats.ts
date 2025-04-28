@@ -42,6 +42,7 @@ export const useArenaStats = () => {
           matches_won: entry.matches_won,
           total_score: entry.total_score,
           highest_score: entry.highest_score,
+          win_rate: entry.matches_played > 0 ? (entry.matches_won / entry.matches_played) : 0
         }));
         
         setLeaderboard(formattedLeaderboard);

@@ -25,6 +25,7 @@ export const useArenaAchievements = () => {
           description: 'Participated in your first quiz match',
           icon: 'award',
           earned: false,
+          rarity: 'common'
         },
         {
           id: 'first-win',
@@ -32,6 +33,7 @@ export const useArenaAchievements = () => {
           description: 'Won your first quiz match',
           icon: 'trophy',
           earned: false,
+          rarity: 'uncommon'
         },
         {
           id: 'perfect-score',
@@ -39,6 +41,7 @@ export const useArenaAchievements = () => {
           description: 'Answered all questions correctly in a match',
           icon: 'star',
           earned: false,
+          rarity: 'rare'
         },
         {
           id: 'five-matches',
@@ -46,6 +49,7 @@ export const useArenaAchievements = () => {
           description: 'Participated in 5 quiz matches',
           icon: 'medal',
           earned: false,
+          rarity: 'common'
         }
       ];
 

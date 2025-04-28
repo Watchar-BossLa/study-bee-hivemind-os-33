@@ -9,7 +9,7 @@ export interface Course {
 export interface Module {
   id: string;
   name: string;
-  level: QualificationLevel;
+  level: QualificationLevelType;
   description?: string;
   learning_outcomes?: string[];
   duration?: string;
@@ -17,7 +17,8 @@ export interface Module {
   courses: Course[];
 }
 
-export type QualificationLevel = 
+// Define as a type alias for string literals
+export type QualificationLevelType = 
   | "certificate"
   | "cvq"
   | "diploma"
@@ -25,10 +26,13 @@ export type QualificationLevel =
   | "masters"
   | "professional";
 
+// Define as an interface for the full qualification level object
 export interface QualificationLevel {
-  id: string;
+  id: QualificationLevelType;
   name: string;
   description: string;
+  duration?: string;
+  creditValue?: string;
 }
 
 export interface SubjectArea {
@@ -49,3 +53,6 @@ export interface ProfessionalQualification {
     courses: string[];
   }[];
 }
+
+// Add AccountingQualification type which was missing
+export type AccountingQualification = ProfessionalQualification;

@@ -44,9 +44,11 @@ export interface ArenaStats {
 
 export interface LeaderboardEntry {
   user_id: string;
+  username?: string;
   display_name?: string;
   avatar_url?: string;
   total_score: number;
+  highest_score?: number;
   matches_played: number;
   matches_won: number;
   win_rate: number;
@@ -57,7 +59,7 @@ export interface Achievement {
   name: string;
   description: string;
   icon: string;
-  unlocked: boolean;
-  unlocked_at?: string;
+  earned: boolean;
+  earned_at?: string;
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 }

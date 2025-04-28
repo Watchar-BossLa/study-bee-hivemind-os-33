@@ -101,7 +101,8 @@ export const useArenaMatch = () => {
         id: data.id,
         status: data.status as 'waiting' | 'active' | 'completed',
         start_time: data.start_time,
-        end_time: data.end_time
+        end_time: data.end_time,
+        subject_focus: data.subject_focus,
       };
       
       setCurrentMatch(typedMatch);
@@ -115,9 +116,22 @@ export const useArenaMatch = () => {
       .eq('match_id', matchId);
     
     if (data) {
-      setPlayers(data);
+      // Convert database response to MatchPlayer type
+      const typedPlayers: MatchPlayer[] = data.map(player => ({
+        id: player.id,
+        match_id: player.match_id,
+        user_id: player.user_id,
+        score: player.score || 0,
+        correct_answers: player.correct_answers || 0,
+        questions_answered: player.questions_answered || 0,
+        total_response_time: player.total_response_time || 0,
+        streak: player.streak || 0,
+        joined_at: player.created_at || new Date().toISOString()
+      }));
       
-      if (data.length >= 2 && currentMatch?.status === 'waiting') {
+      setPlayers(typedPlayers);
+      
+      if (typedPlayers.length >= 2 && currentMatch?.status === 'waiting') {
         await supabase
           .from('arena_matches')
           .update({ 

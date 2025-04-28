@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { SubjectArea, QualificationLevel } from '@/types/qualifications';
+import { SubjectArea, QualificationLevelType } from '@/types/qualifications';
 import { subjectAreas, qualificationLevels } from '@/data/qualifications';
 import { Book, BookOpen } from 'lucide-react';
 import QualificationCard from './QualificationCard';

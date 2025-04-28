@@ -6,6 +6,7 @@ export const professionalQualifications: AccountingQualification[] = [
     id: "acca",
     name: "Association of Chartered Certified Accountants (ACCA)",
     description: "Globally recognized professional accounting qualification",
+    organization: "ACCA",
     modules: [
       { name: "Applied Knowledge", courses: ["Business and Technology", "Management Accounting", "Financial Accounting"] },
       { name: "Applied Skills", courses: ["Corporate and Business Law", "Performance Management", "Taxation", "Financial Reporting", "Audit and Assurance", "Financial Management"] },
@@ -16,6 +17,7 @@ export const professionalQualifications: AccountingQualification[] = [
     id: "cima",
     name: "Chartered Institute of Management Accountants (CIMA)",
     description: "Leading professional body for management accountants",
+    organization: "CIMA",
     modules: [
       { name: "Certificate Level", courses: ["BA1: Fundamentals of Business Economics", "BA2: Fundamentals of Management Accounting", "BA3: Fundamentals of Financial Accounting", "BA4: Fundamentals of Ethics, Corporate Governance and Business Law"] },
       { name: "Operational Level", courses: ["E1: Organizational Management", "P1: Management Accounting", "F1: Financial Reporting and Taxation"] },

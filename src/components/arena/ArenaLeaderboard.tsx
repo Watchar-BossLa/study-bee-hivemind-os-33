@@ -53,7 +53,7 @@ export const ArenaLeaderboard = ({ leaderboard }: ArenaLeaderboardProps) => {
                     </div>
                   </TableCell>
                   <TableCell>Player {entry.username || entry.user_id.substring(0, 4)}</TableCell>
-                  <TableCell className="text-right">{entry.highest_score}</TableCell>
+                  <TableCell className="text-right">{entry.highest_score || entry.total_score}</TableCell>
                   <TableCell className="hidden text-right sm:table-cell">{entry.matches_played}</TableCell>
                   <TableCell className="hidden text-right md:table-cell">{entry.matches_won}</TableCell>
                 </TableRow>
