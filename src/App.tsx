@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +11,7 @@ import CourseContent from "./pages/CourseContent";
 import NotFound from "./pages/NotFound";
 import NotImplemented from "./pages/NotImplemented";
 import OCRFlashcards from "./pages/OCRFlashcards";
+import FlashcardReviewPage from "./pages/FlashcardReview";
 import GraphTutor from "./pages/GraphTutor";
 import Arena from "./pages/Arena";
 import CourseLearning from "./pages/CourseLearning";
@@ -42,9 +42,11 @@ const App = () => (
             <Route path="/course/:subjectId/:moduleId" element={<CourseContent />} />
             <Route path="/learn/:subjectId/:moduleId/:courseId" element={<CourseLearning />} />
             
-            {/* Placeholder routes for features mentioned in the spec */}
+            {/* Updated route for spaced repetition */}
+            <Route path="/spaced-repetition" element={<FlashcardReviewPage />} />
+            
+            {/* Keep flashcards route as NotImplemented for now */}
             <Route path="/flashcards" element={<NotImplemented />} />
-            <Route path="/spaced-repetition" element={<NotImplemented />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
