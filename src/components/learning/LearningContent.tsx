@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import React, { useState } from 'react';
+import { Book } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Book, BookOpen, Play, FileText, CheckCircle, FileVideo } from 'lucide-react';
-import { subjectAreas } from '@/data/qualifications';
 import { Button } from '@/components/ui/button';
 import LearningDialog from './LearningDialog';
-import { supabase } from '@/integrations/supabase/client';
+import CourseProgress from './components/CourseProgress';
+import CourseSection from './components/CourseSection';
+import { useLearningSession } from '@/hooks/useLearningSession';
+import { subjectAreas } from '@/data/qualifications';
 
 interface LearningContentProps {
   subjectId?: string;
@@ -16,13 +16,9 @@ interface LearningContentProps {
 
 const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps) => {
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
-  const subject = subjectAreas.find(s => s.id === subjectId);
-  const module = subject?.modules.find(m => m.id === moduleId);
-  const course = module?.courses.find(c => c.id === courseId);
-
-  if (!course) {
-    return <div>Course not found</div>;
-  }
+  
+  // Use the custom hook for session tracking
+  useLearningSession(subjectId, moduleId, courseId);
 
   const sections = [
     {
@@ -34,7 +30,7 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
           title: 'Course Overview',
           type: 'video',
           content: `
-            <h2>Welcome to ${course.name}</h2>
+            <h2>Welcome to ${courseId}</h2>
             <p>This comprehensive course will introduce you to the fundamental principles of accounting. Throughout this course, you will learn:</p>
             <ul>
               <li>Basic accounting concepts and terminology</li>
@@ -155,163 +151,54 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
     }
   ];
 
-  const getLessonIcon = (type: string) => {
-    switch (type) {
-      case 'video':
-        return <Play className="h-5 w-5 text-primary" />;
-      case 'reading':
-        return <FileText className="h-5 w-5 text-primary" />;
-      case 'exercise':
-        return <CheckCircle className="h-5 w-5 text-primary" />;
-      default:
-        return <Book className="h-5 w-5 text-primary" />;
-    }
-  };
+  if (!courseId) {
+    return <div>Course not found</div>;
+  }
 
-  useEffect(() => {
-    const startSession = async () => {
-      const { data, error } = await supabase
-        .from('learning_sessions')
-        .insert({
-          subject_id: subjectId,
-          module_id: moduleId,
-          course_id: courseId,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error starting learning session:', error);
-      }
-    };
-
-    startSession();
-
-    return () => {
-      const endSession = async () => {
-        const { data: sessions } = await supabase
-          .from('learning_sessions')
-          .select('id, start_time')
-          .eq('subject_id', subjectId)
-          .eq('module_id', moduleId)
-          .eq('course_id', courseId)
-          .is('end_time', null)
-          .limit(1)
-          .single();
-
-        if (sessions) {
-          const endTime = new Date();
-          const startTime = new Date(sessions.start_time);
-          const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
-
-          await supabase
-            .from('learning_sessions')
-            .update({
-              end_time: endTime.toISOString(),
-              duration_minutes: durationMinutes,
-            })
-            .eq('id', sessions.id);
-
-          const today = new Date().toISOString().split('T')[0];
-          await supabase.rpc('upsert_study_metrics', {
-            p_date: today,
-            p_duration: durationMinutes,
-            p_sessions: 1,
-          });
-        }
-      };
-
-      endSession();
-    };
-  }, [subjectId, moduleId, courseId]);
+  const subject = subjectAreas.find(s => s.id === subjectId);
+  const module = subject?.modules.find(m => m.id === moduleId);
+  const course = module?.courses.find(c => c.id === courseId);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">{course.name}</h1>
+        <h1 className="text-3xl font-bold mb-2">{course?.name}</h1>
         <div className="flex items-center gap-2 text-muted-foreground">
           <Book className="h-5 w-5" />
           <span>{module?.name}</span>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Progress value={0} className="h-2 mb-2" />
-          <p className="text-sm text-muted-foreground">0% Complete</p>
-        </CardContent>
-      </Card>
+      <CourseProgress progress={0} />
 
       <Tabs defaultValue="content" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="content" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            Course Content
-          </TabsTrigger>
-          <TabsTrigger value="materials" className="flex items-center gap-2">
-            <Book className="h-4 w-4" />
-            Study Materials
-          </TabsTrigger>
+          <TabsTrigger value="content">Course Content</TabsTrigger>
+          <TabsTrigger value="materials">Study Materials</TabsTrigger>
         </TabsList>
 
         <TabsContent value="content" className="space-y-4">
           {sections.map(section => (
-            <Card key={section.id}>
-              <CardHeader>
-                <CardTitle>{section.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {section.lessons.map(lesson => (
-                  <Button
-                    key={lesson.id}
-                    variant="ghost"
-                    className="w-full justify-start p-4 h-auto"
-                    onClick={() => setSelectedLesson(lesson)}
-                  >
-                    <div className="flex items-start gap-4">
-                      {getLessonIcon(lesson.type)}
-                      <div className="flex-1 text-left">
-                        <h3 className="font-medium mb-1">{lesson.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {lesson.type.charAt(0).toUpperCase() + lesson.type.slice(1)} • {lesson.duration}
-                        </p>
-                      </div>
-                      {lesson.completed && (
-                        <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
-                      )}
-                    </div>
-                  </Button>
-                ))}
-              </CardContent>
-            </Card>
+            <CourseSection
+              key={section.id}
+              section={section}
+              onSelectLesson={setSelectedLesson}
+            />
           ))}
         </TabsContent>
 
         <TabsContent value="materials">
-          <Card>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Course Materials</h3>
-                <div className="space-y-4">
-                  <Button variant="outline" className="w-full justify-start gap-2">
-                    <FileText className="h-4 w-4" />
-                    Course Syllabus
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start gap-2">
-                    <FileText className="h-4 w-4" />
-                    Study Guide
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start gap-2">
-                    <FileText className="h-4 w-4" />
-                    Practice Problems Set
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            <Button variant="outline" className="w-full justify-start gap-2">
+              Course Syllabus
+            </Button>
+            <Button variant="outline" className="w-full justify-start gap-2">
+              Study Guide
+            </Button>
+            <Button variant="outline" className="w-full justify-start gap-2">
+              Practice Problems Set
+            </Button>
+          </div>
         </TabsContent>
       </Tabs>
 
