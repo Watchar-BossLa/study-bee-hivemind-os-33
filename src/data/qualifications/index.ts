@@ -1,6 +1,5 @@
-
 import { qualificationLevels } from './levels';
-import { accountingSubjectArea, accountingQualifications } from './accounting';
+import { accountingSubjectArea, accountingQualifications } from '../subjects/accounting';
 import { businessSubjectArea } from './business';
 import { itSubjectArea } from './it';
 import { educationSubjectArea } from './education';
