@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSpacedRepetition } from '@/hooks/useSpacedRepetition';
-import { Check, X } from 'lucide-react';
+import QuestionView from './QuestionView';
+import AnswerView from './AnswerView';
 
 interface FlashcardReviewProps {
   id: string;
@@ -29,47 +29,19 @@ const FlashcardReview: React.FC<FlashcardReviewProps> = ({
 
   return (
     <Card className="w-full max-w-xl mx-auto">
-      <CardContent className="p-6 space-y-4">
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Question:</h3>
-          <p>{question}</p>
-          
-          {!isAnswerVisible ? (
-            <Button 
-              className="w-full"
-              onClick={() => setIsAnswerVisible(true)}
-            >
-              Show Answer
-            </Button>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold">Answer:</h3>
-                <p>{answer}</p>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => handleResponse(false)}
-                  disabled={isSubmitting}
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Incorrect
-                </Button>
-                <Button
-                  className="flex-1"
-                  onClick={() => handleResponse(true)}
-                  disabled={isSubmitting}
-                >
-                  <Check className="mr-2 h-4 w-4" />
-                  Correct
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+      <CardContent className="p-6">
+        {!isAnswerVisible ? (
+          <QuestionView 
+            question={question} 
+            onShowAnswer={() => setIsAnswerVisible(true)} 
+          />
+        ) : (
+          <AnswerView 
+            answer={answer}
+            isSubmitting={isSubmitting}
+            onResponse={handleResponse}
+          />
+        )}
       </CardContent>
     </Card>
   );
