@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -13,6 +12,7 @@ import { CourseProps } from '@/types/course';
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from 'react-router-dom';
+import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
 
 // Featured courses data
 const featuredCourses: CourseProps[] = [
@@ -60,6 +60,17 @@ const Index = () => {
         <section className="py-12 bg-gray-50/50">
           <div className="container">
             <QuickActions />
+          </div>
+        </section>
+        
+        {/* Analytics Dashboard Section */}
+        <section className="py-12 bg-white">
+          <div className="container">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold">Learning Analytics</h2>
+              <p className="text-muted-foreground mt-2">Track your learning progress and performance</p>
+            </div>
+            <AnalyticsDashboard />
           </div>
         </section>
         
