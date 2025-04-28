@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { accountingQualifications } from '@/data/qualificationsData';
+import { accountingQualifications } from '@/data/qualifications';
 import { Book, Award, CheckCircle } from 'lucide-react';
 
 const AccountingQualifications = () => {

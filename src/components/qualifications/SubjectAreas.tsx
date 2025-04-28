@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { SubjectArea, QualificationLevel } from '@/types/qualifications';
-import { subjectAreas, qualificationLevels } from '@/data/qualificationsData';
+import { subjectAreas, qualificationLevels } from '@/data/qualifications';
 import { Book, BookOpen } from 'lucide-react';
 import QualificationCard from './QualificationCard';
 
