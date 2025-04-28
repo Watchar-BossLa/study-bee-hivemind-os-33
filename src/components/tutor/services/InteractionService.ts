@@ -1,6 +1,7 @@
 
 import { UserInteraction } from '../types/agents';
 import { LLMRouter } from './LLMRouter';
+import { RouterRequest } from '../types/router';
 
 export class InteractionService {
   private interactions: UserInteraction[] = [];
@@ -18,9 +19,9 @@ export class InteractionService {
     agent.status = 'busy';
     
     try {
-      const routerRequest = {
+      const routerRequest: RouterRequest = {
         query: message,
-        task: 'tutor',
+        task: 'tutor' as const,
         complexity: 'medium',
         urgency: 'medium',
         costSensitivity: 'medium'

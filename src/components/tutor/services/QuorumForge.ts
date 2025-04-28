@@ -4,6 +4,7 @@ import { LLMRouter } from './LLMRouter';
 import { CouncilService } from './CouncilService';
 import { DeliberationService } from './DeliberationService';
 import { InteractionService } from './InteractionService';
+import { AgentService } from './AgentService';
 
 // Specialized learning agents
 export const specializedAgents: SpecializedAgent[] = [
@@ -50,7 +51,7 @@ export const specializedAgents: SpecializedAgent[] = [
 ];
 
 export class QuorumForge {
-  private agents: SpecializedAgent[];
+  private agentService: AgentService;
   private councilService: CouncilService;
   private deliberationService: DeliberationService;
   private interactionService: InteractionService;
@@ -59,7 +60,7 @@ export class QuorumForge {
     agents: SpecializedAgent[] = specializedAgents, 
     router: LLMRouter = new LLMRouter()
   ) {
-    this.agents = agents;
+    this.agentService = new AgentService(agents);
     this.councilService = new CouncilService(agents);
     this.deliberationService = new DeliberationService();
     this.interactionService = new InteractionService(router);
@@ -95,7 +96,7 @@ export class QuorumForge {
     const council = this.councilService.getCouncil(councilId);
     
     if (!council) {
-      throw new Error(`Could not find appropriate council for message`);
+      throw new Error('Could not find appropriate council for message');
     }
 
     const interaction: UserInteraction = {
@@ -121,7 +122,7 @@ export class QuorumForge {
   }
 
   public getAgents(): SpecializedAgent[] {
-    return this.agents;
+    return this.agentService.getAgents();
   }
 
   public getCouncils(): Map<string, SpecializedAgent[]> {
