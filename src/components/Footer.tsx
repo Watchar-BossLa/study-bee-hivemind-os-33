@@ -1,23 +1,22 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import LogoBee from './LogoBee';
 
 const Footer = () => {
   return (
-    <footer className="bg-bee-dark text-white py-12">
-      <div className="container grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="bg-bee-dark text-white py-6">
+      <div className="container grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="md:col-span-1">
           <LogoBee className="text-white" />
-          <p className="mt-4 text-sm text-gray-300">
-            Study Bee helps you master any subject with AI-powered learning, spaced repetition, and interactive quizzes.
+          <p className="mt-2 text-sm text-gray-300">
+            Study Bee helps you master any subject with AI-powered learning.
           </p>
         </div>
         
-        <div className="md:col-span-3 grid grid-cols-2 md:grid-cols-3 gap-8">
+        <div className="md:col-span-3 grid grid-cols-2 md:grid-cols-3 gap-4">
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-bee-amber">Features</h3>
-            <ul className="space-y-2 text-sm">
+            <h3 className="text-base font-semibold mb-2 text-bee-amber">Features</h3>
+            <ul className="space-y-1 text-sm">
               <li><Link to="#" className="hover:text-bee-amber transition-colors">AI Tutoring</Link></li>
               <li><Link to="#" className="hover:text-bee-amber transition-colors">Flashcards</Link></li>
               <li><Link to="#" className="hover:text-bee-amber transition-colors">OCR Scanner</Link></li>
@@ -27,8 +26,8 @@ const Footer = () => {
           </div>
           
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-bee-amber">Resources</h3>
-            <ul className="space-y-2 text-sm">
+            <h3 className="text-base font-semibold mb-2 text-bee-amber">Resources</h3>
+            <ul className="space-y-1 text-sm">
               <li><Link to="/courses" className="hover:text-bee-amber transition-colors">Course Catalog</Link></li>
               <li><Link to="#" className="hover:text-bee-amber transition-colors">Study Guides</Link></li>
               <li><Link to="#" className="hover:text-bee-amber transition-colors">Community</Link></li>
@@ -37,8 +36,8 @@ const Footer = () => {
           </div>
           
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-bee-amber">Company</h3>
-            <ul className="space-y-2 text-sm">
+            <h3 className="text-base font-semibold mb-2 text-bee-amber">Company</h3>
+            <ul className="space-y-1 text-sm">
               <li><Link to="#" className="hover:text-bee-amber transition-colors">About Us</Link></li>
               <li><Link to="#" className="hover:text-bee-amber transition-colors">Privacy Policy</Link></li>
               <li><Link to="#" className="hover:text-bee-amber transition-colors">Terms of Service</Link></li>
@@ -48,10 +47,10 @@ const Footer = () => {
         </div>
       </div>
       
-      <div className="container mt-8 pt-8 border-t border-gray-700">
+      <div className="container mt-4 pt-4 border-t border-gray-700">
         <div className="flex flex-col md:flex-row justify-between items-center">
-          <p className="text-sm text-gray-400">© 2025 Study Bee. All rights reserved.</p>
-          <div className="flex space-x-6 mt-4 md:mt-0">
+          <p className="text-xs text-gray-400">© 2025 Study Bee. All rights reserved.</p>
+          <div className="flex space-x-4 mt-2 md:mt-0">
             <Link to="#" className="text-gray-400 hover:text-bee-amber">
               <span className="sr-only">Twitter</span>
               <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
