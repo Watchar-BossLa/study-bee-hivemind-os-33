@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -83,6 +82,14 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+  
+  .dynamic.light {
+    --gradient-overlay: linear-gradient(102.3deg, rgba(147,39,143,0.15) 5.9%, rgba(234,172,232,0.15) 64%, rgba(246,219,245,0.15) 89%);
+  }
+  
+  .dynamic.dark {
+    --gradient-overlay: linear-gradient(90deg, hsla(277, 75%, 84%, 0.15) 0%, hsla(297, 50%, 51%, 0.15) 100%);
+  }
 }
 
 @layer base {
@@ -92,6 +99,23 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+  
+  .dynamic body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: var(--gradient-overlay);
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  .dynamic main {
+    position: relative;
+    z-index: 2;
   }
 }
 

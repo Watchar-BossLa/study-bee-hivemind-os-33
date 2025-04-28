@@ -35,7 +35,7 @@ export function ThemeProvider({
 
   useEffect(() => {
     const root = window.document.documentElement
-    root.classList.remove("light", "dark")
+    root.classList.remove("light", "dark", "dynamic")
 
     if (theme === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -47,11 +47,18 @@ export function ThemeProvider({
         const hours = new Date().getHours()
         return hours >= 6 && hours < 18
       }
-      root.classList.add(isDaytime() ? "light" : "dark")
+      
+      const baseTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
+      root.classList.add(baseTheme, "dynamic")
 
       const checkTime = () => {
+        const currentBaseTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light"
         root.classList.remove("light", "dark")
-        root.classList.add(isDaytime() ? "light" : "dark")
+        root.classList.add(currentBaseTheme)
       }
 
       const interval = setInterval(checkTime, 60000) // Check every minute
