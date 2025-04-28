@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +22,13 @@ const App = () => (
   <ThemeProvider defaultTheme="system" storageKey="study-bee-ui-theme">
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        {/* Theme change announcer for screen readers */}
+        <div 
+          id="theme-change-announcer" 
+          className="sr-only" 
+          aria-live="polite" 
+          aria-atomic="true"
+        />
         <Toaster />
         <Sonner />
         <BrowserRouter>

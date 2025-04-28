@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -86,10 +85,12 @@
   
   .dynamic.light {
     --gradient-overlay: linear-gradient(102.3deg, rgba(147,39,143,0.15) 5.9%, rgba(234,172,232,0.15) 64%, rgba(246,219,245,0.15) 89%);
+    --focus-outline-color: rgba(147,39,143,0.5);
   }
   
   .dynamic.dark {
     --gradient-overlay: linear-gradient(90deg, hsla(277, 75%, 84%, 0.15) 0%, hsla(297, 50%, 51%, 0.15) 100%);
+    --focus-outline-color: hsla(297, 50%, 70%, 0.5);
   }
 }
 
@@ -114,9 +115,42 @@
     z-index: 1;
   }
   
-  .dynamic main {
+  .dynamic main, 
+  .dynamic header, 
+  .dynamic footer, 
+  .dynamic dialog, 
+  .dynamic [role="dialog"] {
     position: relative;
     z-index: 2;
+  }
+  
+  .dynamic :focus-visible {
+    outline: 2px solid var(--focus-outline-color);
+    outline-offset: 2px;
+  }
+  
+  @media (max-width: 640px) {
+    .dynamic.light {
+      --gradient-overlay: linear-gradient(135deg, rgba(147,39,143,0.2) 15%, rgba(234,172,232,0.2) 85%);
+    }
+    
+    .dynamic.dark {
+      --gradient-overlay: linear-gradient(135deg, hsla(277, 75%, 84%, 0.2) 15%, hsla(297, 50%, 51%, 0.2) 85%);
+    }
+  }
+  
+  @media print {
+    .dynamic body::before {
+      display: none;
+    }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .dynamic * {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
   }
 }
 
