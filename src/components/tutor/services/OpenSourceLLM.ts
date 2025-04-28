@@ -1,84 +1,73 @@
 
-/**
- * Service to interact with open-source language models via Hugging Face Inference API
- */
-export class OpenSourceLLMService {
-  private apiUrl = 'https://api-inference.huggingface.co/models';
-  private model = 'HuggingFaceH4/zephyr-7b-beta';  // A capable open source LLM
+import { pipeline, Pipeline } from '@huggingface/transformers';
+
+class OpenSourceLLMService {
+  private textGeneration: Pipeline | null = null;
   private apiKey: string | null = null;
-  
-  /**
-   * Set the API key for Hugging Face
-   */
-  setApiKey(apiKey: string): void {
-    this.apiKey = apiKey;
-  }
-  
-  /**
-   * Change the model being used
-   */
-  setModel(model: string): void {
-    this.model = model;
-  }
-  
-  /**
-   * Generate text using the selected model
-   */
-  async generateText(prompt: string): Promise<string> {
-    if (!prompt.trim()) {
-      return '';
-    }
+  private model = 'HuggingFaceH4/zephyr-7b-beta';
+  private isInitializing = false;
+
+  async initialize(): Promise<void> {
+    if (this.textGeneration || this.isInitializing) return;
     
     try {
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
+      this.isInitializing = true;
+      console.log('Initializing LLM pipeline...');
       
-      if (this.apiKey) {
-        headers['Authorization'] = `Bearer ${this.apiKey}`;
-      }
+      this.textGeneration = await pipeline(
+        'text-generation',
+        this.model,
+        { 
+          task: 'text-generation',
+          device: 'cpu',
+          revision: 'main'
+        }
+      );
       
-      const response = await fetch(`${this.apiUrl}/${this.model}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          inputs: prompt,
-          parameters: {
-            max_new_tokens: 512,
-            temperature: 0.7,
-            top_p: 0.9,
-            do_sample: true
-          }
-        })
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Error generating text:', error);
-        return `Error: ${response.statusText}`;
-      }
-      
-      const result = await response.json();
-      
-      // For text generation models that return an array of generation objects
-      if (Array.isArray(result) && result[0]?.generated_text) {
-        return result[0].generated_text;
-      }
-      
-      // For models that return direct text
-      if (typeof result === 'string') {
-        return result;
-      }
-      
-      // For other response formats
-      return JSON.stringify(result);
-      
+      console.log('LLM pipeline initialized successfully');
     } catch (error) {
-      console.error('Error with language model:', error);
-      return 'Sorry, I encountered an error processing your request.';
+      console.error('Failed to initialize LLM:', error);
+      throw error;
+    } finally {
+      this.isInitializing = false;
+    }
+  }
+
+  setApiKey(key: string): void {
+    this.apiKey = key;
+  }
+
+  setModel(model: string): void {
+    this.model = model;
+    // Re-initialize pipeline with new model
+    this.textGeneration = null;
+    this.initialize();
+  }
+
+  async generateText(prompt: string): Promise<string> {
+    if (!this.textGeneration) {
+      await this.initialize();
+    }
+
+    if (!this.textGeneration) {
+      throw new Error('Failed to initialize text generation pipeline');
+    }
+
+    try {
+      const result = await this.textGeneration(prompt, {
+        max_length: 1000,
+        temperature: 0.7,
+        top_p: 0.95,
+        repetition_penalty: 1.1,
+        do_sample: true
+      });
+
+      return Array.isArray(result) ? result[0].generated_text : result.generated_text;
+    } catch (error) {
+      console.error('Error generating text:', error);
+      throw error;
     }
   }
 }
 
-// Create a singleton instance
 export const openSourceLLM = new OpenSourceLLMService();

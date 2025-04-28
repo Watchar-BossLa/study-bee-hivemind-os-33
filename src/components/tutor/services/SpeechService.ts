@@ -1,4 +1,3 @@
-
 import { pipeline } from '@huggingface/transformers';
 
 /**
@@ -19,21 +18,20 @@ export class SpeechService {
       this.isInitializing = true;
       console.log('Initializing speech synthesis pipeline...');
       
-      // Initialize the text-to-speech pipeline with a small and efficient model
-      // Using Microsoft's SpeechT5 model which is optimized for browser usage
       this.tts = await pipeline(
         'text-to-speech',
         'microsoft/speecht5_tts',
-        { quantized: true }
+        { 
+          revision: 'main',
+          device: 'cpu'
+        }
       );
       
-      // Initialize audio context for playing audio
       this.audioContext = new AudioContext();
       
       console.log('Speech synthesis pipeline initialized successfully');
     } catch (error) {
       console.error('Failed to initialize speech synthesis:', error);
-      // Fallback to browser's native speech synthesis if available
       if ('speechSynthesis' in window) {
         console.log('Falling back to browser speech synthesis');
       }
