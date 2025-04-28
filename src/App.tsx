@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import NotImplemented from "./pages/NotImplemented";
 import OCRFlashcards from "./pages/OCRFlashcards";
 import GraphTutor from "./pages/GraphTutor";
 import Arena from "./pages/Arena";
+import CourseLearning from "./pages/CourseLearning";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +30,7 @@ const App = () => (
           <Route path="/arena" element={<Arena />} />
           <Route path="/qualifications" element={<Qualifications />} />
           <Route path="/course/:subjectId/:moduleId" element={<CourseContent />} />
+          <Route path="/learn/:subjectId/:moduleId/:courseId" element={<CourseLearning />} />
           
           {/* Placeholder routes for features mentioned in the spec */}
           <Route path="/flashcards" element={<NotImplemented />} />
