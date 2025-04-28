@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthContext";
+import { Json } from "@/integrations/supabase/types";
 
 export type UserProfile = {
   id: string;
@@ -31,7 +32,20 @@ export function useUserProfile() {
       throw error;
     }
     
-    return data;
+    // Transform the data to match our UserProfile type
+    // Handle learning_preferences properly by ensuring it's an array
+    const profile: UserProfile = {
+      ...data,
+      learning_preferences: data.learning_preferences 
+        ? Array.isArray(data.learning_preferences) 
+          ? data.learning_preferences 
+          : typeof data.learning_preferences === 'string'
+            ? [data.learning_preferences]
+            : null
+        : null
+    };
+    
+    return profile;
   };
 
   const updateProfile = async (profile: Partial<Omit<UserProfile, 'id'>>) => {
@@ -49,7 +63,19 @@ export function useUserProfile() {
       throw error;
     }
     
-    return data;
+    // Transform the response data to match our UserProfile type
+    const updatedProfile: UserProfile = {
+      ...data,
+      learning_preferences: data.learning_preferences 
+        ? Array.isArray(data.learning_preferences) 
+          ? data.learning_preferences 
+          : typeof data.learning_preferences === 'string'
+            ? [data.learning_preferences]
+            : null
+        : null
+    };
+    
+    return updatedProfile;
   };
 
   const profileQuery = useQuery({
