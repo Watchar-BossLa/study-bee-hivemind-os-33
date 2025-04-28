@@ -16,7 +16,7 @@ class OpenSourceLLMService {
       
       const options = {
         revision: 'main',
-        device: 'webgpu' 
+        device: 'webgpu' as const
       };
       
       this.textGeneration = await pipeline(
