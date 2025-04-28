@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,7 +39,7 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
           id: 'lesson-2',
           title: 'Key Concepts',
           type: 'reading',
-          content: 'Let's explore the key concepts that form the foundation of this subject.',
+          content: 'Let\'s explore the key concepts that form the foundation of this subject.',
           duration: '15 mins',
           completed: false
         }
@@ -61,7 +61,7 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
           id: 'lesson-4',
           title: 'Practice Exercise',
           type: 'exercise',
-          content: 'Let's practice what we've learned with some hands-on exercises.',
+          content: 'Let\'s practice what we\'ve learned with some hands-on exercises.',
           duration: '30 mins',
           completed: false
         }
