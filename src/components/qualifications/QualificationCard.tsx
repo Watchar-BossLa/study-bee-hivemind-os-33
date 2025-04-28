@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Book, ChevronDown, ChevronUp } from 'lucide-react';
@@ -8,18 +8,28 @@ import { Module, QualificationLevel } from '@/types/qualifications';
 
 interface QualificationCardProps {
   module: Module;
+  subjectId: string;
   qualificationLevel?: QualificationLevel;
 }
 
-const QualificationCard = ({ module, qualificationLevel }: QualificationCardProps) => {
+const QualificationCard = ({ module, subjectId, qualificationLevel }: QualificationCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const navigate = useNavigate();
 
-  const toggleExpand = () => {
+  const toggleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsExpanded(!isExpanded);
   };
 
+  const handleCardClick = () => {
+    navigate(`/course/${subjectId}/${module.id}`);
+  };
+
   return (
-    <Card className="h-full flex flex-col">
+    <Card 
+      className="h-full flex flex-col transition-shadow hover:shadow-md cursor-pointer" 
+      onClick={handleCardClick}
+    >
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>

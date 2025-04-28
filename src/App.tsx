@@ -6,7 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Courses from "./pages/Courses";
-import Qualifications from "./pages/Qualifications"; // Add this line
+import Qualifications from "./pages/Qualifications";
+import CourseContent from "./pages/CourseContent";
 import NotFound from "./pages/NotFound";
 import NotImplemented from "./pages/NotImplemented";
 import OCRFlashcards from "./pages/OCRFlashcards";
@@ -27,7 +28,8 @@ const App = () => (
           <Route path="/ocr" element={<OCRFlashcards />} />
           <Route path="/tutor" element={<GraphTutor />} />
           <Route path="/arena" element={<Arena />} />
-          <Route path="/qualifications" element={<Qualifications />} /> {/* Add this line */}
+          <Route path="/qualifications" element={<Qualifications />} />
+          <Route path="/course/:subjectId/:moduleId" element={<CourseContent />} />
           
           {/* Placeholder routes for features mentioned in the spec */}
           <Route path="/flashcards" element={<NotImplemented />} />

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,8 +9,6 @@ import QualificationCard from './QualificationCard';
 
 const SubjectAreas = () => {
   const [activeSubject, setActiveSubject] = useState<string>(subjectAreas[0].id);
-
-  const activeSubjectData = subjectAreas.find(subject => subject.id === activeSubject);
 
   return (
     <div className="container mx-auto py-8">
@@ -39,6 +36,7 @@ const SubjectAreas = () => {
                 <QualificationCard 
                   key={module.id}
                   module={module}
+                  subjectId={subject.id}
                   qualificationLevel={qualificationLevels.find(level => level.id === module.level)}
                 />
               ))}
