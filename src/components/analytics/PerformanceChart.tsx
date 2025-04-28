@@ -1,13 +1,14 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 interface PerformanceChartProps {
   data: Array<{
-    subject_id: string;
-    score: number;
     completed_at: string;
+    score: number;
+    subject_id: string;
   }>;
 }
 
@@ -25,13 +26,14 @@ const PerformanceChart = ({ data }: PerformanceChartProps) => {
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ChartContainer>
             <LineChart data={chartData}>
               <XAxis dataKey="name" />
               <YAxis domain={[0, 100]} />
+              <ChartTooltip />
               <Line type="monotone" dataKey="score" stroke="#10b981" name="Score" />
             </LineChart>
-          </ResponsiveContainer>
+          </ChartContainer>
         </div>
       </CardContent>
     </Card>
