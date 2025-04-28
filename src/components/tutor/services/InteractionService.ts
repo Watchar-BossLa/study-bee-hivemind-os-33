@@ -1,4 +1,3 @@
-
 import { UserInteraction } from '../types/agents';
 import { LLMRouter } from './LLMRouter';
 import { AgentResponseProcessor } from './interactions/AgentResponseProcessor';
@@ -43,5 +42,13 @@ export class InteractionService {
 
   public getUserTopInterests(userId: string, limit: number = 5): string[] {
     return this.interactionTracker.getUserTopInterests(userId, limit);
+  }
+
+  public getAgentPerformanceMetrics(agentId: string) {
+    return this.interactionTracker.getAgentPerformanceMetrics(agentId);
+  }
+
+  public getAllAgentPerformanceMetrics() {
+    return this.interactionTracker.getAllAgentPerformanceMetrics();
   }
 }

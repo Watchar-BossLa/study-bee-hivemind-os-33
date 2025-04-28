@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { MessageType } from '../types/chat';
 import { RouterRequest } from '../types/router';
@@ -39,13 +40,13 @@ export const useFeedbackHandler = (
       );
     }
     
-    setMessages((prevMessages: MessageType[]) => 
-      prevMessages.map(m => 
-        m.id === messageId ? 
-          { ...m, userRating: rating, requestFeedback: false } : 
-          m
-      )
+    const updatedMessages = messages.map(m => 
+      m.id === messageId ? 
+        { ...m, userRating: rating, requestFeedback: false } : 
+        m
     );
+    
+    setMessages(updatedMessages);
     
     toast({
       title: "Feedback Recorded",

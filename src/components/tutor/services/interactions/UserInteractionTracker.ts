@@ -1,9 +1,9 @@
-
-import { UserInteraction } from '../../types/agents';
+import { UserInteraction, AgentPerformanceMetrics } from '../../types/agents';
 
 export class UserInteractionTracker {
   private interactions: UserInteraction[] = [];
   private userTopicInterests: Map<string, Record<string, number>> = new Map();
+  private agentPerformance: Map<string, AgentPerformanceMetrics> = new Map();
 
   public addInteraction(interaction: UserInteraction): void {
     this.interactions.push(interaction);
@@ -52,5 +52,13 @@ export class UserInteractionTracker {
       .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
       .map(([topicId, _]) => topicId);
+  }
+
+  public getAgentPerformanceMetrics(agentId: string): AgentPerformanceMetrics | undefined {
+    return this.agentPerformance.get(agentId);
+  }
+
+  public getAllAgentPerformanceMetrics(): Map<string, AgentPerformanceMetrics> {
+    return new Map(this.agentPerformance);
   }
 }
