@@ -1,9 +1,18 @@
 
 import { SpecializedAgent } from '../types/agents';
-import { CouncilVote, CouncilDecision } from '../types/councils';
+import { CouncilDecision } from '../types/councils';
+import { VotingService } from './deliberation/VotingService';
+import { ConsensusService } from './deliberation/ConsensusService';
 
 export class DeliberationService {
   private decisions: CouncilDecision[] = [];
+  private votingService: VotingService;
+  private consensusService: ConsensusService;
+
+  constructor() {
+    this.votingService = new VotingService();
+    this.consensusService = new ConsensusService();
+  }
 
   public async deliberate(
     council: SpecializedAgent[],
@@ -12,42 +21,20 @@ export class DeliberationService {
     maxTurns: number = 3,
     consensusThreshold: number = 0.8
   ): Promise<CouncilDecision> {
-    const votes: CouncilVote[] = council.map(agent => ({
-      agentId: agent.id,
-      confidence: Math.random() * 0.4 + 0.6,
-      suggestion: `${agent.role}'s suggestion on ${topic}`,
-      reasoning: `Based on ${agent.domain} expertise, ${agent.role} recommends...`
-    }));
-
-    const suggestionGroups: Map<string, CouncilVote[]> = new Map();
-    votes.forEach(vote => {
-      if (!suggestionGroups.has(vote.suggestion)) {
-        suggestionGroups.set(vote.suggestion, []);
-      }
-      suggestionGroups.get(vote.suggestion)!.push(vote);
-    });
-
-    let consensusSuggestion = "";
-    let consensusCount = 0;
-    let highestCount = 0;
-
-    suggestionGroups.forEach((groupVotes, suggestion) => {
-      if (groupVotes.length > highestCount) {
-        highestCount = groupVotes.length;
-        consensusSuggestion = suggestion;
-        consensusCount = groupVotes.length;
-      }
-    });
-
-    const consensusConfidence = consensusCount / votes.length;
+    const votes = this.votingService.collectVotes(council, topic);
+    const suggestionGroups = this.votingService.groupVotesBySuggestion(votes);
     
-    const decision: CouncilDecision = {
+    const { suggestion, confidence } = this.consensusService.calculateConsensus(
+      votes,
+      suggestionGroups
+    );
+    
+    const decision = this.consensusService.createDecision(
       topic,
       votes,
-      consensus: consensusSuggestion,
-      confidenceScore: consensusConfidence,
-      timestamp: new Date()
-    };
+      suggestion,
+      confidence
+    );
 
     this.decisions.push(decision);
     return decision;
