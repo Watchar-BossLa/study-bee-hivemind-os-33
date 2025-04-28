@@ -9,7 +9,7 @@ import {
   DropdownMenuRadioItem
 } from "@/components/ui/dropdown-menu"
 import { Moon, Sun, Laptop, Sparkles } from "lucide-react"
-import { useTheme } from "./ThemeProvider"
+import { useTheme, type Theme } from "./ThemeProvider"
 import { cn } from "@/lib/utils"
 
 export function ThemeToggle() {
