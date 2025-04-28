@@ -1,11 +1,12 @@
+
 import { qualificationLevels } from './levels';
 import { accountingSubjectArea, accountingQualifications } from '../subjects/accounting';
-import { businessSubjectArea } from './business';
-import { itSubjectArea } from './it';
-import { educationSubjectArea } from './education';
-import { scienceSubjectArea } from './science';
-import { medicineSubjectArea } from './medicine';
-import { engineeringSubjectArea } from './engineering';
+import { businessSubjectArea } from '../subjects/business';
+import { itSubjectArea } from '../subjects/it';
+import { educationSubjectArea } from '../subjects/education';
+import { scienceSubjectArea } from '../subjects/science';
+import { medicineSubjectArea } from '../subjects/medicine';
+import { engineeringSubjectArea } from '../subjects/engineering';
 
 export const subjectAreas = [
   accountingSubjectArea,
