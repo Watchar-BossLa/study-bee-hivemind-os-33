@@ -1,10 +1,9 @@
-
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Notes, BookUser } from 'lucide-react';
+import { FileText, BookUser } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const CollaborativeNotes = () => {
@@ -16,7 +15,7 @@ const CollaborativeNotes = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Notes className="h-8 w-8" />
+              <FileText className="h-8 w-8" />
               Collaborative Notes
             </h1>
             <p className="text-muted-foreground mt-1">

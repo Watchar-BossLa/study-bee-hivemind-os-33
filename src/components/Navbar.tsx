@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Search, Menu, Command, BookOpen, Camera, Brain, Award, Home, Users, User, Notes } from "lucide-react";
+import { Search, Menu, Command, BookOpen, Camera, Brain, Award, Home, Users, User, FileText } from "lucide-react";
 import LogoBee from './LogoBee';
 import CommandPalette from './CommandPalette';
 import { ThemeToggle } from './theme/ThemeToggle';
@@ -148,7 +149,7 @@ const Navbar = () => {
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <Notes className="h-4 w-4" />
+                      <FileText className="h-4 w-4" />
                       <span className="text-sm font-medium">Collaborative Notes</span>
                     </div>
                     <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
