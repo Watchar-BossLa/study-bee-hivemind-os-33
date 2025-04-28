@@ -7,12 +7,17 @@ export const useLearningSession = (subjectId?: string, moduleId?: string, course
     const startSession = async () => {
       if (!subjectId || !moduleId || !courseId) return;
       
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data, error } = await supabase
         .from('learning_sessions')
         .insert({
+          user_id: user.id,
           subject_id: subjectId,
           module_id: moduleId,
           course_id: courseId,
+          start_time: new Date().toISOString(),
         })
         .select()
         .single();
@@ -28,12 +33,16 @@ export const useLearningSession = (subjectId?: string, moduleId?: string, course
       const endSession = async () => {
         if (!subjectId || !moduleId || !courseId) return;
         
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
         const { data: sessions } = await supabase
           .from('learning_sessions')
           .select('id, start_time')
           .eq('subject_id', subjectId)
           .eq('module_id', moduleId)
           .eq('course_id', courseId)
+          .eq('user_id', user.id)
           .is('end_time', null)
           .limit(1)
           .maybeSingle();

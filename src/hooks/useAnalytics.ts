@@ -22,7 +22,7 @@ export function useAnalytics() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('study_metrics')
-        .select('*')
+        .select('total_study_time_minutes, sessions_completed, focus_score, date')
         .order('date', { ascending: false })
         .limit(30);
 
@@ -36,7 +36,7 @@ export function useAnalytics() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('performance_records')
-        .select('*')
+        .select('subject_id, score, assessment_type, completed_at')
         .order('completed_at', { ascending: false })
         .limit(50);
 

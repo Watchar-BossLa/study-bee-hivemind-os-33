@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 interface StudyHabitsChartProps {
@@ -26,14 +25,13 @@ const StudyHabitsChart = ({ data }: StudyHabitsChartProps) => {
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">
-          <ChartContainer>
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
               <XAxis dataKey="name" />
               <YAxis />
-              <ChartTooltip />
               <Bar dataKey="minutes" fill="#3b82f6" name="Minutes" />
             </BarChart>
-          </ChartContainer>
+          </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>
