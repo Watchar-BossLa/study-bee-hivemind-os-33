@@ -1,4 +1,3 @@
-
 export interface QuizQuestion {
   id: string;
   question: string;
@@ -15,6 +14,14 @@ export interface QuizQuestion {
 }
 
 export type QuizAnswer = 'a' | 'b' | 'c' | 'd' | 'none';
+
+export interface UpdatePlayerProgressParams {
+  match_id_param: string;
+  user_id_param: string;
+  score_to_add: number;
+  is_correct: boolean;
+  response_time_param: number;
+}
 
 export interface MatchPlayer {
   id: string;
@@ -92,12 +99,4 @@ export interface DbArenaMatch {
   created_at: string | null;
   updated_at: string | null;
   subject_focus?: string;
-}
-
-export interface UpdatePlayerProgressParams {
-  match_id_param: string;
-  user_id_param: string;
-  score_to_add: number;
-  is_correct: boolean;
-  response_time_param: number;
 }
