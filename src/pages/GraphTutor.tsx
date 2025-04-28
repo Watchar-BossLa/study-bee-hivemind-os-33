@@ -11,7 +11,7 @@ const GraphTutor = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <main className="flex-grow container max-w-7xl mx-auto px-4 py-8">
+      <main className="flex-grow container max-w-7xl mx-auto px-4 py-8 mb-8">
         <TutorHeader />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
           <div className="lg:col-span-1 order-2 lg:order-1">
@@ -23,6 +23,7 @@ const GraphTutor = () => {
         </div>
       </main>
       <Footer />
+      <Toaster />
     </div>
   );
 };
