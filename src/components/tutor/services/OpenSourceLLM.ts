@@ -1,5 +1,5 @@
 
-import { pipeline, Pipeline } from '@huggingface/transformers';
+import { pipeline, type Pipeline } from '@huggingface/transformers';
 
 class OpenSourceLLMService {
   private textGeneration: Pipeline | null = null;
@@ -14,13 +14,13 @@ class OpenSourceLLMService {
       this.isInitializing = true;
       console.log('Initializing LLM pipeline...');
       
+      // Create the pipeline with correct options
       this.textGeneration = await pipeline(
         'text-generation',
         this.model,
         { 
-          task: 'text-generation',
-          device: 'cpu',
-          revision: 'main'
+          revision: 'main',
+          quantized: false // Remove the 'task' property that doesn't exist
         }
       );
       
@@ -41,7 +41,7 @@ class OpenSourceLLMService {
     this.model = model;
     // Re-initialize pipeline with new model
     this.textGeneration = null;
-    this.initialize();
+    this.initialize().catch(err => console.error('Error reinitializing with new model:', err));
   }
 
   async generateText(prompt: string): Promise<string> {
@@ -62,7 +62,12 @@ class OpenSourceLLMService {
         do_sample: true
       });
 
-      return Array.isArray(result) ? result[0].generated_text : result.generated_text;
+      // Handle the result correctly based on its structure
+      if (Array.isArray(result)) {
+        return result[0]?.generated_text || prompt;
+      } else {
+        return result.generated_text || prompt;
+      }
     } catch (error) {
       console.error('Error generating text:', error);
       throw error;
