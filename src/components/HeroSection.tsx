@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -11,7 +10,7 @@ const HeroSection = () => {
         <div className="space-y-8">
           <div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-              Learn <span className="text-bee-amber animate-pulse-subtle">Smarter</span>, Not Harder
+              Learn <span className="text-bee-amber animate-pulse-subtle">Smarter</span>
             </h1>
             <p className="mt-6 text-xl text-muted-foreground">
               Study Bee uses AI and spaced repetition to help you master any subject. Create flashcards instantly, get AI tutoring, and track your progress.
