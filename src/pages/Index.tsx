@@ -1,18 +1,17 @@
+
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import FeaturesSection from '@/components/FeaturesSection';
 import AIFeatures from '@/components/AIFeatures';
-import CourseCard from '@/components/CourseCard';
-import DashboardStats from '@/components/dashboard/DashboardStats';
-import QuickActions from '@/components/dashboard/QuickActions';
-import LearningProgress from '@/components/dashboard/LearningProgress';
 import { CourseProps } from '@/types/course';
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
-import { Link } from 'react-router-dom';
-import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
+import QuickActionsSection from '@/components/home/QuickActionsSection';
+import AnalyticsSection from '@/components/home/AnalyticsSection';
+import LearningProgressSection from '@/components/home/LearningProgressSection';
+import StatisticsSection from '@/components/home/StatisticsSection';
+import FeaturedCourses from '@/components/home/FeaturedCourses';
+import CTA from '@/components/home/CTA';
 
 // Featured courses data
 const featuredCourses: CourseProps[] = [
@@ -55,79 +54,14 @@ const Index = () => {
       
       <main className="flex-grow">
         <HeroSection />
-        
-        {/* Dashboard Quick Actions Section */}
-        <section className="py-12 bg-gray-50/50">
-          <div className="container">
-            <QuickActions />
-          </div>
-        </section>
-        
-        {/* Analytics Dashboard Section */}
-        <section className="py-12 bg-white">
-          <div className="container">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold">Learning Analytics</h2>
-              <p className="text-muted-foreground mt-2">Track your learning progress and performance</p>
-            </div>
-            <AnalyticsDashboard />
-          </div>
-        </section>
-        
-        {/* Learning Progress Section */}
-        <section className="py-12 bg-white">
-          <div className="container">
-            <LearningProgress />
-          </div>
-        </section>
-        
-        {/* Stats Overview */}
-        <section className="py-12 bg-gray-50/50">
-          <div className="container">
-            <DashboardStats />
-          </div>
-        </section>
-        
+        <QuickActionsSection />
+        <AnalyticsSection />
+        <LearningProgressSection />
+        <StatisticsSection />
         <AIFeatures />
-        
         <FeaturesSection />
-        
-        {/* Featured Courses Section */}
-        <section className="py-16 bg-white">
-          <div className="container">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-              <div>
-                <h2 className="text-3xl font-bold">Featured Courses</h2>
-                <p className="text-muted-foreground mt-2">Start mastering these popular subjects today</p>
-              </div>
-              <Link to="/courses" className="mt-4 md:mt-0">
-                <Button variant="outline" className="group">
-                  View All Courses
-                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-            </div>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredCourses.map((course) => (
-                <CourseCard key={course.id} course={course} />
-              ))}
-            </div>
-          </div>
-        </section>
-        
-        {/* CTA Section */}
-        <section className="py-20 bg-bee-dark text-white">
-          <div className="container text-center">
-            <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Learning?</h2>
-            <p className="text-xl mb-8 max-w-2xl mx-auto">
-              Join thousands of students using Study Bee to master new subjects faster than ever before.
-            </p>
-            <Button size="lg" className="bg-bee-amber hover:bg-bee-honey text-bee-dark">
-              Get Started Free
-            </Button>
-          </div>
-        </section>
+        <FeaturedCourses courses={featuredCourses} />
+        <CTA />
       </main>
       
       <Footer />
