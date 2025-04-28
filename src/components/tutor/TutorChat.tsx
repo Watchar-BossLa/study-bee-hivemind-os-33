@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Loader2, Book } from 'lucide-react';
-import TutorMessage from './TutorMessage';
+import TutorMessage from './components/TutorMessage';
 import { ProcessingIndicator } from './components/ProcessingIndicator';
 import { useTutorChat } from './hooks/useTutorChat';
 

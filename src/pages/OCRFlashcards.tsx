@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import OCRCamera from '@/components/ocr/OCRCamera';
 import OCRProcessing from '@/components/ocr/OCRProcessing';
-import FlashcardsList from '@/components/ocr/FlashcardsList';
+import FlashcardsList from '@/components/shared/flashcards/FlashcardsList';
 import { Button } from '@/components/ui/button';
 import { Camera, ArrowLeft, BrainCircuit, RotateCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
