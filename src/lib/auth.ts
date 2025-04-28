@@ -19,7 +19,10 @@ export async function getCurrentUser() {
 }
 
 // Sign in with email and password
-export async function signInWithEmail(email: string, password: string) {
+export async function signInWithEmail(email: string, password: string): Promise<{
+  user: User | null;
+  session: Session | null;
+}> {
   console.log("Attempting to sign in with email:", email);
   
   try {
@@ -34,7 +37,10 @@ export async function signInWithEmail(email: string, password: string) {
     }
     
     console.log("Sign-in successful for:", email);
-    return data;
+    return {
+      user: data.user,
+      session: data.session
+    };
   } catch (error: any) {
     console.error("Error during sign in:", error.message);
     throw error;
@@ -42,7 +48,10 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 // Sign up with email and password
-export async function signUpWithEmail(email: string, password: string, userData: Record<string, any> = {}) {
+export async function signUpWithEmail(email: string, password: string, userData: Record<string, any> = {}): Promise<{
+  user: User | null;
+  session: Session | null;
+}> {
   console.log("Attempting to sign up with email:", email);
   
   try {
@@ -60,7 +69,10 @@ export async function signUpWithEmail(email: string, password: string, userData:
     }
     
     console.log("Sign-up successful for:", email, "Email verification required:", !data.session);
-    return data;
+    return {
+      user: data.user,
+      session: data.session
+    };
   } catch (error: any) {
     console.error("Error during sign up:", error.message);
     throw error;

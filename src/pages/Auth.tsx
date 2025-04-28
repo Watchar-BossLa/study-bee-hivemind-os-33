@@ -36,11 +36,7 @@ const Auth = () => {
     
     try {
       console.log("Attempting to sign in with:", { email });
-      const { user, session, error } = await signInWithEmail(email, password);
-      
-      if (error) {
-        throw error;
-      }
+      const { session } = await signInWithEmail(email, password);
       
       if (!session) {
         throw new Error("No session returned after sign-in");
@@ -77,11 +73,7 @@ const Auth = () => {
     
     try {
       console.log("Attempting to sign up with:", { email, fullName });
-      const { user, session, error } = await signUpWithEmail(email, password, { full_name: fullName });
-      
-      if (error) {
-        throw error;
-      }
+      const { session } = await signUpWithEmail(email, password, { full_name: fullName });
       
       toast({
         title: "Account created",
