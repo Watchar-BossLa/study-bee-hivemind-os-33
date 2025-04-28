@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { Book } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import LearningDialog from './LearningDialog';
-import CourseProgress from './components/CourseProgress';
-import CourseSection from './components/CourseSection';
-import { useLearningSession } from '@/hooks/useLearningSession';
+
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Book, Check, Video, FileText, Clock, Users, Award } from 'lucide-react';
 import { subjectAreas } from '@/data/qualifications';
+import CourseSection from './components/CourseSection';
+import { LearningDialog } from './LearningDialog';
 
 interface LearningContentProps {
   subjectId?: string;
@@ -15,198 +17,353 @@ interface LearningContentProps {
 }
 
 const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps) => {
-  const [selectedLesson, setSelectedLesson] = useState<any>(null);
+  const params = useParams();
+  const sid = subjectId || params.subjectId;
+  const mid = moduleId || params.moduleId;
+  const cid = courseId || params.courseId;
   
-  // Use the custom hook for session tracking
-  useLearningSession(subjectId, moduleId, courseId);
-
-  const sections = [
-    {
-      id: 'introduction',
-      title: 'Introduction',
-      lessons: [
-        {
-          id: 'lesson-1',
-          title: 'Course Overview',
-          type: 'video',
-          content: `
-            <h2>Welcome to ${courseId}</h2>
-            <p>This comprehensive course will introduce you to the fundamental principles of accounting. Throughout this course, you will learn:</p>
-            <ul>
-              <li>Basic accounting concepts and terminology</li>
-              <li>The accounting equation and its components</li>
-              <li>Double-entry bookkeeping system</li>
-              <li>Recording business transactions</li>
-              <li>Preparing basic financial statements</li>
-            </ul>
-            <p>By the end of this course, you will have a solid foundation in accounting principles and be ready to advance to more complex topics.</p>
-            <h3>Course Structure</h3>
-            <p>The course is divided into several modules, each focusing on specific aspects of accounting. You will have access to:</p>
-            <ul>
-              <li>Video lectures</li>
-              <li>Reading materials</li>
-              <li>Practice exercises</li>
-              <li>Quizzes and assessments</li>
-            </ul>
-          `,
-          duration: '10 mins',
-          completed: false
-        },
-        {
-          id: 'lesson-2',
-          title: 'Key Concepts',
-          type: 'reading',
-          content: `
-            <h2>Essential Accounting Concepts</h2>
-            <p>Before diving into the technical aspects of accounting, let's understand some fundamental concepts:</p>
-            
-            <h3>1. The Accounting Equation</h3>
-            <p>Assets = Liabilities + Owner's Equity</p>
-            <p>This equation is the foundation of all accounting principles. It shows that everything a company owns (assets) must be financed by either debt (liabilities) or owner investments (equity).</p>
-            
-            <h3>2. Double-Entry System</h3>
-            <p>Every business transaction affects at least two accounts. For every debit entry, there must be a corresponding credit entry of equal value.</p>
-            
-            <h3>3. Types of Accounts</h3>
-            <ul>
-              <li><strong>Assets:</strong> Resources owned by the business</li>
-              <li><strong>Liabilities:</strong> Debts and obligations</li>
-              <li><strong>Owner's Equity:</strong> Owner's investment plus retained earnings</li>
-              <li><strong>Revenue:</strong> Income from business activities</li>
-              <li><strong>Expenses:</strong> Costs of doing business</li>
-            </ul>
-          `,
-          duration: '15 mins',
-          completed: false
-        }
-      ]
-    },
-    {
-      id: 'fundamentals',
-      title: 'Core Fundamentals',
-      lessons: [
-        {
-          id: 'lesson-3',
-          title: 'Basic Principles',
-          type: 'video',
-          content: `
-            <h2>Fundamental Accounting Principles</h2>
-            <p>In this lesson, we'll explore the core principles that guide accounting practices:</p>
-            
-            <h3>1. Revenue Recognition Principle</h3>
-            <p>Revenue should be recorded when it is earned, regardless of when cash is received.</p>
-            
-            <h3>2. Matching Principle</h3>
-            <p>Expenses should be recorded in the same period as the revenues they helped generate.</p>
-            
-            <h3>3. Cost Principle</h3>
-            <p>Assets should be recorded at their original cost, not their current market value.</p>
-            
-            <h3>4. Going Concern Principle</h3>
-            <p>Assumes that a business will continue operating indefinitely unless there's evidence to the contrary.</p>
-            
-            <h3>Practice Example</h3>
-            <p>Consider a company that pays $12,000 for a one-year insurance policy in January. How should this be recorded throughout the year?</p>
-          `,
-          duration: '20 mins',
-          completed: false
-        },
-        {
-          id: 'lesson-4',
-          title: 'Practice Exercise',
-          type: 'exercise',
-          content: `
-            <h2>Practical Application Exercise</h2>
-            
-            <h3>Exercise 1: Classification of Accounts</h3>
-            <p>Classify each of the following items as an Asset (A), Liability (L), or Owner's Equity (OE):</p>
-            <ol>
-              <li>Cash in bank</li>
-              <li>Accounts payable</li>
-              <li>Equipment</li>
-              <li>Bank loan</li>
-              <li>Owner's capital</li>
-            </ol>
-            
-            <h3>Exercise 2: Recording Transactions</h3>
-            <p>Record the following transactions using the double-entry system:</p>
-            <ol>
-              <li>Invested $10,000 cash to start a business</li>
-              <li>Purchased office supplies for $500 on credit</li>
-              <li>Received $2,000 from clients for services rendered</li>
-            </ol>
-            
-            <h3>Solution Guidelines</h3>
-            <p>After completing the exercises, check your work against these principles:</p>
-            <ul>
-              <li>Each transaction should have equal debits and credits</li>
-              <li>Assets increase with debits, decrease with credits</li>
-              <li>Liabilities and Owner's Equity increase with credits, decrease with debits</li>
-            </ul>
-          `,
-          duration: '30 mins',
-          completed: false
-        }
-      ]
+  const [activeTab, setActiveTab] = useState('content');
+  const [selectedLesson, setSelectedLesson] = useState<any>(null);
+  const [progress, setProgress] = useState(0);
+  
+  // Mock course data
+  const [courseData, setCourseData] = useState<{
+    title: string;
+    description: string;
+    instructor: string;
+    totalStudents: number;
+    totalLessons: number;
+    duration: string;
+    sections: {
+      id: string;
+      title: string;
+      lessons: {
+        id: string;
+        title: string;
+        type: 'video' | 'reading' | 'quiz' | 'exercise';
+        duration: string;
+        content: string;
+        completed: boolean;
+      }[];
+    }[];
+  } | null>(null);
+  
+  useEffect(() => {
+    if (sid && mid && cid) {
+      // Find actual course information from our data
+      const subject = subjectAreas.find(s => s.id === sid);
+      const module = subject?.modules.find(m => m.id === mid);
+      const course = module?.courses.find(c => c.id === cid);
+      
+      if (course) {
+        // Generate mock detailed content for the course
+        const mockCourseData = {
+          title: course.name,
+          description: course.description || 'This course provides comprehensive coverage of key concepts and practices.',
+          instructor: 'Dr. Jennifer Williams',
+          totalStudents: 1240 + Math.floor(Math.random() * 500),
+          totalLessons: 12 + Math.floor(Math.random() * 8),
+          duration: '4-6 weeks',
+          sections: [
+            {
+              id: 's1',
+              title: 'Introduction',
+              lessons: [
+                {
+                  id: 'l1',
+                  title: `Welcome to ${course.name}`,
+                  type: 'video' as const,
+                  duration: '5:20',
+                  content: 'Welcome to the course! In this video, we will go over what you will learn.',
+                  completed: true
+                },
+                {
+                  id: 'l2',
+                  title: 'Course Overview',
+                  type: 'reading' as const,
+                  duration: '10 min',
+                  content: 'This document provides an overview of the course syllabus and expectations.',
+                  completed: true
+                },
+                {
+                  id: 'l3',
+                  title: 'Pre-Assessment Quiz',
+                  type: 'quiz' as const,
+                  duration: '15 min',
+                  content: 'Test your initial knowledge with this quick assessment.',
+                  completed: false
+                }
+              ]
+            },
+            {
+              id: 's2',
+              title: 'Core Concepts',
+              lessons: [
+                {
+                  id: 'l4',
+                  title: 'Fundamental Principles',
+                  type: 'video' as const,
+                  duration: '18:45',
+                  content: 'This lecture covers the fundamental principles that form the foundation of this subject.',
+                  completed: false
+                },
+                {
+                  id: 'l5',
+                  title: 'Key Terminology',
+                  type: 'reading' as const,
+                  duration: '20 min',
+                  content: 'A glossary of important terms and concepts you will need throughout the course.',
+                  completed: false
+                },
+                {
+                  id: 'l6',
+                  title: 'Application Exercise',
+                  type: 'exercise' as const,
+                  duration: '30 min',
+                  content: 'Apply what you have learned in this practical exercise.',
+                  completed: false
+                },
+                {
+                  id: 'l7',
+                  title: 'Concept Check',
+                  type: 'quiz' as const,
+                  duration: '10 min',
+                  content: 'Check your understanding of the core concepts covered so far.',
+                  completed: false
+                }
+              ]
+            },
+            {
+              id: 's3',
+              title: 'Advanced Topics',
+              lessons: [
+                {
+                  id: 'l8',
+                  title: 'Advanced Techniques',
+                  type: 'video' as const,
+                  duration: '22:15',
+                  content: 'This lecture explores more advanced techniques and methodologies.',
+                  completed: false
+                },
+                {
+                  id: 'l9',
+                  title: 'Case Studies',
+                  type: 'reading' as const,
+                  duration: '25 min',
+                  content: 'Review these real-world case studies to deepen your understanding.',
+                  completed: false
+                },
+                {
+                  id: 'l10',
+                  title: 'Practical Application',
+                  type: 'exercise' as const,
+                  duration: '45 min',
+                  content: 'Apply advanced concepts in this comprehensive practical exercise.',
+                  completed: false
+                }
+              ]
+            },
+            {
+              id: 's4',
+              title: 'Assessment',
+              lessons: [
+                {
+                  id: 'l11',
+                  title: 'Final Review',
+                  type: 'reading' as const,
+                  duration: '30 min',
+                  content: 'A comprehensive review of all course material to prepare for the final assessment.',
+                  completed: false
+                },
+                {
+                  id: 'l12',
+                  title: 'Final Assessment',
+                  type: 'quiz' as const,
+                  duration: '60 min',
+                  content: 'Demonstrate your mastery of the course material with this final assessment.',
+                  completed: false
+                }
+              ]
+            }
+          ]
+        };
+        
+        setCourseData(mockCourseData);
+        
+        // Calculate progress based on completed lessons
+        const totalLessons = mockCourseData.sections.reduce((sum, section) => sum + section.lessons.length, 0);
+        const completedLessons = mockCourseData.sections.reduce((sum, section) => 
+          sum + section.lessons.filter(lesson => lesson.completed).length, 0);
+        
+        setProgress(Math.round((completedLessons / totalLessons) * 100));
+      }
     }
-  ];
-
-  if (!courseId) {
-    return <div>Course not found</div>;
-  }
-
-  const subject = subjectAreas.find(s => s.id === subjectId);
-  const module = subject?.modules.find(m => m.id === moduleId);
-  const course = module?.courses.find(c => c.id === courseId);
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">{course?.name}</h1>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Book className="h-5 w-5" />
-          <span>{module?.name}</span>
+  }, [sid, mid, cid]);
+  
+  const handleSelectLesson = (lesson: any) => {
+    setSelectedLesson(lesson);
+  };
+  
+  const handleCloseDialog = () => {
+    setSelectedLesson(null);
+  };
+  
+  const handleCompleteLesson = () => {
+    if (selectedLesson && courseData) {
+      // Mark the lesson as completed
+      const updatedCourseData = {
+        ...courseData,
+        sections: courseData.sections.map(section => ({
+          ...section,
+          lessons: section.lessons.map(lesson => 
+            lesson.id === selectedLesson.id ? { ...lesson, completed: true } : lesson
+          )
+        }))
+      };
+      
+      setCourseData(updatedCourseData);
+      
+      // Recalculate progress
+      const totalLessons = updatedCourseData.sections.reduce((sum, section) => sum + section.lessons.length, 0);
+      const completedLessons = updatedCourseData.sections.reduce((sum, section) => 
+        sum + section.lessons.filter(lesson => lesson.completed).length, 0);
+      
+      setProgress(Math.round((completedLessons / totalLessons) * 100));
+      
+      // Close the dialog
+      setSelectedLesson(null);
+    }
+  };
+  
+  if (!courseData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-pulse space-y-4">
+          <div className="h-12 w-64 bg-muted rounded"></div>
+          <div className="h-8 w-32 bg-muted rounded mx-auto"></div>
         </div>
       </div>
-
-      <CourseProgress progress={0} />
-
-      <Tabs defaultValue="content" className="space-y-4">
-        <TabsList>
+    );
+  }
+  
+  return (
+    <div className="space-y-8">
+      {/* Course Header */}
+      <div>
+        <h1 className="text-3xl font-bold">{courseData.title}</h1>
+        <p className="text-muted-foreground mt-2">{courseData.description}</p>
+        
+        <div className="mt-6 flex flex-wrap gap-6">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-muted-foreground" />
+            <span>{courseData.totalStudents.toLocaleString()} students</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Book className="h-5 w-5 text-muted-foreground" />
+            <span>{courseData.totalLessons} lessons</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-muted-foreground" />
+            <span>{courseData.duration}</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Progress Bar */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Progress</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Progress</span>
+              <span className="text-sm font-medium">{progress}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+          
+          {progress === 100 && (
+            <div className="mt-4 flex items-center gap-2 p-2 bg-primary/10 rounded-md">
+              <Award className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium">Congratulations! You've completed this course.</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* Course Content */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid grid-cols-3 mb-8">
           <TabsTrigger value="content">Course Content</TabsTrigger>
-          <TabsTrigger value="materials">Study Materials</TabsTrigger>
+          <TabsTrigger value="resources">Resources</TabsTrigger>
+          <TabsTrigger value="discussion">Discussion</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="content" className="space-y-4">
-          {sections.map(section => (
+        
+        <TabsContent value="content" className="space-y-6">
+          {courseData.sections.map((section) => (
             <CourseSection
               key={section.id}
               section={section}
-              onSelectLesson={setSelectedLesson}
+              onSelectLesson={handleSelectLesson}
             />
           ))}
         </TabsContent>
-
-        <TabsContent value="materials">
-          <div className="space-y-4">
-            <Button variant="outline" className="w-full justify-start gap-2">
-              Course Syllabus
-            </Button>
-            <Button variant="outline" className="w-full justify-start gap-2">
-              Study Guide
-            </Button>
-            <Button variant="outline" className="w-full justify-start gap-2">
-              Practice Problems Set
-            </Button>
-          </div>
+        
+        <TabsContent value="resources">
+          <Card>
+            <CardHeader>
+              <CardTitle>Course Resources</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 p-3 border rounded-md hover:bg-accent/50 cursor-pointer">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Course Syllabus</p>
+                    <p className="text-sm text-muted-foreground">PDF • 420 KB</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 border rounded-md hover:bg-accent/50 cursor-pointer">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Supplementary Reading</p>
+                    <p className="text-sm text-muted-foreground">PDF • 1.2 MB</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 border rounded-md hover:bg-accent/50 cursor-pointer">
+                  <Video className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Course Introduction Video</p>
+                    <p className="text-sm text-muted-foreground">MP4 • 52 MB</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="discussion">
+          <Card>
+            <CardHeader>
+              <CardTitle>Course Discussion</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-muted-foreground">Join the discussion to ask questions and connect with other learners.</p>
+                <Button>Start Discussion</Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
-
+      
+      {/* Learning Dialog */}
       {selectedLesson && (
         <LearningDialog
-          isOpen={!!selectedLesson}
-          onClose={() => setSelectedLesson(null)}
           lesson={selectedLesson}
+          onClose={handleCloseDialog}
+          onComplete={handleCompleteLesson}
         />
       )}
     </div>

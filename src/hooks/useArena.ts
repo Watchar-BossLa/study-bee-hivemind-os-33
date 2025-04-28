@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useArenaMatch } from './useArenaMatch';
 import { useArenaQuestion } from './useArenaQuestion';
@@ -64,6 +65,10 @@ export const useArena = () => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           if (currentQuestionIndex < questions.length - 1) {
+            // Move to next question when time runs out
+            if (selectedAnswer === null) {
+              answerQuestion('x'); // 'x' represents a timeout/no answer
+            }
             return 15;
           } else {
             clearInterval(timer);
@@ -76,13 +81,13 @@ export const useArena = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [currentMatch, currentQuestionIndex, questions.length, matchComplete, finishMatch]);
+  }, [currentMatch, currentQuestionIndex, questions.length, matchComplete, finishMatch, selectedAnswer, answerQuestion]);
 
   useEffect(() => {
     if (currentMatch?.status === 'active' && questions.length === 0) {
       fetchQuestions();
     }
-  }, [currentMatch?.status, questions.length]);
+  }, [currentMatch?.status, questions.length, fetchQuestions]);
 
   const checkForAchievements = async (userId: string, matchId: string) => {
     const { data: playerData } = await supabase
@@ -107,6 +112,17 @@ export const useArena = () => {
     if (isWinner) {
       await awardAchievement(userId, 'first-win');
     }
+    
+    // High score achievement
+    if (playerData.score >= 100) {
+      await awardAchievement(userId, 'high-score');
+    }
+    
+    // Quick responder achievement
+    const averageResponseTime = playerData.total_response_time / playerData.questions_answered;
+    if (averageResponseTime <= 5 && playerData.questions_answered >= 3) {
+      await awardAchievement(userId, 'quick-responder');
+    }
   };
 
   useEffect(() => {
@@ -124,7 +140,7 @@ export const useArena = () => {
     };
 
     handleMatchComplete();
-  }, [matchComplete, currentMatch, fetchUserStats, fetchLeaderboard]);
+  }, [matchComplete, currentMatch, fetchUserStats, fetchLeaderboard, resetQuestions]);
 
   return {
     isLoading,

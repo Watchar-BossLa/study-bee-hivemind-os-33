@@ -9,16 +9,38 @@ export const useArenaQuestion = (matchId: string | null) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(15);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchQuestions = async () => {
+    if (loading || !matchId) return;
+    
     try {
-      const { data: questionData } = await supabase
+      setLoading(true);
+      setError(null);
+      
+      // First check if match has a subject focus
+      const { data: matchData } = await supabase
+        .from('arena_matches')
+        .select('subject_focus')
+        .eq('id', matchId)
+        .single();
+      
+      let query = supabase
         .from('quiz_questions')
         .select('*')
-        .order('created_at')
-        .limit(5);
+        .order('id');
+      
+      // If there's a subject focus, filter questions by that subject
+      if (matchData?.subject_focus) {
+        query = query.eq('subject', matchData.subject_focus);
+      }
+      
+      // Get 5-10 random questions
+      const questionCount = Math.floor(Math.random() * 6) + 5; // 5-10 questions
+      const { data: questionData } = await query.limit(questionCount);
 
-      if (questionData) {
+      if (questionData && questionData.length > 0) {
         const typedQuestions: QuizQuestion[] = questionData.map(q => ({
           id: q.id,
           question: q.question,
@@ -28,36 +50,139 @@ export const useArenaQuestion = (matchId: string | null) => {
           option_d: q.option_d,
           correct_answer: q.correct_answer as 'a' | 'b' | 'c' | 'd',
           difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
-          category: q.category
+          category: q.category,
+          subject: q.subject || 'general'
         }));
         
         setQuestions(typedQuestions);
+      } else {
+        // Fallback to hardcoded questions if no questions found in database
+        setQuestions([
+          {
+            id: '1',
+            question: 'What is the powerhouse of the cell?',
+            option_a: 'Mitochondria',
+            option_b: 'Nucleus',
+            option_c: 'Endoplasmic reticulum',
+            option_d: 'Golgi apparatus',
+            correct_answer: 'a',
+            difficulty: 'easy',
+            category: 'Biology',
+            subject: 'science'
+          },
+          {
+            id: '2',
+            question: 'Which accounting principle states that expenses should be matched with related revenues?',
+            option_a: 'Going concern principle',
+            option_b: 'Matching principle',
+            option_c: 'Materiality principle',
+            option_d: 'Consistency principle',
+            correct_answer: 'b',
+            difficulty: 'medium',
+            category: 'Accounting',
+            subject: 'accounting'
+          },
+          {
+            id: '3',
+            question: 'Which teaching approach focuses on student interests and needs?',
+            option_a: 'Teacher-centered approach',
+            option_b: 'Curriculum-centered approach',
+            option_c: 'Student-centered approach',
+            option_d: 'Assessment-centered approach',
+            correct_answer: 'c',
+            difficulty: 'medium',
+            category: 'Education',
+            subject: 'education'
+          },
+          {
+            id: '4',
+            question: 'What does HTML stand for?',
+            option_a: 'Hyperlinks and Text Markup Language',
+            option_b: 'Home Tool Markup Language',
+            option_c: 'Hyper Text Markup Language',
+            option_d: 'Hyper Technical Meta Language',
+            correct_answer: 'c',
+            difficulty: 'easy',
+            category: 'IT',
+            subject: 'it'
+          },
+          {
+            id: '5',
+            question: 'What is the first step in the software development lifecycle?',
+            option_a: 'Design',
+            option_b: 'Testing',
+            option_c: 'Deployment',
+            option_d: 'Requirements Analysis',
+            correct_answer: 'd',
+            difficulty: 'medium',
+            category: 'IT',
+            subject: 'it'
+          }
+        ]);
       }
     } catch (error) {
       console.error('Error fetching questions:', error);
+      setError('Failed to load questions');
+      
+      // Fallback to at least one hardcoded question if there's an error
+      setQuestions([
+        {
+          id: 'fallback',
+          question: 'What is the main goal of education?',
+          option_a: 'To pass exams',
+          option_b: 'To gain knowledge and develop skills',
+          option_c: 'To get a degree',
+          option_d: 'To satisfy requirements',
+          correct_answer: 'b',
+          difficulty: 'medium',
+          category: 'Education',
+          subject: 'education'
+        }
+      ]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const answerQuestion = async (answer: 'a' | 'b' | 'c' | 'd') => {
+  const answerQuestion = async (answer: 'a' | 'b' | 'c' | 'd' | 'x') => {
     if (!matchId || selectedAnswer || currentQuestionIndex >= questions.length) return;
     
     setSelectedAnswer(answer);
     const currentQuestion = questions[currentQuestionIndex];
     const isCorrect = answer === currentQuestion.correct_answer;
+    const responseTime = 15 - timeLeft; // Calculate response time
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const scoreToAdd = isCorrect ? calculateScore(currentQuestion.difficulty) : 0;
+      // Only add score if answer is correct and not a timeout (answer !== 'x')
+      const scoreToAdd = (isCorrect && answer !== 'x') 
+        ? calculateScore(currentQuestion.difficulty, responseTime) 
+        : 0;
       
+      // Update player progress in the match
       await supabase.rpc('update_player_progress', {
         match_id_param: matchId,
         user_id_param: user.id,
         score_to_add: scoreToAdd,
-        is_correct: isCorrect
+        is_correct: isCorrect && answer !== 'x',
+        response_time: responseTime
       });
 
+      // Also record this question response in the user_responses table for analytics
+      await supabase.from('user_quiz_responses').insert({
+        user_id: user.id,
+        match_id: matchId,
+        question_id: currentQuestion.id,
+        selected_answer: answer,
+        is_correct: isCorrect && answer !== 'x',
+        response_time: responseTime,
+        difficulty: currentQuestion.difficulty,
+        subject: currentQuestion.subject
+      });
+
+      // Move to next question after a delay
       setTimeout(() => {
         if (currentQuestionIndex < questions.length - 1) {
           setCurrentQuestionIndex(prev => prev + 1);
@@ -76,6 +201,7 @@ export const useArenaQuestion = (matchId: string | null) => {
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
     setTimeLeft(15);
+    setError(null);
   };
 
   return {
@@ -83,6 +209,8 @@ export const useArenaQuestion = (matchId: string | null) => {
     currentQuestionIndex,
     selectedAnswer,
     timeLeft,
+    loading,
+    error,
     setTimeLeft,
     fetchQuestions,
     answerQuestion,

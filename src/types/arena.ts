@@ -1,5 +1,5 @@
 
-export type QuizQuestion = {
+export interface QuizQuestion {
   id: string;
   question: string;
   option_a: string;
@@ -9,48 +9,55 @@ export type QuizQuestion = {
   correct_answer: 'a' | 'b' | 'c' | 'd';
   difficulty: 'easy' | 'medium' | 'hard';
   category: string;
-};
+  subject?: string;
+}
 
-export type ArenaMatch = {
-  id: string;
-  status: 'waiting' | 'active' | 'completed';
-  start_time: string | null;
-  end_time: string | null;
-};
-
-export type MatchPlayer = {
+export interface MatchPlayer {
   id: string;
   match_id: string;
   user_id: string;
   score: number;
-  questions_answered: number;
   correct_answers: number;
-};
+  questions_answered: number;
+  total_response_time: number;
+  streak: number;
+  joined_at: string;
+}
 
-export type ArenaStats = {
+export interface ArenaMatch {
+  id: string;
+  status: 'waiting' | 'active' | 'completed';
+  start_time: string | null;
+  end_time: string | null;
+  subject_focus?: string;
+}
+
+export interface ArenaStats {
   matches_played: number;
   matches_won: number;
-  total_score: number;
-  highest_score: number;
   questions_answered: number;
   correct_answers: number;
-  last_match_date: string | null;
-};
+  total_score: number;
+  highest_score: number;
+  average_response_time?: number;
+}
 
-export type Achievement = {
+export interface LeaderboardEntry {
+  user_id: string;
+  display_name?: string;
+  avatar_url?: string;
+  total_score: number;
+  matches_played: number;
+  matches_won: number;
+  win_rate: number;
+}
+
+export interface Achievement {
   id: string;
   name: string;
   description: string;
   icon: string;
-  earned: boolean;
-  earned_at?: string;
-};
-
-export type LeaderboardEntry = {
-  user_id: string;
-  username: string | null;
-  matches_played: number;
-  matches_won: number;
-  total_score: number;
-  highest_score: number;
-};
+  unlocked: boolean;
+  unlocked_at?: string;
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+}

@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Check, X, Clock } from 'lucide-react';
+import { Check, X, Clock, AlertTriangle } from 'lucide-react';
 import { QuizQuestion, MatchPlayer } from '@/types/arena';
 import { ArenaPlayers } from './ArenaPlayers';
 
@@ -16,6 +16,8 @@ interface ArenaQuizProps {
   totalQuestions: number;
   matchComplete: boolean;
   players: MatchPlayer[];
+  loading?: boolean;
+  error?: string | null;
 }
 
 export const ArenaQuiz = ({
@@ -26,7 +28,9 @@ export const ArenaQuiz = ({
   questionNumber,
   totalQuestions,
   matchComplete,
-  players
+  players,
+  loading = false,
+  error = null
 }: ArenaQuizProps) => {
   if (matchComplete) {
     return (
@@ -40,6 +44,41 @@ export const ArenaQuiz = ({
             <p className="text-lg font-medium">Thanks for playing!</p>
             <p className="text-muted-foreground">Check the leaderboard to see your ranking.</p>
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Card className="col-span-2">
+        <CardHeader>
+          <CardTitle>Loading Questions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-40">
+            <div className="animate-pulse flex flex-col items-center">
+              <div className="h-12 w-12 rounded-full bg-muted mb-4"></div>
+              <div className="h-4 w-32 bg-muted rounded"></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="col-span-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="h-5 w-5" />
+            Error Loading Questions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">{error}</p>
+          <Button className="mt-4" variant="outline">Try Again</Button>
         </CardContent>
       </Card>
     );
@@ -68,6 +107,12 @@ export const ArenaQuiz = ({
     }
   };
 
+  const getTimeLeftClass = () => {
+    if (timeLeft <= 5) return 'text-red-500';
+    if (timeLeft <= 10) return 'text-yellow-500';
+    return '';
+  };
+
   return (
     <>
       <Card className="col-span-2">
@@ -80,8 +125,8 @@ export const ArenaQuiz = ({
                 <span className={difficultyColor()}> {question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1)}</span>
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2 rounded-full bg-accent/50 px-3 py-1">
-              <Clock className="h-4 w-4" />
+            <div className={`flex items-center gap-2 rounded-full bg-accent/50 px-3 py-1 ${getTimeLeftClass()}`}>
+              <Clock className={`h-4 w-4 ${timeLeft <= 5 ? 'animate-pulse' : ''}`} />
               <span>{timeLeft}s</span>
             </div>
           </div>

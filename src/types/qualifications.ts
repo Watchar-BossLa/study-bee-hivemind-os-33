@@ -9,9 +9,26 @@ export interface Course {
 export interface Module {
   id: string;
   name: string;
-  level: string;
-  courses: Course[];
+  level: QualificationLevel;
   description?: string;
+  learning_outcomes?: string[];
+  duration?: string;
+  credits_required?: number;
+  courses: Course[];
+}
+
+export type QualificationLevel = 
+  | "certificate"
+  | "cvq"
+  | "diploma"
+  | "bachelors" 
+  | "masters"
+  | "professional";
+
+export interface QualificationLevel {
+  id: string;
+  name: string;
+  description: string;
 }
 
 export interface SubjectArea {
@@ -22,22 +39,13 @@ export interface SubjectArea {
   modules: Module[];
 }
 
-export interface QualificationLevel {
+export interface ProfessionalQualification {
   id: string;
   name: string;
   description: string;
-  duration: string;
-  creditValue: string;
-}
-
-export interface AccountingModule {
-  name: string;
-  courses: string[];
-}
-
-export interface AccountingQualification {
-  id: string;
-  name: string;
-  description: string;
-  modules: AccountingModule[];
+  organization: string;
+  modules: {
+    name: string;
+    courses: string[];
+  }[];
 }

@@ -7,12 +7,59 @@ export class VotingService {
     council: SpecializedAgent[],
     topic: string
   ): CouncilVote[] {
-    return council.map(agent => ({
-      agentId: agent.id,
-      confidence: Math.random() * 0.4 + 0.6,
-      suggestion: `${agent.role}'s suggestion on ${topic}`,
-      reasoning: `Based on ${agent.domain} expertise, ${agent.role} recommends...`
-    }));
+    return council.map(agent => {
+      // Calculate confidence based on domain expertise match
+      const expertiseMatch = this.calculateExpertiseMatch(agent.domain, topic);
+      const confidence = 0.6 + (expertiseMatch * 0.4); // Base 0.6 + up to 0.4 based on expertise match
+      
+      return {
+        agentId: agent.id,
+        confidence,
+        suggestion: this.generateSuggestion(agent, topic, expertiseMatch),
+        reasoning: `Based on ${agent.domain} expertise, ${agent.role} recommends this approach because it aligns with ${this.getReasoningContext(agent.domain, topic)}`
+      };
+    });
+  }
+
+  private calculateExpertiseMatch(domain: string, topic: string): number {
+    // Simple expertise matching algorithm
+    const domainKeywords = domain.toLowerCase().split(/\s+/);
+    const topicKeywords = topic.toLowerCase().split(/\s+/);
+    
+    let matches = 0;
+    for (const dword of domainKeywords) {
+      for (const tword of topicKeywords) {
+        if (dword.includes(tword) || tword.includes(dword)) {
+          matches++;
+        }
+      }
+    }
+    
+    return Math.min(matches / Math.max(domainKeywords.length, 1), 1);
+  }
+
+  private generateSuggestion(agent: SpecializedAgent, topic: string, expertiseMatch: number): string {
+    const suggestions = [
+      `A ${agent.domain}-focused approach to ${topic}`,
+      `${topic} should be addressed through ${agent.domain} principles`,
+      `Incorporating ${agent.domain} methodologies into ${topic}`,
+      `Applying ${agent.domain} frameworks to solve ${topic} challenges`
+    ];
+
+    // Return more specific suggestion for higher expertise match
+    const index = Math.min(Math.floor(expertiseMatch * suggestions.length), suggestions.length - 1);
+    return suggestions[index];
+  }
+
+  private getReasoningContext(domain: string, topic: string): string {
+    const contexts = [
+      `proven ${domain} best practices`,
+      `research in the field of ${domain}`,
+      `established ${domain} frameworks`,
+      `recent advancements in ${domain} theory`
+    ];
+    
+    return contexts[Math.floor(Math.random() * contexts.length)];
   }
 
   public groupVotesBySuggestion(votes: CouncilVote[]): Map<string, CouncilVote[]> {

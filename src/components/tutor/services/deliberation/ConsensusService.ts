@@ -7,20 +7,30 @@ export class ConsensusService {
     suggestionGroups: Map<string, CouncilVote[]>
   ): { suggestion: string; confidence: number } {
     let consensusSuggestion = "";
-    let consensusCount = 0;
-    let highestCount = 0;
+    let highestScore = 0;
 
+    // Weight votes by confidence
     suggestionGroups.forEach((groupVotes, suggestion) => {
-      if (groupVotes.length > highestCount) {
-        highestCount = groupVotes.length;
+      // Calculate weighted score: count + sum of confidences
+      const weightedScore = groupVotes.length + groupVotes.reduce((sum, vote) => sum + vote.confidence, 0);
+      
+      if (weightedScore > highestScore) {
+        highestScore = weightedScore;
         consensusSuggestion = suggestion;
-        consensusCount = groupVotes.length;
       }
     });
 
+    // Calculate overall confidence based on proportion of votes and their confidences
+    const totalVotesForConsensus = suggestionGroups.get(consensusSuggestion)?.length || 0;
+    const confidenceSum = suggestionGroups.get(consensusSuggestion)?.reduce((sum, vote) => sum + vote.confidence, 0) || 0;
+    const averageConfidence = confidenceSum / Math.max(totalVotesForConsensus, 1);
+    
+    // Final confidence is a combination of vote proportion and average confidence
+    const confidence = (totalVotesForConsensus / votes.length) * 0.7 + averageConfidence * 0.3;
+
     return {
       suggestion: consensusSuggestion,
-      confidence: consensusCount / votes.length
+      confidence
     };
   }
 

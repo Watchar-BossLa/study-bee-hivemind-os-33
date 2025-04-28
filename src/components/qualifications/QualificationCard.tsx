@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Book, ChevronDown, ChevronUp } from 'lucide-react';
+import { Book, ChevronDown, ChevronUp, Clock, Award, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Module, QualificationLevel } from '@/types/qualifications';
 
@@ -24,6 +25,9 @@ const QualificationCard = ({ module, subjectId, qualificationLevel }: Qualificat
   const handleCardClick = () => {
     navigate(`/course/${subjectId}/${module.id}`);
   };
+  
+  // Calculate total credits
+  const totalCredits = module.courses.reduce((sum, course) => sum + course.credits, 0);
 
   return (
     <Card 
@@ -44,20 +48,65 @@ const QualificationCard = ({ module, subjectId, qualificationLevel }: Qualificat
         </div>
       </CardHeader>
       <CardContent className="flex-grow">
+        {module.learning_outcomes && (
+          <div className="mb-4">
+            <div className="text-sm font-medium mb-2">Learning Outcomes:</div>
+            <ul className="space-y-1 text-sm">
+              {module.learning_outcomes.slice(0, isExpanded ? undefined : 2).map((outcome, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <Award className="h-4 w-4 mt-1 text-muted-foreground" />
+                  <span>{outcome}</span>
+                </li>
+              ))}
+              {!isExpanded && module.learning_outcomes.length > 2 && (
+                <li className="text-sm text-muted-foreground">
+                  + {module.learning_outcomes.length - 2} more outcomes
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
+        
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
+          {module.duration && (
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">{module.duration}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Book className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">{module.courses.length} courses</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Award className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">{totalCredits} credits</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">{1000 + Math.floor(Math.random() * 2000)} enrolled</span>
+          </div>
+        </div>
+
         <div className="mb-4">
           <div className="text-sm font-medium mb-1">Courses:</div>
           <ul className={`space-y-1 text-sm ${!isExpanded && 'max-h-28 overflow-hidden'}`}>
-            {module.courses.map((course, index) => (
+            {module.courses.slice(0, isExpanded ? undefined : 3).map((course, index) => (
               <li key={course.id} className="flex items-start gap-2">
                 <Book className="h-4 w-4 mt-1 text-muted-foreground" />
                 <span>{course.name} <span className="text-muted-foreground">({course.credits} credits)</span></span>
               </li>
             ))}
+            {!isExpanded && module.courses.length > 3 && (
+              <li className="text-sm text-muted-foreground">
+                + {module.courses.length - 3} more courses
+              </li>
+            )}
           </ul>
         </div>
       </CardContent>
       <CardFooter className="pt-0 mt-auto">
-        {module.courses.length > 3 && (
+        {(module.courses.length > 3 || (module.learning_outcomes && module.learning_outcomes.length > 2)) && (
           <Button 
             variant="ghost" 
             onClick={toggleExpand} 
