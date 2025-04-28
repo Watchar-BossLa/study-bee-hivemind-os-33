@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Search, Menu, Command, BookOpen, Camera, Brain, Award, Home } from "lucide-react";
+import { Search, Menu, Command, BookOpen, Camera, Brain, Award, Home, Users, User, Notes } from "lucide-react";
 import LogoBee from './LogoBee';
 import CommandPalette from './CommandPalette';
 import { ThemeToggle } from './theme/ThemeToggle';
@@ -109,6 +109,50 @@ const Navbar = () => {
                     </div>
                     <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                       Compete in real-time quiz battles
+                    </p>
+                  </Link>
+                  <Link 
+                    to="/study-groups"
+                    className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${
+                      isActive('/study-groups') ? 'bg-accent' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span className="text-sm font-medium">Study Groups</span>
+                    </div>
+                    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                      Join study groups and learn together
+                    </p>
+                  </Link>
+                  
+                  <Link 
+                    to="/peer-learning"
+                    className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${
+                      isActive('/peer-learning') ? 'bg-accent' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      <span className="text-sm font-medium">Peer Learning</span>
+                    </div>
+                    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                      Connect with study partners
+                    </p>
+                  </Link>
+                  
+                  <Link 
+                    to="/collaborative-notes"
+                    className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${
+                      isActive('/collaborative-notes') ? 'bg-accent' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Notes className="h-4 w-4" />
+                      <span className="text-sm font-medium">Collaborative Notes</span>
+                    </div>
+                    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                      Create and share study notes
                     </p>
                   </Link>
                 </div>

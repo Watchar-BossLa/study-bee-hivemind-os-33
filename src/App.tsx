@@ -15,6 +15,9 @@ import FlashcardReviewPage from "./pages/FlashcardReview";
 import GraphTutor from "./pages/GraphTutor";
 import Arena from "./pages/Arena";
 import CourseLearning from "./pages/CourseLearning";
+import StudyGroups from "./pages/StudyGroups";
+import PeerLearning from "./pages/PeerLearning";
+import CollaborativeNotes from "./pages/CollaborativeNotes";
 
 const queryClient = new QueryClient();
 
@@ -22,7 +25,6 @@ const App = () => (
   <ThemeProvider defaultTheme="system" storageKey="study-bee-ui-theme">
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        {/* Theme change announcer for screen readers */}
         <div 
           id="theme-change-announcer" 
           className="sr-only" 
@@ -41,14 +43,11 @@ const App = () => (
             <Route path="/qualifications" element={<Qualifications />} />
             <Route path="/course/:subjectId/:moduleId" element={<CourseContent />} />
             <Route path="/learn/:subjectId/:moduleId/:courseId" element={<CourseLearning />} />
-            
-            {/* Updated route for spaced repetition */}
             <Route path="/spaced-repetition" element={<FlashcardReviewPage />} />
-            
-            {/* Keep flashcards route as NotImplemented for now */}
             <Route path="/flashcards" element={<NotImplemented />} />
-            
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/study-groups" element={<StudyGroups />} />
+            <Route path="/peer-learning" element={<PeerLearning />} />
+            <Route path="/collaborative-notes" element={<CollaborativeNotes />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
