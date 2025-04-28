@@ -3,8 +3,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Book, BookOpen, Play } from 'lucide-react';
+import { Book, BookOpen, Play, FileText, CheckCircle } from 'lucide-react';
 import { subjectAreas } from '@/data/qualifications';
+import { Button } from '@/components/ui/button';
 
 interface LearningContentProps {
   subjectId?: string;
@@ -20,6 +21,66 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
   if (!course) {
     return <div>Course not found</div>;
   }
+
+  const sections = [
+    {
+      id: 'introduction',
+      title: 'Introduction',
+      lessons: [
+        {
+          id: 'lesson-1',
+          title: 'Course Overview',
+          type: 'video',
+          content: 'Welcome to this course! In this section, we will cover the fundamental concepts and principles.',
+          duration: '10 mins',
+          completed: false
+        },
+        {
+          id: 'lesson-2',
+          title: 'Key Concepts',
+          type: 'reading',
+          content: 'Let's explore the key concepts that form the foundation of this subject.',
+          duration: '15 mins',
+          completed: false
+        }
+      ]
+    },
+    {
+      id: 'fundamentals',
+      title: 'Core Fundamentals',
+      lessons: [
+        {
+          id: 'lesson-3',
+          title: 'Basic Principles',
+          type: 'video',
+          content: 'Understanding the basic principles is crucial for mastering this subject.',
+          duration: '20 mins',
+          completed: false
+        },
+        {
+          id: 'lesson-4',
+          title: 'Practice Exercise',
+          type: 'exercise',
+          content: 'Let's practice what we've learned with some hands-on exercises.',
+          duration: '30 mins',
+          completed: false
+        }
+      ]
+    }
+  ];
+
+  const getLessonIcon = (type: string) => {
+    switch (type) {
+      case 'video':
+        return <Play className="h-5 w-5 text-primary" />;
+      case 'reading':
+        return <FileText className="h-5 w-5 text-primary" />;
+      case 'exercise':
+        return <CheckCircle className="h-5 w-5 text-primary" />;
+      default:
+        return <Book className="h-5 w-5 text-primary" />;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -54,54 +115,56 @@ const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps
         </TabsList>
 
         <TabsContent value="content" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Introduction</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4 p-4 hover:bg-accent rounded-lg cursor-pointer">
-                <Play className="h-5 w-5 text-primary" />
-                <div>
-                  <h3 className="font-medium">Welcome to {course.name}</h3>
-                  <p className="text-sm text-muted-foreground">Course overview and objectives</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 p-4 hover:bg-accent rounded-lg cursor-pointer">
-                <Book className="h-5 w-5 text-primary" />
-                <div>
-                  <h3 className="font-medium">Course Materials</h3>
-                  <p className="text-sm text-muted-foreground">Required readings and resources</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Module 1: Fundamentals</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4 p-4 hover:bg-accent rounded-lg cursor-pointer">
-                <Play className="h-5 w-5 text-primary" />
-                <div>
-                  <h3 className="font-medium">Core Concepts</h3>
-                  <p className="text-sm text-muted-foreground">Introduction to key principles</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {sections.map(section => (
+            <Card key={section.id}>
+              <CardHeader>
+                <CardTitle>{section.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {section.lessons.map(lesson => (
+                  <Button
+                    key={lesson.id}
+                    variant="ghost"
+                    className="w-full justify-start p-4 h-auto"
+                    onClick={() => console.log('Opening lesson:', lesson.id)}
+                  >
+                    <div className="flex items-start gap-4">
+                      {getLessonIcon(lesson.type)}
+                      <div className="flex-1 text-left">
+                        <h3 className="font-medium mb-1">{lesson.title}</h3>
+                        <p className="text-sm text-muted-foreground">{lesson.content}</p>
+                        <p className="text-sm text-primary mt-2">{lesson.duration}</p>
+                      </div>
+                      {lesson.completed && (
+                        <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
+                      )}
+                    </div>
+                  </Button>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
         </TabsContent>
 
         <TabsContent value="materials">
           <Card>
             <CardContent className="p-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Required Materials</h3>
-                <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                  <li>Course textbook and readings</li>
-                  <li>Practice exercises and worksheets</li>
-                  <li>Supplementary resources</li>
-                </ul>
+                <h3 className="text-lg font-medium">Course Materials</h3>
+                <div className="space-y-4">
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <FileText className="h-4 w-4" />
+                    Course Syllabus
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <FileText className="h-4 w-4" />
+                    Required Readings
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start gap-2">
+                    <FileText className="h-4 w-4" />
+                    Practice Exercises
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
