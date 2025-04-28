@@ -5,12 +5,12 @@ import { useAuth } from "@/components/auth/AuthContext";
 
 export type UserProfile = {
   id: string;
-  full_name: string;
-  avatar_url?: string;
-  bio?: string;
-  learning_preferences?: string[];
-  created_at: string;
-  updated_at: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  learning_preferences: string[] | null;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 export function useUserProfile() {
@@ -21,10 +21,10 @@ export function useUserProfile() {
     if (!user) return null;
     
     const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
     
     if (error) {
       console.error('Error fetching user profile:', error);
@@ -34,13 +34,13 @@ export function useUserProfile() {
     return data;
   };
 
-  const updateProfile = async (profile: Partial<UserProfile>) => {
+  const updateProfile = async (profile: Partial<Omit<UserProfile, 'id'>>) => {
     if (!user) throw new Error("User not authenticated");
     
     const { data, error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update(profile)
-      .eq('id', user.id)
+      .eq("id", user.id)
       .select()
       .single();
     

@@ -70,7 +70,7 @@ const Auth = () => {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-background to-muted/50 p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <LogoBee size="large" />
+          <LogoBee className="text-6xl mx-auto" />
           <h1 className="text-3xl font-bold mt-4">Study Bee</h1>
           <p className="text-muted-foreground">The adaptive learning platform</p>
         </div>
