@@ -1,5 +1,5 @@
 
-import { useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { quorumForge } from '../services/QuorumForge';
 import { learningPathService } from '../services/LearningPathService';
 import { llmRouter } from '../services/LLMRouter';
