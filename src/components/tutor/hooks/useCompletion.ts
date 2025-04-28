@@ -1,15 +1,8 @@
 
 import { useCallback } from 'react';
 import { MessageType } from '../types/chat';
-import { quorumForge } from '../services/QuorumForge';
-import { learningPathService } from '../services/LearningPathService';
-import { useToast } from '@/hooks/use-toast';
-import { 
-  extractTopicsFromMessage, 
-  generateFollowUpQuestions, 
-  identifyKnowledgeGraphNodes 
-} from '../utils/topicUtils';
-import { assessComplexity } from '../utils/messageUtils';
+import { useMessageAnalysis } from './useMessageAnalysis';
+import { useAgentResponse } from './useAgentResponse';
 
 export const useCompletion = (
   messages: MessageType[],
@@ -22,60 +15,29 @@ export const useCompletion = (
   activePath: string | null,
   metadata: any
 ) => {
-  const { toast } = useToast();
+  const { analyzeMessage } = useMessageAnalysis(updateMetadata, addTopic);
+  const { handleAgentResponse } = useAgentResponse(updateMessage, updateMetadata, updateModelUse);
 
   const completeResponse = useCallback(async () => {
     try {
-      const userMessage = messages.find(m => m.loading === undefined && m.role === 'user');
+      const userMessage = messages.find(m => m.role === 'user' && m.loading === undefined);
       if (!userMessage) return;
       
-      const messageComplexity = assessComplexity(userMessage.content);
-      updateMetadata({ complexity: messageComplexity });
+      const analysis = analyzeMessage(userMessage.content);
       
-      const topics = extractTopicsFromMessage(userMessage.content);
-      topics.forEach(addTopic);
-      
-      const mockUserId = 'user-123';
-      const interaction = await quorumForge.processInteraction(
-        userMessage.content,
-        mockUserId,
-        { 
-          activePath,
-          complexity: messageComplexity,
-          userSkillLevel: metadata.userSkillLevel,
-          topicId: topics[0],
-          additionalContext: messages.map(m => m.content).join(' '),
-          userId: mockUserId,
-          preferredModality: metadata.preferredModality
-        }
+      const {
+        bestResponse,
+        contributingAgents,
+        followUpQuestions,
+        promptForFeedback
+      } = await handleAgentResponse(
+        userMessage, 
+        analysis.topics,
+        analysis.complexity,
+        'user-123',
+        activePath,
+        metadata
       );
-
-      const bestResponse = interaction.agentResponses.reduce(
-        (best, current) => current.confidenceScore > best.confidenceScore ? current : best,
-        interaction.agentResponses[0]
-      );
-
-      const contributingAgents = interaction.agentResponses
-        .sort((a, b) => b.confidenceScore - a.confidenceScore)
-        .map(resp => resp.agentId);
-      
-      updateModelUse(bestResponse.modelUsed);
-
-      if (topics.length > 0) {
-        const recommendedPaths = learningPathService.getPathsByTopic(topics[0]);
-        if (recommendedPaths.length > 0) {
-          const path = recommendedPaths[0];
-          toast({
-            title: "Learning Path Recommended",
-            description: `The "${path.name}" learning path is recommended based on your question.`,
-          });
-          updateMetadata({ activePathId: path.id });
-        }
-      }
-
-      const relatedNodes = identifyKnowledgeGraphNodes(userMessage.content, topics);
-      const followUpQuestions = generateFollowUpQuestions(userMessage.content, topics);
-      const promptForFeedback = Math.random() > 0.7;
 
       updateMessage(messages[messages.length - 1].id, {
         content: bestResponse.response + (promptForFeedback ? 
@@ -83,21 +45,23 @@ export const useCompletion = (
         role: 'assistant',
         timestamp: new Date(),
         modelUsed: bestResponse.modelUsed,
-        relatedTopics: topics,
+        relatedTopics: analysis.topics,
         agentContributors: contributingAgents,
         loading: false,
-        complexity: messageComplexity,
+        complexity: analysis.complexity,
         processingTime: bestResponse.processingTimeMs,
         requestFeedback: promptForFeedback,
         agentAnalysis: {
-          primaryDomain: topics[0] || undefined,
-          confidenceScores: interaction.agentResponses.reduce((scores, resp) => {
-            scores[resp.agentId] = resp.confidenceScore;
-            return scores;
-          }, {} as Record<string, number>),
+          primaryDomain: analysis.topics[0] || undefined,
+          confidenceScores: Object.fromEntries(
+            contributingAgents.map((agentId, index) => [
+              agentId,
+              bestResponse.confidenceScore * (1 - index * 0.1)
+            ])
+          ),
           recommendedFollowup: followUpQuestions
         },
-        knowledgeGraphNodes: relatedNodes
+        knowledgeGraphNodes: analysis.relatedNodes
       });
     } catch (error) {
       console.error('Error processing with QuorumForge:', error);
@@ -113,7 +77,7 @@ export const useCompletion = (
       setIsLoading(false);
       setProcessingProgress(100);
     }
-  }, [messages, activePath, metadata, updateMetadata, addTopic, updateModelUse, toast, setIsLoading, setProcessingProgress]);
+  }, [messages, activePath, metadata, updateMessage, analyzeMessage, handleAgentResponse, setIsLoading, setProcessingProgress]);
 
   return { completeResponse };
 };
