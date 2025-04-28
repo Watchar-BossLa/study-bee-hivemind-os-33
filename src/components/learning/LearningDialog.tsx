@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { FileVideo } from 'lucide-react';
 
 interface LearningDialogProps {
   isOpen: boolean;
