@@ -1,15 +1,17 @@
-
 import { SpecializedAgent } from '../../types/agents';
 import { RouterRequest } from '../../types/router';
 import { LLMRouter } from '../LLMRouter';
+import { PydanticValidator } from '../frameworks/PydanticValidator';
 
 export class AgentResponseProcessor {
   private router: LLMRouter;
   private userModelSuccessRates: Map<string, Record<string, number>>;
+  private pydanticValidator: PydanticValidator;
   
   constructor(router: LLMRouter) {
     this.router = router;
     this.userModelSuccessRates = new Map();
+    this.pydanticValidator = new PydanticValidator();
   }
 
   public async processAgentResponse(
@@ -20,7 +22,10 @@ export class AgentResponseProcessor {
     agent.status = 'busy';
     
     try {
-      const routerRequest = this.createRouterRequest(message, context);
+      // Validate the request context using PydanticValidator
+      const validatedContext = this.pydanticValidator.validateContext(context);
+      
+      const routerRequest = this.createRouterRequest(message, validatedContext);
       const modelSelection = this.router.getDetailedSelection(routerRequest);
       const selectedModel = this.router.selectModel(routerRequest);
       
@@ -28,7 +33,7 @@ export class AgentResponseProcessor {
       const { processingTime, expertiseMatch } = await this.simulateProcessing(agent, message);
       
       const confidenceScore = this.calculateConfidenceScore(agent, expertiseMatch);
-      const agentSpecificResponse = this.generateAgentResponse(agent, message, context);
+      const agentSpecificResponse = this.generateAgentResponse(agent, message, validatedContext);
       
       const response = this.prepareResponse(
         agent, 
@@ -39,9 +44,12 @@ export class AgentResponseProcessor {
         modelSelection
       );
       
-      this.updateMetrics(agent, selectedModel.id, routerRequest, processingTime, context, confidenceScore);
+      // Validate the response using PydanticValidator before returning
+      const validatedResponse = this.pydanticValidator.validatePlan(response);
       
-      return response;
+      this.updateMetrics(agent, selectedModel.id, routerRequest, processingTime, validatedContext, confidenceScore);
+      
+      return validatedResponse;
     } catch (error) {
       this.handleError(agent, message, error);
       throw error;
@@ -109,7 +117,8 @@ export class AgentResponseProcessor {
       confidenceScore,
       processingTimeMs: Date.now() - startTime,
       fallbackModels: modelSelection.fallbackOptions,
-      reasoningTrace: modelSelection.reasoningTrace
+      reasoningTrace: modelSelection.reasoningTrace,
+      validatedSchema: true
     };
   }
 

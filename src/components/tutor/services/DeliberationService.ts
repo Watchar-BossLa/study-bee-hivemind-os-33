@@ -3,6 +3,7 @@ import { SpecializedAgent } from '../types/agents';
 import { CouncilDecision } from '../types/councils';
 import { VotingService } from './deliberation/VotingService';
 import { ConsensusService } from './deliberation/ConsensusService';
+import { Plan } from './frameworks/CrewAIPlanner';
 
 export class DeliberationService {
   private decisions: CouncilDecision[] = [];
@@ -35,6 +36,44 @@ export class DeliberationService {
       suggestion,
       confidence
     );
+
+    this.decisions.push(decision);
+    return decision;
+  }
+  
+  public async deliberateWithPlan(
+    council: SpecializedAgent[],
+    topic: string,
+    context: Record<string, any>,
+    plan: Plan,
+    maxTurns: number = 3,
+    consensusThreshold: number = 0.8
+  ): Promise<CouncilDecision> {
+    console.log(`Deliberating with CrewAI plan: ${plan.title}`);
+    
+    // Use the plan tasks to guide voting process
+    const enhancedVotes = this.votingService.collectVotesWithPlan(council, topic, plan);
+    const suggestionGroups = this.votingService.groupVotesBySuggestion(enhancedVotes);
+    
+    const { suggestion, confidence } = this.consensusService.calculateConsensus(
+      enhancedVotes,
+      suggestionGroups
+    );
+    
+    const decision = this.consensusService.createDecision(
+      topic,
+      enhancedVotes,
+      suggestion,
+      confidence
+    );
+    
+    // Add plan metadata to the decision
+    decision.plan = {
+      id: plan.id,
+      title: plan.title,
+      taskCount: plan.tasks.length,
+      memberCount: plan.members.length
+    };
 
     this.decisions.push(decision);
     return decision;

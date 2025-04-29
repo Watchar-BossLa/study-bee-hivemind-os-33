@@ -5,16 +5,19 @@ import { allSpecializedAgents } from './SpecializedAgents';
 import { CouncilRepository } from './councils/CouncilRepository';
 import { DynamicCouncilManager } from './councils/DynamicCouncilManager'; 
 import { CouncilSelector } from './councils/CouncilSelector';
+import { OpenAISwarmWrapper } from './frameworks/OpenAISwarmWrapper';
 
 export class CouncilService {
   private councilRepository: CouncilRepository;
   private dynamicCouncilManager: DynamicCouncilManager;
   private councilSelector: CouncilSelector;
+  private swarmWrapper: OpenAISwarmWrapper;
 
   constructor(agents: SpecializedAgent[] = allSpecializedAgents) {
     this.councilRepository = new CouncilRepository(agents);
     this.dynamicCouncilManager = new DynamicCouncilManager();
     this.councilSelector = new CouncilSelector(this.dynamicCouncilManager);
+    this.swarmWrapper = new OpenAISwarmWrapper();
   }
 
   public createCouncil(councilId: string, agentIds: string[], agents: SpecializedAgent[]): void {
@@ -44,5 +47,22 @@ export class CouncilService {
   
   public getBestCouncilForSimilarQuery(query: string): string | undefined {
     return this.dynamicCouncilManager.getBestCouncilForSimilarQuery(query);
+  }
+  
+  public async executeParallelTasks(
+    council: SpecializedAgent[],
+    tasks: string[],
+    context: Record<string, any>
+  ): Promise<string[]> {
+    if (council.length > 4 && tasks.length > 3) {
+      console.log('Using OpenAI Swarm for parallel task execution');
+      return this.swarmWrapper.runSwarm(tasks);
+    } else {
+      // Sequential execution simulation
+      return Promise.all(tasks.map(async (task) => {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        return `Sequential result for: ${task}`;
+      }));
+    }
   }
 }
