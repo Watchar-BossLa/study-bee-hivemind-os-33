@@ -19,7 +19,7 @@ export const useArenaAnswerHandler = (matchId: string | null) => {
     
     // Check if the answer is correct
     // Since 'none' is not part of correct_answer type, handle it separately
-    const isCorrect = answer !== 'none' && answer === currentQuestion.correct_answer;
+    const isCorrect = answer === currentQuestion.correct_answer;
     const responseTime = 15 - timeLeft;
     
     try {
