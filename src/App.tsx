@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +19,7 @@ import CourseLearning from "./pages/CourseLearning";
 import StudyGroups from "./pages/StudyGroups";
 import PeerLearning from "./pages/PeerLearning";
 import CollaborativeNotes from "./pages/CollaborativeNotes";
+import LiveStudySessions from "./pages/LiveStudySessions";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +50,7 @@ const App = () => (
             <Route path="/study-groups" element={<StudyGroups />} />
             <Route path="/peer-learning" element={<PeerLearning />} />
             <Route path="/collaborative-notes" element={<CollaborativeNotes />} />
+            <Route path="/live-sessions" element={<LiveStudySessions />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
