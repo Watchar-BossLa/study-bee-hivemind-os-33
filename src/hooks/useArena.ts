@@ -5,7 +5,7 @@ import { useArenaQuestion } from './useArenaQuestion';
 import { useArenaStats } from './useArenaStats';
 import { useArenaAchievements } from './useArenaAchievements';
 import { supabase } from '@/integrations/supabase/client';
-import { QuizAnswer } from '@/types/arena';
+import { QuizAnswer, DbMatchPlayer } from '@/types/arena';
 
 export const useArena = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -119,33 +119,36 @@ export const useArena = () => {
       .single();
 
     if (!playerData) return;
+    
+    // Ensure we treat playerData as the correct type with total_response_time
+    const typedPlayerData = playerData as unknown as DbMatchPlayer;
 
     // First match achievement
     await awardAchievement(userId, 'first-match');
 
     // Perfect score achievement
-    if (playerData.questions_answered > 0 && playerData.correct_answers === playerData.questions_answered) {
+    if (typedPlayerData.questions_answered > 0 && typedPlayerData.correct_answers === typedPlayerData.questions_answered) {
       await awardAchievement(userId, 'perfect-score');
     }
 
     // Check if won the match
-    const isWinner = players.every(p => p.user_id === userId || p.score < playerData.score);
+    const isWinner = players.every(p => p.user_id === userId || p.score < typedPlayerData.score);
     if (isWinner) {
       await awardAchievement(userId, 'first-win');
     }
     
     // High score achievement
-    if (playerData.score >= 100) {
+    if (typedPlayerData.score >= 100) {
       await awardAchievement(userId, 'high-score');
     }
     
     // Quick responder achievement - safely handle potentially missing property
-    const totalResponseTime = playerData.total_response_time || 0;
-    const averageResponseTime = playerData.questions_answered > 0 ? 
-      totalResponseTime / playerData.questions_answered : 
+    const totalResponseTime = typedPlayerData.total_response_time || 0;
+    const averageResponseTime = typedPlayerData.questions_answered > 0 ? 
+      totalResponseTime / typedPlayerData.questions_answered : 
       0;
       
-    if (averageResponseTime <= 5 && playerData.questions_answered >= 3) {
+    if (averageResponseTime <= 5 && typedPlayerData.questions_answered >= 3) {
       await awardAchievement(userId, 'quick-responder');
     }
   };

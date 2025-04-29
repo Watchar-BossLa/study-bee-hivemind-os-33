@@ -27,7 +27,9 @@ export const useArenaQuestionFetch = (matchId: string | null) => {
         .order('id');
       
       if (matchData && 'subject_focus' in matchData && matchData.subject_focus) {
-        query = query.eq('category', matchData.subject_focus);
+        // Ensure subject_focus is treated as a string
+        const subjectFocus = String(matchData.subject_focus);
+        query = query.eq('category', subjectFocus);
       }
       
       const questionCount = Math.floor(Math.random() * 6) + 5; // 5-10 questions

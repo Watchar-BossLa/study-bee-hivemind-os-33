@@ -1,3 +1,4 @@
+
 export interface QuizQuestion {
   id: string;
   question: string;
