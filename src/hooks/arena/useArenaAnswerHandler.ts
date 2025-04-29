@@ -18,15 +18,16 @@ export const useArenaAnswerHandler = (matchId: string | null) => {
     setSelectedAnswer(answer);
     
     // Check if the answer is correct
-    // Since 'none' is not part of correct_answer type, handle it separately
-    const isCorrect = answer === currentQuestion.correct_answer;
+    // For 'none' answers (timeout), they're always incorrect
+    // For regular answers (a,b,c,d), compare with correct_answer
+    const isCorrect = answer !== 'none' && answer === currentQuestion.correct_answer;
     const responseTime = 15 - timeLeft;
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const scoreToAdd = (isCorrect && answer !== 'none') 
+      const scoreToAdd = (isCorrect) 
         ? calculateScore(currentQuestion.difficulty, responseTime) 
         : 0;
       
