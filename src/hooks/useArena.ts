@@ -27,7 +27,9 @@ export const useArena = () => {
     setTimeLeft,
     fetchQuestions,
     answerQuestion,
-    resetQuestions
+    resetQuestions,
+    moveToNextQuestion,
+    resetTimer
   } = useArenaQuestion(currentMatch?.id ?? null);
 
   const { 
@@ -43,6 +45,7 @@ export const useArena = () => {
     awardAchievement 
   } = useArenaAchievements();
 
+  // Initial data fetching
   useEffect(() => {
     setIsLoading(true);
     
@@ -57,6 +60,7 @@ export const useArena = () => {
     };
   }, [fetchUserStats, fetchLeaderboard, fetchAchievements, leaveMatch]);
 
+  // Handle active match timer
   useEffect(() => {
     if (!currentMatch || currentMatch.status !== 'active' || matchComplete || !questions.length) {
       return;
@@ -68,9 +72,11 @@ export const useArena = () => {
           if (currentQuestionIndex < questions.length - 1) {
             // Move to next question when time runs out
             if (selectedAnswer === null) {
-              // Fixed QuizAnswer type by using 'none' instead of 'x'
+              // Pass 'none' instead of 'x'
               answerQuestion('none'); 
             }
+            moveToNextQuestion(questions.length);
+            resetTimer();
             return 15;
           } else {
             clearInterval(timer);
@@ -83,14 +89,27 @@ export const useArena = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [currentMatch, currentQuestionIndex, questions.length, matchComplete, finishMatch, selectedAnswer, answerQuestion]);
+  }, [
+    currentMatch, 
+    currentQuestionIndex, 
+    questions.length, 
+    matchComplete, 
+    finishMatch, 
+    selectedAnswer, 
+    answerQuestion,
+    moveToNextQuestion, 
+    resetTimer,
+    setTimeLeft
+  ]);
 
+  // Fetch questions when match becomes active
   useEffect(() => {
     if (currentMatch?.status === 'active' && questions.length === 0) {
       fetchQuestions();
     }
   }, [currentMatch?.status, questions.length, fetchQuestions]);
 
+  // Check for achievements when match completes
   const checkForAchievements = async (userId: string, matchId: string) => {
     const { data: playerData } = await supabase
       .from('match_players')
@@ -131,6 +150,7 @@ export const useArena = () => {
     }
   };
 
+  // Handle match completion
   useEffect(() => {
     const handleMatchComplete = async () => {
       if (matchComplete && currentMatch) {

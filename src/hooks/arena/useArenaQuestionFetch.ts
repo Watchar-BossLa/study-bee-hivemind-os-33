@@ -26,7 +26,7 @@ export const useArenaQuestionFetch = (matchId: string | null) => {
         .select('*')
         .order('id');
       
-      if (matchData?.subject_focus) {
+      if (matchData && 'subject_focus' in matchData && matchData.subject_focus) {
         query = query.eq('category', matchData.subject_focus);
       }
       
