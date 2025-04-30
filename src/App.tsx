@@ -1,62 +1,46 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "./components/theme/ThemeProvider";
-import Index from "./pages/Index";
-import Courses from "./pages/Courses";
-import Qualifications from "./pages/Qualifications";
-import CourseContent from "./pages/CourseContent";
-import NotFound from "./pages/NotFound";
-import NotImplemented from "./pages/NotImplemented";
-import OCRFlashcards from "./pages/OCRFlashcards";
-import FlashcardReviewPage from "./pages/FlashcardReview";
-import GraphTutor from "./pages/GraphTutor";
-import Arena from "./pages/Arena";
-import CourseLearning from "./pages/CourseLearning";
-import StudyGroups from "./pages/StudyGroups";
-import PeerLearning from "./pages/PeerLearning";
-import CollaborativeNotes from "./pages/CollaborativeNotes";
-import LiveStudySessions from "./pages/LiveStudySessions";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Index from './pages/Index';
+import Courses from './pages/Courses';
+import CourseContent from './pages/CourseContent';
+import CourseLearning from './pages/CourseLearning';
+import Arena from './pages/Arena';
+import FlashcardReview from './pages/FlashcardReview';
+import OCRFlashcards from './pages/OCRFlashcards';
+import GraphTutor from './pages/GraphTutor';
+import LiveStudySessions from './pages/LiveStudySessions';
+import PeerLearning from './pages/PeerLearning';
+import NotImplemented from './pages/NotImplemented';
+import NotFound from './pages/NotFound';
+import Qualifications from './pages/Qualifications';
+import StudyGroups from './pages/StudyGroups';
+import CollaborativeNotes from './pages/CollaborativeNotes';
+import QuorumDashboard from './pages/QuorumDashboard';
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <ThemeProvider defaultTheme="system" storageKey="study-bee-ui-theme">
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div 
-          id="theme-change-announcer" 
-          className="sr-only" 
-          aria-live="polite" 
-          aria-atomic="true"
-        />
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/ocr" element={<OCRFlashcards />} />
-            <Route path="/tutor" element={<GraphTutor />} />
-            <Route path="/arena" element={<Arena />} />
-            <Route path="/qualifications" element={<Qualifications />} />
-            <Route path="/course/:subjectId/:moduleId" element={<CourseContent />} />
-            <Route path="/learn/:subjectId/:moduleId/:courseId" element={<CourseLearning />} />
-            <Route path="/spaced-repetition" element={<FlashcardReviewPage />} />
-            <Route path="/flashcards" element={<NotImplemented />} />
-            <Route path="/study-groups" element={<StudyGroups />} />
-            <Route path="/peer-learning" element={<PeerLearning />} />
-            <Route path="/collaborative-notes" element={<CollaborativeNotes />} />
-            <Route path="/live-sessions" element={<LiveStudySessions />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
-);
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/courses" element={<Courses />} />
+        <Route path="/courses/:courseId" element={<CourseContent />} />
+        <Route path="/learning/:courseId" element={<CourseLearning />} />
+        <Route path="/arena" element={<Arena />} />
+        <Route path="/flashcards/review" element={<FlashcardReview />} />
+        <Route path="/flashcards/ocr" element={<OCRFlashcards />} />
+        <Route path="/tutor" element={<GraphTutor />} />
+        <Route path="/live-sessions" element={<LiveStudySessions />} />
+        <Route path="/peer-learning" element={<PeerLearning />} />
+        <Route path="/qualifications" element={<Qualifications />} />
+        <Route path="/study-groups" element={<StudyGroups />} />
+        <Route path="/notes" element={<CollaborativeNotes />} />
+        <Route path="/dashboard/quorum" element={<QuorumDashboard />} />
+        <Route path="/wip" element={<NotImplemented />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Router>
+  );
+};
 
 export default App;

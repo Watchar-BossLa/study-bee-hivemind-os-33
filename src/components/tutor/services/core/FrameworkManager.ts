@@ -7,6 +7,10 @@ import { CrewAIPlanner } from '../frameworks/CrewAIPlanner';
 import { AgentToAgentHub } from '../frameworks/AgentToAgentHub';
 import { CouncilService } from '../CouncilService';
 import { LLMRouter } from '../LLMRouter';
+import { LangChainQuotaGuard } from '../frameworks/LangChainQuotaGuard';
+import { AutogenTurnGuard } from '../frameworks/AutogenTurnGuard';
+import { A2AOAuthHandler } from '../frameworks/A2AOAuthHandler';
+import { SwarmMetricsService } from '../metrics/SwarmMetricsService';
 
 export class FrameworkManager {
   private openAISwarm: OpenAISwarmWrapper;
@@ -16,14 +20,26 @@ export class FrameworkManager {
   private crewAIPlanner: CrewAIPlanner;
   private a2aHub: AgentToAgentHub;
   
+  // New services from QuorumForge OS commit matrix
+  private langChainQuotaGuard: LangChainQuotaGuard;
+  private autogenTurnGuard: AutogenTurnGuard;
+  private a2aOAuthHandler: A2AOAuthHandler;
+  private swarmMetricsService: SwarmMetricsService;
+  
   constructor(councilService: CouncilService, router: LLMRouter) {
+    // Initialize metrics and monitoring services
+    this.swarmMetricsService = new SwarmMetricsService();
+    this.langChainQuotaGuard = new LangChainQuotaGuard();
+    this.autogenTurnGuard = new AutogenTurnGuard();
+    this.a2aOAuthHandler = new A2AOAuthHandler();
+    
     // Initialize framework integrations
-    this.openAISwarm = new OpenAISwarmWrapper();
+    this.openAISwarm = new OpenAISwarmWrapper(this.swarmMetricsService);
     this.pydanticValidator = new PydanticValidator();
-    this.langChainIntegration = new LangChainIntegration(router);
-    this.autogenIntegration = new AutogenIntegration(router);
+    this.langChainIntegration = new LangChainIntegration(router, this.langChainQuotaGuard);
+    this.autogenIntegration = new AutogenIntegration(router, this.autogenTurnGuard);
     this.crewAIPlanner = new CrewAIPlanner(councilService);
-    this.a2aHub = new AgentToAgentHub();
+    this.a2aHub = new AgentToAgentHub(this.a2aOAuthHandler);
     
     // Initialize A2A Hub
     this.initializeA2AHub();
@@ -59,6 +75,18 @@ export class FrameworkManager {
   
   public getA2AHub(): AgentToAgentHub {
     return this.a2aHub;
+  }
+  
+  public getLangChainQuotaGuard(): LangChainQuotaGuard {
+    return this.langChainQuotaGuard;
+  }
+  
+  public getAutogenTurnGuard(): AutogenTurnGuard {
+    return this.autogenTurnGuard;
+  }
+  
+  public getSwarmMetricsService(): SwarmMetricsService {
+    return this.swarmMetricsService;
   }
   
   public async communicateWithExternalAgent(

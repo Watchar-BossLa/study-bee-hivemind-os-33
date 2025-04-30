@@ -2,7 +2,7 @@
 import { CouncilVote } from '../../types/councils';
 import { ConsensusCalculator, ConsensusOptions } from './ConsensusCalculator';
 
-export { ConsensusOptions } from './ConsensusCalculator';
+export type { ConsensusOptions } from './ConsensusCalculator';
 
 /**
  * Service responsible for handling consensus operations
