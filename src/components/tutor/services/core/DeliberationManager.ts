@@ -42,8 +42,10 @@ export class DeliberationManager {
         topic,
         validatedContext,
         crewPlan,
-        maxTurns,
-        consensusThreshold
+        {
+          consensusThreshold,
+          minRequiredVotes: council.length / 2
+        }
       );
     }
     
@@ -51,8 +53,10 @@ export class DeliberationManager {
       council,
       topic,
       validatedContext,
-      maxTurns,
-      consensusThreshold
+      {
+        consensusThreshold,
+        minRequiredVotes: council.length / 2
+      }
     );
   }
 

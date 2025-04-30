@@ -1,11 +1,13 @@
 
 import { SpecializedAgent } from '../types/agents';
 import { CouncilDecision } from '../types/councils';
-import { VotingService, VotingOptions } from './deliberation/VotingService';
-import { ConsensusService, ConsensusOptions } from './deliberation/ConsensusService';
+import { VotingService } from './deliberation/VotingService';
+import { ConsensusService } from './deliberation/ConsensusService';
 import { Plan } from './frameworks/CrewAIPlanner';
 import { VoteHistoryStorage } from './deliberation/VoteHistoryStorage';
 import { VoteIntegrityService } from './deliberation/VoteIntegrityService';
+import { DeliberationProcessor } from './deliberation/DeliberationProcessor';
+import { DecisionBuilder } from './deliberation/DecisionBuilder';
 
 export interface DeliberationOptions {
   timeLimit?: number; // ms
@@ -22,11 +24,15 @@ export class DeliberationService {
   private votingService: VotingService;
   private consensusService: ConsensusService;
   private voteHistoryStorage: VoteHistoryStorage;
+  private deliberationProcessor: DeliberationProcessor;
+  private decisionBuilder: DecisionBuilder;
   
   constructor() {
     this.votingService = new VotingService();
     this.consensusService = new ConsensusService();
     this.voteHistoryStorage = new VoteHistoryStorage();
+    this.deliberationProcessor = new DeliberationProcessor(this.votingService, this.consensusService);
+    this.decisionBuilder = new DecisionBuilder();
   }
 
   public async deliberate(
@@ -48,54 +54,17 @@ export class DeliberationService {
     
     const startTime = Date.now();
     
-    // Convert deliberation options to voting options
-    const votingOptions: VotingOptions = {
-      timeLimit: options?.timeLimit,
-      complexityOverride: options?.complexityOverride,
-      boostAgentIds: options?.boostAgentIds,
-      boostFactor: options?.boostFactor,
-      minRequiredVotes: options?.minRequiredVotes,
-      usePerformanceHistory: options?.usePerformanceHistory
-    };
-    
-    // Get votes from agents
-    const votes = this.votingService.collectVotes(council, topic, votingOptions);
-    const suggestionGroups = this.votingService.groupVotesBySuggestion(votes);
-    
-    // Check for suspicious votes
-    const suspiciousVotes = this.votingService.detectSuspiciousVotes(votes);
-    if (suspiciousVotes.length > 0) {
-      console.warn(`Detected ${suspiciousVotes.length} suspicious votes during deliberation`);
-    }
-    
-    // Convert deliberation options to consensus options
-    const consensusOptions: ConsensusOptions = {
-      baseThreshold: options?.consensusThreshold || 0.7,
-      minRequiredVotes: options?.minRequiredVotes,
-      timeoutMs: options?.timeLimit,
-      topicComplexity: options?.complexityOverride
-    };
-    
-    // Calculate consensus
-    const { suggestion, confidence } = this.consensusService.calculateConsensus(
-      votes,
-      suggestionGroups,
-      consensusOptions
-    );
-    
-    // Create security analysis if suspicious votes were detected
-    const securityAnalysis = suspiciousVotes.length > 0 ? {
-      riskLevel: suspiciousVotes.length / votes.length,
-      recommendations: ["Review suspicious votes", "Consider re-running deliberation"]
-    } : undefined;
+    // Process the deliberation
+    const { votes, suggestion, confidence, suspiciousVotes } = 
+      this.deliberationProcessor.processDeliberation(council, topic, context, options);
     
     // Create decision
-    const decision = this.consensusService.createDecision(
+    const decision = this.decisionBuilder.createDecision(
       topic,
       votes,
       suggestion,
       confidence,
-      securityAnalysis
+      suspiciousVotes
     );
 
     // Add to history and cache
@@ -121,65 +90,21 @@ export class DeliberationService {
     
     const startTime = Date.now();
     
-    // Convert deliberation options to voting options
-    const votingOptions: VotingOptions = {
-      timeLimit: options?.timeLimit,
-      complexityOverride: options?.complexityOverride || 'high', // Plans are typically complex
-      boostAgentIds: options?.boostAgentIds,
-      boostFactor: options?.boostFactor,
-      minRequiredVotes: options?.minRequiredVotes,
-      usePerformanceHistory: options?.usePerformanceHistory
-    };
-    
-    // Use the plan tasks to guide voting process
-    const enhancedVotes = this.votingService.collectVotesWithPlan(
-      council, 
-      topic, 
-      plan,
-      votingOptions
-    );
-    
-    const suggestionGroups = this.votingService.groupVotesBySuggestion(enhancedVotes);
-    
-    // Check for suspicious votes
-    const suspiciousVotes = this.votingService.detectSuspiciousVotes(enhancedVotes);
-    
-    // Convert deliberation options to consensus options
-    const consensusOptions: ConsensusOptions = {
-      baseThreshold: options?.consensusThreshold || 0.65, // Lower threshold for plan-based decisions
-      minRequiredVotes: options?.minRequiredVotes,
-      timeoutMs: options?.timeLimit,
-      topicComplexity: 'high' // Plans are considered complex
-    };
-    
-    const { suggestion, confidence } = this.consensusService.calculateConsensus(
-      enhancedVotes,
-      suggestionGroups,
-      consensusOptions
-    );
-    
-    // Create security analysis if suspicious votes were detected
-    const securityAnalysis = suspiciousVotes.length > 0 ? {
-      riskLevel: suspiciousVotes.length / enhancedVotes.length,
-      recommendations: ["Review suspicious votes", "Consider re-running deliberation with plan"]
-    } : undefined;
+    // Process the deliberation with plan
+    const { votes, suggestion, confidence, suspiciousVotes } = 
+      this.deliberationProcessor.processDeliberationWithPlan(council, topic, plan, options);
     
     // Create decision
-    const decision = this.consensusService.createDecision(
+    let decision = this.decisionBuilder.createDecision(
       topic,
-      enhancedVotes,
+      votes,
       suggestion,
       confidence,
-      securityAnalysis
+      suspiciousVotes
     );
     
     // Add plan metadata to the decision
-    decision.plan = {
-      id: plan.id,
-      title: plan.title,
-      taskCount: plan.tasks.length,
-      memberCount: plan.members.length
-    };
+    decision = this.decisionBuilder.addPlanMetadata(decision, plan);
 
     // Add to history
     this.decisions.push(decision);
