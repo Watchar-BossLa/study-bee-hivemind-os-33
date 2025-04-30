@@ -1,3 +1,4 @@
+
 import { SpecializedAgent } from '../../types/agents';
 import { CouncilVote } from '../../types/councils';
 import { Plan } from '../frameworks/CrewAIPlanner';
@@ -31,7 +32,7 @@ export class VotingService {
       const expertiseMatch = this.calculateExpertiseMatch(agent.domain, topic);
       
       // Boost confidence for agents that have related tasks in the plan
-      const isPlanContributor = plan.members.some(member => member.agentId === agent.id);
+      const isPlanContributor = plan.members.some(member => member.id === agent.id);
       const planBoost = isPlanContributor ? 0.15 : 0;
       
       const confidence = Math.min(0.6 + (expertiseMatch * 0.4) + planBoost, 0.98);
@@ -52,7 +53,7 @@ export class VotingService {
     expertiseMatch: number
   ): string {
     // Check if agent is a member of the plan
-    const isMember = plan.members.some(member => member.agentId === agent.id);
+    const isMember = plan.members.some(member => member.id === agent.id);
     
     if (isMember) {
       // Get assigned tasks for this agent
