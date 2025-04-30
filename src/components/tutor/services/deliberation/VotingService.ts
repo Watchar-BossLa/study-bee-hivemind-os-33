@@ -2,48 +2,97 @@
 import { SpecializedAgent } from '../../types/agents';
 import { CouncilVote } from '../../types/councils';
 import { Plan } from '../frameworks/CrewAIPlanner';
+import { VoteWeightCalculator } from './VoteWeightCalculator';
+import { VoteIntegrityService } from './VoteIntegrityService';
+
+export interface VotingOptions {
+  timeLimit?: number; // ms
+  complexityOverride?: 'low' | 'medium' | 'high';
+  boostAgentIds?: string[]; // IDs of agents to boost
+  boostFactor?: number; // How much to boost (0-1)
+  minRequiredVotes?: number;
+  usePerformanceHistory?: boolean;
+}
 
 export class VotingService {
+  private weightCalculator: VoteWeightCalculator;
+  private integrityService: VoteIntegrityService;
+  
+  constructor() {
+    this.weightCalculator = new VoteWeightCalculator();
+    this.integrityService = new VoteIntegrityService();
+  }
+
   public collectVotes(
     council: SpecializedAgent[],
-    topic: string
+    topic: string,
+    options?: VotingOptions
   ): CouncilVote[] {
     return council.map(agent => {
-      // Calculate confidence based on domain expertise match
-      const expertiseMatch = this.calculateExpertiseMatch(agent.domain, topic);
-      const confidence = 0.6 + (expertiseMatch * 0.4); // Base 0.6 + up to 0.4 based on expertise match
+      // Calculate weight based on expertise, performance, and other factors
+      const weight = this.weightCalculator.calculateWeight(agent, topic);
       
-      return {
+      // Apply boost if this agent is in the boost list
+      const boost = this.calculateBoost(agent.id, options);
+      const finalConfidence = Math.min(weight + boost, 0.98);
+      
+      const vote: CouncilVote = {
         agentId: agent.id,
-        confidence,
-        suggestion: this.generateSuggestion(agent, topic, expertiseMatch),
+        confidence: finalConfidence,
+        suggestion: this.generateSuggestion(agent, topic, weight),
         reasoning: `Based on ${agent.domain} expertise, ${agent.role} recommends this approach because it aligns with ${this.getReasoningContext(agent.domain, topic)}`
       };
+      
+      // Secure the vote with a hash
+      this.integrityService.secureVote(vote);
+      
+      return vote;
     });
   }
 
   public collectVotesWithPlan(
     council: SpecializedAgent[],
     topic: string,
-    plan: Plan
+    plan: Plan,
+    options?: VotingOptions
   ): CouncilVote[] {
     return council.map(agent => {
-      // Calculate confidence based on domain expertise match
-      const expertiseMatch = this.calculateExpertiseMatch(agent.domain, topic);
+      // Calculate baseline weight
+      const weight = this.weightCalculator.calculateWeight(agent, topic);
       
       // Boost confidence for agents that have related tasks in the plan
       const isPlanContributor = plan.members.some(member => member.id === agent.id);
       const planBoost = isPlanContributor ? 0.15 : 0;
       
-      const confidence = Math.min(0.6 + (expertiseMatch * 0.4) + planBoost, 0.98);
+      // Apply user-requested boosts
+      const userBoost = this.calculateBoost(agent.id, options);
       
-      return {
+      // Combine all confidence factors, capped at 0.98
+      const finalConfidence = Math.min(weight + planBoost + userBoost, 0.98);
+      
+      const vote: CouncilVote = {
         agentId: agent.id,
-        confidence,
-        suggestion: this.generatePlanAwareSuggestion(agent, topic, plan, expertiseMatch),
+        confidence: finalConfidence,
+        suggestion: this.generatePlanAwareSuggestion(agent, topic, plan, weight),
         reasoning: `Based on ${agent.domain} expertise and role in plan "${plan.title}", ${agent.role} recommends this approach because it aligns with ${this.getReasoningContext(agent.domain, topic)}`
       };
+      
+      // Secure the vote with a hash
+      this.integrityService.secureVote(vote);
+      
+      return vote;
     });
+  }
+  
+  /**
+   * Calculate boost value for an agent based on options
+   */
+  private calculateBoost(agentId: string, options?: VotingOptions): number {
+    if (!options || !options.boostAgentIds || !options.boostAgentIds.includes(agentId)) {
+      return 0;
+    }
+    
+    return options.boostFactor || 0.2; // Default boost of 0.2 if not specified
   }
 
   private generatePlanAwareSuggestion(
@@ -68,23 +117,6 @@ export class VotingService {
     
     // Fall back to standard suggestion if not involved in specific tasks
     return this.generateSuggestion(agent, topic, expertiseMatch);
-  }
-
-  private calculateExpertiseMatch(domain: string, topic: string): number {
-    // Simple expertise matching algorithm
-    const domainKeywords = domain.toLowerCase().split(/\s+/);
-    const topicKeywords = topic.toLowerCase().split(/\s+/);
-    
-    let matches = 0;
-    for (const dword of domainKeywords) {
-      for (const tword of topicKeywords) {
-        if (dword.includes(tword) || tword.includes(dword)) {
-          matches++;
-        }
-      }
-    }
-    
-    return Math.min(matches / Math.max(domainKeywords.length, 1), 1);
   }
 
   private generateSuggestion(agent: SpecializedAgent, topic: string, expertiseMatch: number): string {
@@ -120,5 +152,20 @@ export class VotingService {
       suggestionGroups.get(vote.suggestion)!.push(vote);
     });
     return suggestionGroups;
+  }
+  
+  /**
+   * Find potentially manipulated votes
+   */
+  public detectSuspiciousVotes(votes: CouncilVote[]): CouncilVote[] {
+    // First check vote integrity
+    const tampered = votes.filter(vote => !this.integrityService.verifyVote(vote));
+    
+    // Then check for statistical outliers
+    const outliers = this.integrityService.detectOutliers(votes);
+    
+    // Combine and deduplicate results
+    const allSuspicious = [...tampered, ...outliers];
+    return [...new Set(allSuspicious)];
   }
 }
