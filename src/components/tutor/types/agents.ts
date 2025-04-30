@@ -78,6 +78,11 @@ export interface UserInteraction {
     confidenceScore: number;
     processingTimeMs: number;
   }[];
+  securityAnalysis?: {
+    riskLevel: number;
+    recommendations: string[];
+    threadId?: string;
+  };
   userFeedback?: {
     rating: number;
     comments?: string;

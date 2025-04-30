@@ -1,6 +1,6 @@
-
 import { SpecializedAgent } from '../../types/agents';
 import { CouncilVote } from '../../types/councils';
+import { Plan } from '../frameworks/CrewAIPlanner';
 
 export class VotingService {
   public collectVotes(
@@ -19,6 +19,54 @@ export class VotingService {
         reasoning: `Based on ${agent.domain} expertise, ${agent.role} recommends this approach because it aligns with ${this.getReasoningContext(agent.domain, topic)}`
       };
     });
+  }
+
+  public collectVotesWithPlan(
+    council: SpecializedAgent[],
+    topic: string,
+    plan: Plan
+  ): CouncilVote[] {
+    return council.map(agent => {
+      // Calculate confidence based on domain expertise match
+      const expertiseMatch = this.calculateExpertiseMatch(agent.domain, topic);
+      
+      // Boost confidence for agents that have related tasks in the plan
+      const isPlanContributor = plan.members.some(member => member.agentId === agent.id);
+      const planBoost = isPlanContributor ? 0.15 : 0;
+      
+      const confidence = Math.min(0.6 + (expertiseMatch * 0.4) + planBoost, 0.98);
+      
+      return {
+        agentId: agent.id,
+        confidence,
+        suggestion: this.generatePlanAwareSuggestion(agent, topic, plan, expertiseMatch),
+        reasoning: `Based on ${agent.domain} expertise and role in plan "${plan.title}", ${agent.role} recommends this approach because it aligns with ${this.getReasoningContext(agent.domain, topic)}`
+      };
+    });
+  }
+
+  private generatePlanAwareSuggestion(
+    agent: SpecializedAgent, 
+    topic: string, 
+    plan: Plan, 
+    expertiseMatch: number
+  ): string {
+    // Check if agent is a member of the plan
+    const isMember = plan.members.some(member => member.agentId === agent.id);
+    
+    if (isMember) {
+      // Get assigned tasks for this agent
+      const memberTasks = plan.tasks.filter(task => 
+        task.assignedTo.includes(agent.id)
+      );
+      
+      if (memberTasks.length > 0) {
+        return `Approach ${topic} according to plan "${plan.title}", focusing on: ${memberTasks[0].description}`;
+      }
+    }
+    
+    // Fall back to standard suggestion if not involved in specific tasks
+    return this.generateSuggestion(agent, topic, expertiseMatch);
   }
 
   private calculateExpertiseMatch(domain: string, topic: string): number {

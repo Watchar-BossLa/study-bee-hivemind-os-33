@@ -45,6 +45,13 @@ export interface AutogenThread {
   }[];
   status: 'active' | 'completed' | 'failed';
   topic: string;
+  maxTurns?: number;
+  currentTurn?: number;
+  securityContext?: {
+    threatModel: string;
+    vulnerabilityChecklist: string[];
+    mitigations: string[];
+  };
 }
 
 export interface LangChainTemplate {
@@ -52,6 +59,12 @@ export interface LangChainTemplate {
   name: string;
   template: string;
   inputVariables: string[];
+  outputParser?: string;
+  rateLimits?: {
+    maxRequestsPerMinute: number;
+    maxTokensPerRequest: number;
+    costPerToken: number;
+  };
 }
 
 export interface AgentMessageExchange {
@@ -60,4 +73,28 @@ export interface AgentMessageExchange {
   content: string;
   timestamp: Date;
   protocol: string;
+  metrics?: {
+    latencyMs: number;
+    tokenCount?: number;
+    success: boolean;
+  };
+}
+
+export interface SwarmTask {
+  id: string;
+  description: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  assignedAgents: string[];
+  result?: any;
+  processingTimeMs?: number;
+  parentTaskId?: string;
+}
+
+export interface SwarmMetrics {
+  timestamp: Date;
+  tasksExecuted: number;
+  averageTaskTimeMs: number;
+  successRate: number;
+  fanoutFactor: number;
+  tokenUsage: number;
 }

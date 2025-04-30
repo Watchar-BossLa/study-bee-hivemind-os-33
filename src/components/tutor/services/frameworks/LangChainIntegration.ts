@@ -1,5 +1,6 @@
 
 import { LLMRouter } from '../LLMRouter';
+import { RouterRequest } from '../../types/router';
 
 export interface PromptTemplate {
   template: string;
@@ -79,10 +80,10 @@ export class LangChainIntegration {
       filledPrompt = filledPrompt.replace(`{${variable}}`, value);
     }
     
-    // Create a request for the router
-    const request = {
+    // Create a properly typed request for the router
+    const request: RouterRequest = {
       query: filledPrompt,
-      task: 'tutor',
+      task: this.determineTaskType(chainId),
       complexity: inputs.complexity || 'medium',
       urgency: inputs.urgency || 'medium',
       costSensitivity: 'medium',
@@ -106,6 +107,18 @@ export class LangChainIntegration {
     this.memory.get(chainId)?.push(memoryEntry);
     
     return response;
+  }
+  
+  // Helper method to map chain ID to appropriate task type
+  private determineTaskType(chainId: string): RouterRequest['task'] {
+    if (chainId.includes('tutor')) return 'tutor';
+    if (chainId.includes('assessment')) return 'qa';
+    if (chainId.includes('summary') || chainId.includes('extract')) return 'summarization';
+    if (chainId.includes('code') || chainId.includes('programming')) return 'code';
+    if (chainId.includes('reasoning') || chainId.includes('cot')) return 'reasoning';
+    
+    // Default to tutoring as fallback
+    return 'tutor';
   }
   
   public getChain(chainId: string): Chain | undefined {
