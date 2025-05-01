@@ -3,6 +3,7 @@ import { AutogenIntegration } from '../AutogenIntegration';
 import { AutogenTurnGuard } from '../AutogenTurnGuard';
 import { LLMRouter } from '../../LLMRouter';
 
+// Mock dependencies
 jest.mock('../../LLMRouter');
 jest.mock('../AutogenTurnGuard');
 
@@ -15,12 +16,12 @@ describe('AutogenIntegration', () => {
     mockRouter = new LLMRouter() as jest.Mocked<LLMRouter>;
     mockTurnGuard = new AutogenTurnGuard() as jest.Mocked<AutogenTurnGuard>;
     
-    mockTurnGuard.startSession.mockReturnValue({ 
+    mockTurnGuard.startSession = jest.fn().mockReturnValue({ 
       maxTurns: 5,
       currentTurn: 0
     });
     
-    mockTurnGuard.recordTurn.mockReturnValue(true);
+    mockTurnGuard.recordTurn = jest.fn().mockReturnValue(true);
     
     autogenIntegration = new AutogenIntegration(mockRouter, mockTurnGuard);
   });
@@ -54,7 +55,7 @@ describe('AutogenIntegration', () => {
     });
     
     it('should mark as final turn when turn guard indicates no continuation', async () => {
-      mockTurnGuard.recordTurn.mockReturnValueOnce(false);
+      mockTurnGuard.recordTurn = jest.fn().mockReturnValueOnce(false);
       
       const response = await autogenIntegration.processTurn('thread-1', 'user', 'Hello');
       

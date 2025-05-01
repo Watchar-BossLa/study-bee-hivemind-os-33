@@ -25,6 +25,12 @@ const config: Config = {
       statements: 70,
     },
   },
+  // Add these lines to ensure Jest types are properly recognized
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+    },
+  },
 };
 
 export default config;
