@@ -60,9 +60,9 @@ export class VoteHistoryStorage {
     }
     
     // Calculate average confidence
-    const avgConfidence = decision.votes.reduce(
-      (sum, vote) => sum + vote.confidence, 0
-    ) / decision.votes.length;
+    const avgConfidence = decision.votes.length > 0 
+      ? decision.votes.reduce((sum, vote) => sum + vote.confidence, 0) / decision.votes.length
+      : 0;
     
     // Create history entry
     const historySummary: VoteHistorySummary = {

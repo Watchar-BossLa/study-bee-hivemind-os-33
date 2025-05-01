@@ -68,3 +68,12 @@ jobs:
             echo "$UNSAFE_OPTIONAL_CHAINS"
             exit 1
           fi
+      
+      - name: Check for undefined access
+        run: |
+          UNSAFE_ACCESS=$(grep -r --include="*.ts" --include="*.tsx" -E "undefined\.[a-zA-Z0-9_]+" src/ || true)
+          if [ ! -z "$UNSAFE_ACCESS" ]; then
+            echo "Found potentially unsafe access on undefined:"
+            echo "$UNSAFE_ACCESS"
+            exit 1
+          fi

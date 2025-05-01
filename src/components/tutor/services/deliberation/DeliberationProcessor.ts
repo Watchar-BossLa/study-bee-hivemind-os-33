@@ -5,6 +5,11 @@ import { VotingService, VotingOptions } from './VotingService';
 import { ConsensusService, ConsensusOptions } from './ConsensusService';
 import { Plan } from '../frameworks/CrewAIPlanner';
 
+// Define a proper context type instead of using Record<string, any>
+export interface DeliberationContext {
+  [key: string]: string | number | boolean | null | undefined | DeliberationContext;
+}
+
 export class DeliberationProcessor {
   private votingService: VotingService;
   private consensusService: ConsensusService;
@@ -23,7 +28,7 @@ export class DeliberationProcessor {
   public processDeliberation(
     council: SpecializedAgent[],
     topic: string,
-    context: Record<string, any>,
+    context: DeliberationContext,
     options?: VotingOptions & ConsensusOptions
   ): {
     votes: CouncilVote[],

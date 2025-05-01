@@ -6,6 +6,13 @@ import { VoteHistoryStorage } from '../VoteHistoryStorage';
 import { VoteWeightCalculator } from '../VoteWeightCalculator';
 import { CouncilVote } from '../../../types/councils';
 
+// Create type-safe mock types
+type MockedClass<T> = {
+  [P in keyof T]: T[P] extends (...args: infer A) => infer R
+    ? jest.Mock<R, A>
+    : T[P];
+};
+
 // Mock dependencies
 jest.mock('../ConsensusCalculator');
 jest.mock('../VoteIntegrityService');
@@ -13,10 +20,10 @@ jest.mock('../VoteHistoryStorage');
 jest.mock('../VoteWeightCalculator');
 
 describe('ConsensusService', () => {
-  let mockConsensusCalculator: jest.Mocked<ConsensusCalculator>;
-  let mockVoteIntegrityService: jest.Mocked<VoteIntegrityService>;
-  let mockVoteHistoryStorage: jest.Mocked<VoteHistoryStorage>;
-  let mockVoteWeightCalculator: jest.Mocked<VoteWeightCalculator>;
+  let mockConsensusCalculator: MockedClass<ConsensusCalculator>;
+  let mockVoteIntegrityService: MockedClass<VoteIntegrityService>;
+  let mockVoteHistoryStorage: MockedClass<VoteHistoryStorage>;
+  let mockVoteWeightCalculator: MockedClass<VoteWeightCalculator>;
   let consensusService: ConsensusService;
 
   beforeEach(() => {
@@ -24,10 +31,10 @@ describe('ConsensusService', () => {
     jest.clearAllMocks();
     
     // Setup constructor mocks
-    mockConsensusCalculator = new ConsensusCalculator() as jest.Mocked<ConsensusCalculator>;
-    mockVoteIntegrityService = new VoteIntegrityService() as jest.Mocked<VoteIntegrityService>;
-    mockVoteHistoryStorage = new VoteHistoryStorage() as jest.Mocked<VoteHistoryStorage>;
-    mockVoteWeightCalculator = new VoteWeightCalculator() as jest.Mocked<VoteWeightCalculator>;
+    mockConsensusCalculator = new ConsensusCalculator() as MockedClass<ConsensusCalculator>;
+    mockVoteIntegrityService = new VoteIntegrityService() as MockedClass<VoteIntegrityService>;
+    mockVoteHistoryStorage = new VoteHistoryStorage() as MockedClass<VoteHistoryStorage>;
+    mockVoteWeightCalculator = new VoteWeightCalculator() as MockedClass<VoteWeightCalculator>;
     
     // Setup mocks methods
     mockVoteIntegrityService.validateVotes = jest.fn().mockReturnValue(true);

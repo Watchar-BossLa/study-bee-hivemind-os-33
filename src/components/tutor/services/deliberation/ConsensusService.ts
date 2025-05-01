@@ -77,7 +77,10 @@ export class ConsensusService {
       if (!suggestionGroups.has(vote.suggestion)) {
         suggestionGroups.set(vote.suggestion, []);
       }
-      suggestionGroups.get(vote.suggestion)?.push(vote);
+      const group = suggestionGroups.get(vote.suggestion);
+      if (group) {
+        group.push(vote);
+      }
     }
     
     // Calculate consensus
