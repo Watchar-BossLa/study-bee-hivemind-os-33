@@ -3,6 +3,15 @@ import { LLMRouter } from '../LLMRouter';
 import { LangChainQuotaGuard } from './LangChainQuotaGuard';
 import { RouterRequest } from '../../types/router';
 
+export interface ChainResult {
+  result: string;
+  metadata: {
+    processingTimeMs: number;
+    chainId: string;
+    modelUsed: string;
+  };
+}
+
 export class LangChainIntegration {
   private router: LLMRouter;
   private quotaGuard?: LangChainQuotaGuard;
@@ -13,7 +22,7 @@ export class LangChainIntegration {
     console.log('LangChain Integration initialized for chain execution');
   }
   
-  public async runChain(chainId: string, input: Record<string, unknown>): Promise<unknown> {
+  public async runChain(chainId: string, input: Record<string, unknown>): Promise<ChainResult> {
     console.log(`Running LangChain: ${chainId}`);
     
     // If quota guard exists, check if execution is allowed
@@ -30,18 +39,21 @@ export class LangChainIntegration {
     const processingTime = 300 + Math.random() * 700;
     await new Promise(resolve => setTimeout(resolve, processingTime));
     
+    // Get the model selection from router
+    const modelSelection = this.router.selectModel({
+      query: `Chain execution for ${chainId}`,
+      task: 'reasoning',
+      complexity: 'medium',
+      urgency: 'medium',
+      costSensitivity: 'medium'
+    });
+    
     return {
       result: `LangChain result for ${chainId}`,
       metadata: {
         processingTimeMs: processingTime,
         chainId,
-        modelUsed: this.router.selectModel({
-          query: `Chain execution for ${chainId}`,
-          task: 'reasoning',
-          complexity: 'medium',
-          urgency: 'medium',
-          costSensitivity: 'medium'
-        }).id
+        modelUsed: modelSelection.id
       }
     };
   }

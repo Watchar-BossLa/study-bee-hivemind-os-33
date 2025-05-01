@@ -93,3 +93,38 @@ export function safeAccess(
   }
   return current;
 }
+
+/**
+ * Type-safe assertion function that throws if condition is false
+ */
+export function assertCondition(
+  condition: unknown,
+  message = 'Assertion failed'
+): asserts condition {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+
+/**
+ * Type guard that ensures a value is a valid array
+ */
+export function isValidArray<T>(value: unknown): value is T[] {
+  return Array.isArray(value);
+}
+
+/**
+ * Creates an exact type that doesn't allow excess properties
+ */
+export type Exact<T extends Record<string, unknown>> = {
+  [K in keyof T]: T[K];
+} & {
+  [K in string]: never;
+};
+
+/**
+ * Type guard for checking if a value is a valid Record/object
+ */
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}

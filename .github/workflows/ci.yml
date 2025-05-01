@@ -41,6 +41,9 @@ jobs:
       - name: Dependency security check
         run: npx dependency-check --failOnCVSS 7
 
+      - name: TypeScript strict audit
+        run: npx ts-strict-audit
+
       - name: Build
         run: npm run build
 
@@ -50,3 +53,9 @@ jobs:
           name: coverage-report
           path: coverage/
 
+      - name: Check for prohibited types
+        run: |
+          if grep -r --include="*.ts" --include="*.tsx" "\: any" src/; then
+            echo "Found prohibited 'any' types in codebase"
+            exit 1
+          fi

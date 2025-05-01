@@ -2,6 +2,18 @@
 import { LLMRouter } from '../LLMRouter';
 import { AutogenTurnGuard } from './AutogenTurnGuard';
 
+export interface SecurityAnalysisResult {
+  riskLevel: number;
+  recommendations: string[];
+  threadId?: string;
+}
+
+export interface AgentTurnResponse {
+  toAgent: string;
+  response: string;
+  isFinalTurn: boolean;
+}
+
 export class AutogenIntegration {
   private router: LLMRouter;
   private turnGuard?: AutogenTurnGuard;
@@ -34,7 +46,7 @@ export class AutogenIntegration {
     threadId: string,
     fromAgent: string, 
     message: string
-  ): Promise<{ toAgent: string, response: string, isFinalTurn: boolean }> {
+  ): Promise<AgentTurnResponse> {
     // Check if turn is allowed with turn guard
     let isFinalTurn = false;
     if (this.turnGuard) {
@@ -74,11 +86,7 @@ export class AutogenIntegration {
   public async runRedTeamAnalysis(
     message: string, 
     context: Record<string, unknown>
-  ): Promise<{
-    riskLevel: number;
-    recommendations: string[];
-    threadId?: string;
-  }> {
+  ): Promise<SecurityAnalysisResult> {
     // Create a thread with security-focused agents
     const securityAgents = ['attacker', 'defender', 'patcher'];
     const { threadId, maxTurns } = this.createThread(securityAgents, 'security-analysis');
