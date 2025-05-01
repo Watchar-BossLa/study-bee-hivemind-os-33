@@ -35,8 +35,18 @@ jobs:
       - name: Run tests
         run: npm test -- --coverage
       
+      - name: Consensus Service tests
+        run: npm test -- --testMatch "**/ConsensusService.test.ts" --coverage
+      
       - name: Dependency security check
         run: npx dependency-check --failOnCVSS 7
 
       - name: Build
         run: npm run build
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage/
+
