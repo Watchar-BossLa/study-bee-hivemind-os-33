@@ -1,6 +1,14 @@
 
-import { SpecializedAgent } from '../../types/agents';
+import type { SpecializedAgent } from '../../types/agents';
 import { SwarmMetricsService } from '../metrics/SwarmMetricsService';
+
+export interface SwarmAgentResponse {
+  agentId: string;
+  response: string;
+  modelUsed: string;
+  confidenceScore: number;
+  processingTimeMs: number;
+}
 
 export class OpenAISwarmWrapper {
   private metricsService?: SwarmMetricsService;
@@ -13,8 +21,8 @@ export class OpenAISwarmWrapper {
   public async processParallel(
     agents: SpecializedAgent[],
     message: string,
-    context: Record<string, any>
-  ): Promise<any[]> {
+    context: Record<string, unknown>
+  ): Promise<SwarmAgentResponse[]> {
     console.log(`Processing ${agents.length} agents in parallel with OpenAI Swarm`);
     
     const startTime = Date.now();

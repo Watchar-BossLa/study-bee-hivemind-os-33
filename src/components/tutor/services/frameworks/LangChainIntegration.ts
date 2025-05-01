@@ -1,6 +1,7 @@
 
 import { LLMRouter } from '../LLMRouter';
 import { LangChainQuotaGuard } from './LangChainQuotaGuard';
+import { RouterRequest } from '../../types/router';
 
 export class LangChainIntegration {
   private router: LLMRouter;
@@ -12,7 +13,7 @@ export class LangChainIntegration {
     console.log('LangChain Integration initialized for chain execution');
   }
   
-  public async runChain(chainId: string, input: Record<string, any>): Promise<any> {
+  public async runChain(chainId: string, input: Record<string, unknown>): Promise<unknown> {
     console.log(`Running LangChain: ${chainId}`);
     
     // If quota guard exists, check if execution is allowed
@@ -35,6 +36,7 @@ export class LangChainIntegration {
         processingTimeMs: processingTime,
         chainId,
         modelUsed: this.router.selectModel({
+          query: `Chain execution for ${chainId}`,
           task: 'reasoning',
           complexity: 'medium',
           urgency: 'medium',

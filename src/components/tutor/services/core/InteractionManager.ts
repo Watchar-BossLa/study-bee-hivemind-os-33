@@ -3,6 +3,7 @@ import { InteractionService } from '../InteractionService';
 import { FrameworkManager } from './FrameworkManager';
 import { CouncilService } from '../CouncilService';
 import { UserInteraction } from '../../types/agents';
+import { isOfType } from '../../types/utilities';
 
 export class InteractionManager {
   private interactionService: InteractionService;
@@ -22,7 +23,7 @@ export class InteractionManager {
   public async processInteraction(
     message: string,
     userId: string,
-    context: Record<string, any>
+    context: Record<string, unknown>
   ): Promise<UserInteraction> {
     // Validate the context using PydanticValidator
     const validatedContext = this.frameworkManager.getPydanticValidator().validateContext(context);
@@ -48,7 +49,7 @@ export class InteractionManager {
     };
 
     // Check if we should use parallel processing with OpenAI Swarm
-    if (council.length > 4 && !validatedContext.sequential) {
+    if (council.length > 4 && !isOfType<{ sequential: boolean }>(validatedContext, 'sequential')) {
       const responses = await this.frameworkManager.getOpenAISwarm().processParallel(
         council,
         message,
@@ -107,7 +108,7 @@ export class InteractionManager {
     rating: number, 
     agentFeedback?: Record<string, number>,
     comments?: string
-  ) {
+  ): void {
     this.interactionService.recordUserFeedback(
       interactionId,
       userId,
@@ -117,7 +118,7 @@ export class InteractionManager {
     );
   }
   
-  public getUserTopInterests(userId: string, limit: number = 5) {
+  public getUserTopInterests(userId: string, limit: number = 5): string[] {
     return this.interactionService.getUserTopInterests(userId, limit);
   }
 }
