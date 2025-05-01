@@ -1,177 +1,67 @@
 
 import { LLMRouter } from '../LLMRouter';
-
-interface Agent {
-  id: string;
-  name: string;
-  role: string;
-  capabilities: string[];
-}
-
-interface Message {
-  from: string;
-  to: string;
-  content: string;
-  timestamp: Date;
-}
-
-interface ConversationThread {
-  id: string;
-  topic: string;
-  agents: Agent[];
-  messages: Message[];
-  status: 'active' | 'completed' | 'failed';
-  conclusion?: string;
-}
+import { AutogenTurnGuard } from './AutogenTurnGuard';
 
 export class AutogenIntegration {
   private router: LLMRouter;
-  private agents: Agent[];
-  private threads: Map<string, ConversationThread> = new Map();
+  private turnGuard?: AutogenTurnGuard;
   
-  constructor(router: LLMRouter) {
+  constructor(router: LLMRouter, turnGuard?: AutogenTurnGuard) {
     this.router = router;
-    this.initializeAgents();
-    console.log('Autogen integration initialized for multi-agent threading');
+    this.turnGuard = turnGuard;
+    console.log('Autogen Integration initialized for agent conversations');
   }
   
-  private initializeAgents(): void {
-    this.agents = [
-      {
-        id: 'attacker',
-        name: 'AttackerGPT',
-        role: 'Red Team - Attacker',
-        capabilities: ['vulnerability-assessment', 'attack-simulation']
-      },
-      {
-        id: 'defender',
-        name: 'DefenderGPT',
-        role: 'Blue Team - Defender',
-        capabilities: ['security-analysis', 'threat-detection']
-      },
-      {
-        id: 'patcher',
-        name: 'PatcherGPT',
-        role: 'Security Engineer',
-        capabilities: ['vulnerability-remediation', 'code-review']
-      }
-    ];
-  }
-  
-  public async runRedTeamAnalysis(message: string, context: Record<string, any>): Promise<any> {
-    const threadId = `thread-${Date.now()}`;
+  public createThread(agents: string[], topic: string): { threadId: string, maxTurns?: number } {
+    const threadId = `thread-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    let maxTurns: number | undefined;
     
-    const thread: ConversationThread = {
-      id: threadId,
-      topic: `Security analysis for: ${message.substring(0, 50)}...`,
-      agents: this.agents,
-      messages: [],
-      status: 'active'
-    };
+    // Register session with turn guard if available
+    if (this.turnGuard) {
+      const session = this.turnGuard.startSession(threadId);
+      maxTurns = session.maxTurns;
+    }
     
-    this.threads.set(threadId, thread);
-    
-    // Simulate agent conversation (this would use actual LLM calls in production)
-    await this.simulateAttackerMessage(threadId, message);
-    await this.simulateDefenderResponse(threadId);
-    await this.simulatePatcherRecommendation(threadId);
-    
-    // Complete the thread
-    thread.status = 'completed';
-    thread.conclusion = this.generateSecurityConclusion(thread);
+    console.log(`Created Autogen thread ${threadId} with agents: ${agents.join(', ')}`);
     
     return {
       threadId,
-      summary: thread.conclusion,
-      securityRisk: this.calculateSecurityRisk(thread),
-      recommendations: this.extractRecommendations(thread)
+      maxTurns
     };
   }
   
-  private async simulateAttackerMessage(threadId: string, message: string): Promise<void> {
-    const thread = this.threads.get(threadId);
-    if (!thread) return;
+  public async processTurn(
+    threadId: string,
+    fromAgent: string, 
+    message: string
+  ): Promise<{ toAgent: string, response: string, isFinalTurn: boolean }> {
+    // Check if turn is allowed with turn guard
+    let isFinalTurn = false;
+    if (this.turnGuard) {
+      const canContinue = this.turnGuard.recordTurn(threadId);
+      isFinalTurn = !canContinue;
+    }
     
-    const attackerMessage: Message = {
-      from: 'attacker',
-      to: 'defender',
-      content: `Potential vulnerabilities in the request: "${message}" include SQL injection risk, authorization bypass, and potential XSS vectors.`,
-      timestamp: new Date()
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Simulate response
+    const toAgent = fromAgent === 'user' ? 'assistant' : 'user';
+    const response = `Response from ${toAgent} in thread ${threadId}: ${message.substring(0, 30)}...`;
+    
+    console.log(`Processed turn in thread ${threadId}: ${fromAgent} -> ${toAgent}`);
+    
+    return {
+      toAgent,
+      response,
+      isFinalTurn
     };
-    
-    thread.messages.push(attackerMessage);
-    await new Promise(resolve => setTimeout(resolve, 300));
   }
   
-  private async simulateDefenderResponse(threadId: string): Promise<void> {
-    const thread = this.threads.get(threadId);
-    if (!thread) return;
-    
-    const defenderMessage: Message = {
-      from: 'defender',
-      to: 'patcher',
-      content: `After analyzing the attack vectors, I've confirmed the SQL injection risk is present. The XSS risk is minimal due to our sanitization, but the authorization check could be improved.`,
-      timestamp: new Date()
-    };
-    
-    thread.messages.push(defenderMessage);
-    await new Promise(resolve => setTimeout(resolve, 300));
-  }
-  
-  private async simulatePatcherRecommendation(threadId: string): Promise<void> {
-    const thread = this.threads.get(threadId);
-    if (!thread) return;
-    
-    const patcherMessage: Message = {
-      from: 'patcher',
-      to: 'all',
-      content: `Recommended fixes: 1) Use parameterized queries for all database operations, 2) Implement role-based access control with proper verification, 3) Continue using the XSS sanitization library but upgrade to latest version.`,
-      timestamp: new Date()
-    };
-    
-    thread.messages.push(patcherMessage);
-    await new Promise(resolve => setTimeout(resolve, 300));
-  }
-  
-  private generateSecurityConclusion(thread: ConversationThread): string {
-    return `Security analysis complete. Identified 2 potential vulnerabilities with recommended mitigations provided. Overall risk assessment: Medium.`;
-  }
-  
-  private calculateSecurityRisk(thread: ConversationThread): number {
-    // Simplified risk calculation based on message content
-    const riskIndicators = ['high risk', 'critical', 'severe', 'urgent'];
-    const messageContent = thread.messages.map(m => m.content.toLowerCase()).join(' ');
-    
-    let riskScore = 0.4; // Base risk
-    
-    riskIndicators.forEach(indicator => {
-      if (messageContent.includes(indicator)) {
-        riskScore += 0.1;
-      }
-    });
-    
-    return Math.min(1.0, riskScore);
-  }
-  
-  private extractRecommendations(thread: ConversationThread): string[] {
-    // Extract recommendations from the patcher's message
-    const patcherMessage = thread.messages.find(m => m.from === 'patcher');
-    if (!patcherMessage) return [];
-    
-    // Simple parsing of numbered recommendations
-    const content = patcherMessage.content;
-    const recommendationMatches = content.match(/\d+\)\s+(.*?)(?=\s+\d+\)|$)/g);
-    
-    return recommendationMatches ? 
-      recommendationMatches.map(match => match.replace(/^\d+\)\s+/, '').trim()) : 
-      [];
-  }
-  
-  public getThread(threadId: string): ConversationThread | undefined {
-    return this.threads.get(threadId);
-  }
-  
-  public getAllThreads(): ConversationThread[] {
-    return Array.from(this.threads.values());
+  public endThread(threadId: string): void {
+    console.log(`Ending Autogen thread: ${threadId}`);
+    if (this.turnGuard) {
+      this.turnGuard.endSession(threadId);
+    }
   }
 }

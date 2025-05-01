@@ -1,4 +1,6 @@
 
+import { A2AOAuthHandler } from './A2AOAuthHandler';
+
 interface ExternalAgent {
   id: string;
   name: string;
@@ -16,8 +18,10 @@ export class AgentToAgentHub {
   private localCapabilities: CapabilityAdvertisement[] = [];
   private externalAgents: ExternalAgent[] = [];
   private activeConnections: Set<string> = new Set();
+  private oauthHandler?: A2AOAuthHandler;
   
-  constructor() {
+  constructor(oauthHandler?: A2AOAuthHandler) {
+    this.oauthHandler = oauthHandler;
     // Initialize with mock external agents
     this.initializeMockAgents();
     console.log('A2A Hub initialized with OAuth-PKCE security');
@@ -80,6 +84,15 @@ export class AgentToAgentHub {
     
     if (requiredCapabilities.length > 0 && !hasRequiredCapabilities) {
       throw new Error(`Agent ${agentId} does not have all required capabilities`);
+    }
+    
+    // Get authentication headers if OAuth handler exists
+    let headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (this.oauthHandler) {
+      headers = await this.oauthHandler.createAuthHeaders();
     }
     
     // Track the connection

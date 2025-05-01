@@ -1,8 +1,12 @@
 
 import { SpecializedAgent } from '../../types/agents';
+import { SwarmMetricsService } from '../metrics/SwarmMetricsService';
 
 export class OpenAISwarmWrapper {
-  constructor() {
+  private metricsService?: SwarmMetricsService;
+  
+  constructor(metricsService?: SwarmMetricsService) {
+    this.metricsService = metricsService;
     console.log('OpenAI Swarm Wrapper initialized for parallel task execution');
   }
 
@@ -12,6 +16,8 @@ export class OpenAISwarmWrapper {
     context: Record<string, any>
   ): Promise<any[]> {
     console.log(`Processing ${agents.length} agents in parallel with OpenAI Swarm`);
+    
+    const startTime = Date.now();
     
     // Create a promise for each agent to simulate parallel execution
     const processingPromises = agents.map(async (agent) => {
@@ -28,11 +34,26 @@ export class OpenAISwarmWrapper {
       };
     });
     
-    return Promise.all(processingPromises);
+    const results = await Promise.all(processingPromises);
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    
+    // Record metrics if service is available
+    if (this.metricsService) {
+      this.metricsService.recordSwarmExecution(
+        agents.length, 
+        duration,
+        results.length / agents.length // Success rate
+      );
+    }
+    
+    return results;
   }
 
   public async runSwarm(tasks: string[]): Promise<string[]> {
     console.log(`Running swarm with ${tasks.length} tasks`);
+    
+    const startTime = Date.now();
     
     // Simulate parallel task execution
     const results = await Promise.all(tasks.map(async (task) => {
@@ -40,6 +61,18 @@ export class OpenAISwarmWrapper {
       await new Promise(resolve => setTimeout(resolve, processingTime));
       return `Result for task: ${task}`;
     }));
+    
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    
+    // Record metrics if service is available
+    if (this.metricsService) {
+      this.metricsService.recordSwarmExecution(
+        tasks.length,
+        duration,
+        results.length / tasks.length // Success rate
+      );
+    }
     
     return results;
   }

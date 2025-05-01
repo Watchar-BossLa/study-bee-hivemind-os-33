@@ -33,13 +33,13 @@ export class FrameworkManager {
     this.autogenTurnGuard = new AutogenTurnGuard();
     this.a2aOAuthHandler = new A2AOAuthHandler();
     
-    // Initialize framework integrations
-    this.openAISwarm = new OpenAISwarmWrapper(this.swarmMetricsService);
+    // Initialize framework integrations - fixing constructor parameter mismatches
+    this.openAISwarm = new OpenAISwarmWrapper();
     this.pydanticValidator = new PydanticValidator();
-    this.langChainIntegration = new LangChainIntegration(router, this.langChainQuotaGuard);
-    this.autogenIntegration = new AutogenIntegration(router, this.autogenTurnGuard);
+    this.langChainIntegration = new LangChainIntegration(router);
+    this.autogenIntegration = new AutogenIntegration(router);
     this.crewAIPlanner = new CrewAIPlanner(councilService);
-    this.a2aHub = new AgentToAgentHub(this.a2aOAuthHandler);
+    this.a2aHub = new AgentToAgentHub();
     
     // Initialize A2A Hub
     this.initializeA2AHub();
@@ -98,7 +98,7 @@ export class FrameworkManager {
       return await this.a2aHub.sendMessage(agentId, message, capabilities);
     } catch (error) {
       console.error("External agent communication failed:", error);
-      throw new Error(`Failed to communicate with external agent: ${error.message}`);
+      throw new Error(`Failed to communicate with external agent: ${(error as Error).message}`);
     }
   }
 }
