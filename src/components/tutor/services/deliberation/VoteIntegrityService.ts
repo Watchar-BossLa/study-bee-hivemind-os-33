@@ -50,6 +50,30 @@ export class VoteIntegrityService {
   }
   
   /**
+   * Validate a collection of votes for integrity
+   */
+  public validateVotes(votes: CouncilVote[]): boolean {
+    // Check if votes array is valid
+    if (!Array.isArray(votes) || votes.length === 0) {
+      return false;
+    }
+    
+    // Validate each vote has required fields
+    for (const vote of votes) {
+      if (!vote.agentId || typeof vote.confidence !== 'number' || !vote.suggestion) {
+        return false;
+      }
+      
+      // Check confidence is within valid range
+      if (vote.confidence < 0 || vote.confidence > 1) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  /**
    * Detect outlier votes that might be attempts at vote manipulation
    */
   public detectOutliers(votes: CouncilVote[]): CouncilVote[] {

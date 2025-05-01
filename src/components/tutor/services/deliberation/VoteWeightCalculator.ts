@@ -1,5 +1,6 @@
 
 import { SpecializedAgent } from '../../types/agents';
+import { CouncilVote } from '../../types/councils';
 
 /**
  * Utility for calculating vote weights based on agent expertise and performance
@@ -53,6 +54,20 @@ export class VoteWeightCalculator {
     
     // Ensure weight is within reasonable bounds (0.5-1.0)
     return Math.min(Math.max(weight, 0.5), 1.0);
+  }
+
+  /**
+   * Calculate weights for multiple votes
+   */
+  public calculateWeights(votes: CouncilVote[]): Map<string, number> {
+    const weights = new Map<string, number>();
+    
+    // Assign default weights based on vote confidence
+    for (const vote of votes) {
+      weights.set(vote.agentId, 0.6 + (vote.confidence * 0.3));
+    }
+    
+    return weights;
   }
 
   /**

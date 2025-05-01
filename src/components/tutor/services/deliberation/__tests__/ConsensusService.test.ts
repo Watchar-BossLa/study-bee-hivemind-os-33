@@ -4,6 +4,7 @@ import { ConsensusCalculator } from '../ConsensusCalculator';
 import { VoteIntegrityService } from '../VoteIntegrityService';
 import { VoteHistoryStorage } from '../VoteHistoryStorage';
 import { VoteWeightCalculator } from '../VoteWeightCalculator';
+import { CouncilVote } from '../../../types/councils';
 
 // Mock dependencies
 jest.mock('../ConsensusCalculator');
@@ -19,12 +20,16 @@ describe('ConsensusService', () => {
   let consensusService: ConsensusService;
 
   beforeEach(() => {
+    // Clear all mocks
+    jest.clearAllMocks();
+    
+    // Setup constructor mocks
     mockConsensusCalculator = new ConsensusCalculator() as jest.Mocked<ConsensusCalculator>;
     mockVoteIntegrityService = new VoteIntegrityService() as jest.Mocked<VoteIntegrityService>;
     mockVoteHistoryStorage = new VoteHistoryStorage() as jest.Mocked<VoteHistoryStorage>;
     mockVoteWeightCalculator = new VoteWeightCalculator() as jest.Mocked<VoteWeightCalculator>;
     
-    // Setup mocks
+    // Setup mocks methods
     mockVoteIntegrityService.validateVotes = jest.fn().mockReturnValue(true);
     mockVoteWeightCalculator.calculateWeights = jest.fn().mockReturnValue(
       new Map([
@@ -32,6 +37,22 @@ describe('ConsensusService', () => {
         ['agent2', 0.3]
       ])
     );
+    
+    // Setup calculator mock
+    mockConsensusCalculator.calculateConsensus = jest.fn().mockReturnValue({
+      suggestion: 'Option A',
+      confidence: 0.75
+    });
+    
+    // Setup history mock
+    mockVoteHistoryStorage.recordVotes = jest.fn();
+    mockVoteHistoryStorage.getVoteHistory = jest.fn().mockReturnValue([{
+      topic: 'topic-123',
+      votes: [{ agentId: 'agent1', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' }],
+      consensus: 'Option A',
+      confidenceScore: 0.8,
+      timestamp: new Date()
+    }]);
     
     consensusService = new ConsensusService(
       mockConsensusCalculator,
@@ -44,16 +65,10 @@ describe('ConsensusService', () => {
   describe('processVotes', () => {
     it('should calculate consensus based on weighted votes', async () => {
       // Arrange
-      const votes = [
+      const votes: CouncilVote[] = [
         { agentId: 'agent1', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' },
         { agentId: 'agent2', confidence: 0.5, suggestion: 'Option B', reasoning: 'Reason 2' }
       ];
-      
-      mockConsensusCalculator.calculateConsensus = jest.fn().mockReturnValue({
-        decision: 'Option A',
-        confidence: 0.75,
-        unanimity: false
-      });
       
       // Act
       const result = await consensusService.processVotes('topic-123', votes);
@@ -71,7 +86,7 @@ describe('ConsensusService', () => {
     
     it('should reject invalid votes', async () => {
       // Arrange
-      const votes = [
+      const votes: CouncilVote[] = [
         { agentId: 'agent1', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' },
         { agentId: 'agent2', confidence: 0.5, suggestion: 'Option B', reasoning: 'Reason 2' }
       ];
@@ -87,7 +102,7 @@ describe('ConsensusService', () => {
   describe('getHistoricalConsensus', () => {
     it('should return historical consensus for a topic', async () => {
       // Arrange
-      const mockHistoricalData = {
+      const mockHistoricalData = [{
         topic: 'topic-123',
         votes: [
           { agentId: 'agent1', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' }
@@ -95,16 +110,39 @@ describe('ConsensusService', () => {
         consensus: 'Option A',
         confidenceScore: 0.8,
         timestamp: new Date()
-      };
+      }];
       
-      mockVoteHistoryStorage.getVoteHistory = jest.fn().mockReturnValue([mockHistoricalData]);
+      mockVoteHistoryStorage.getVoteHistory = jest.fn().mockReturnValue(mockHistoricalData);
       
       // Act
       const result = await consensusService.getHistoricalConsensus('topic-123');
       
       // Assert
       expect(mockVoteHistoryStorage.getVoteHistory).toHaveBeenCalledWith('topic-123');
-      expect(result).toEqual([mockHistoricalData]);
+      expect(result).toEqual(mockHistoricalData);
+    });
+  });
+  
+  describe('calculateConsensus', () => {
+    it('should delegate to the calculator', () => {
+      // Arrange
+      const votes: CouncilVote[] = [
+        { agentId: 'agent1', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' }
+      ];
+      const suggestionGroups = new Map<string, CouncilVote[]>();
+      suggestionGroups.set('Option A', [votes[0]]);
+      
+      // Act
+      const result = consensusService.calculateConsensus(votes, suggestionGroups);
+      
+      // Assert
+      expect(mockConsensusCalculator.calculateConsensus).toHaveBeenCalledWith(
+        votes, suggestionGroups, undefined
+      );
+      expect(result).toEqual({
+        suggestion: 'Option A',
+        confidence: 0.75
+      });
     });
   });
 });

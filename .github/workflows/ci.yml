@@ -59,3 +59,12 @@ jobs:
             echo "Found prohibited 'any' types in codebase"
             exit 1
           fi
+      
+      - name: Check for weak optional chaining
+        run: |
+          UNSAFE_OPTIONAL_CHAINS=$(grep -r --include="*.ts" --include="*.tsx" -E "\?\.[a-zA-Z0-9_]+\(" src/ || true)
+          if [ ! -z "$UNSAFE_OPTIONAL_CHAINS" ]; then
+            echo "Found potentially unsafe optional chaining without null checks:"
+            echo "$UNSAFE_OPTIONAL_CHAINS"
+            exit 1
+          fi

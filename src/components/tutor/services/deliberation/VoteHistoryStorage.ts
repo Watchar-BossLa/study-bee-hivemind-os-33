@@ -23,6 +23,28 @@ export class VoteHistoryStorage {
   private readonly cacheTTL: number = 10 * 60 * 1000; // 10 minutes in ms
   
   /**
+   * Record votes in history
+   */
+  public recordVotes(
+    topicId: string,
+    votes: CouncilVote[],
+    consensus: string,
+    confidence: number
+  ): void {
+    // Create a simplified decision object for recording
+    const decision: CouncilDecision = {
+      topic: topicId,
+      votes: [...votes],
+      consensus,
+      confidenceScore: confidence,
+      timestamp: new Date()
+    };
+    
+    // Store in cache with fake councilId for testing purposes
+    this.addVoteToHistory(decision, 'test-council', topicId);
+  }
+  
+  /**
    * Add a new vote decision to history and cache
    */
   public addVoteToHistory(
@@ -86,11 +108,21 @@ export class VoteHistoryStorage {
   /**
    * Get vote history for a specific council or all councils
    */
-  public getVoteHistory(councilId?: string): VoteHistorySummary[] {
-    if (councilId) {
-      return this.voteHistory.filter(summary => summary.councilId === councilId);
+  public getVoteHistory(topicId?: string): CouncilDecision[] {
+    if (!topicId) {
+      return Array.from(this.voteCache.values());
     }
-    return [...this.voteHistory];
+    
+    // Convert the historical summaries to CouncilDecision objects
+    const matchingDecisions: CouncilDecision[] = [];
+    
+    for (const [key, decision] of this.voteCache.entries()) {
+      if (key.includes(topicId)) {
+        matchingDecisions.push(decision);
+      }
+    }
+    
+    return matchingDecisions;
   }
   
   /**
