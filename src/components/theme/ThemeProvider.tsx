@@ -95,7 +95,7 @@ export function ThemeProvider({
       document.body.appendChild(el)
       return el
     })()
-    announcer.textContent = `Theme changed to ${theme === 'dynamic' ? 'dynamic ' + resolvedTheme : theme} mode`
+    announcer.textContent = `Theme changed to ${theme}`
   }, [theme])
 
   const value = {
