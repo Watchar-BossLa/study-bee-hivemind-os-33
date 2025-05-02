@@ -98,7 +98,7 @@ export function ThemeProvider({
     })()
     
     // Enhanced announcement that includes context for dynamic mode
-    const announcementText = theme === 'dynamic'
+    const announcementText = theme === "dynamic"
       ? `Theme changed to dynamic with ${resolvedTheme} base`
       : `Theme changed to ${theme}`;
     
