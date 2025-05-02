@@ -31,7 +31,7 @@ export const useArenaMatch = () => {
   const [currentMatch, setCurrentMatch] = useState<ArenaMatch | null>(null);
   const [players, setPlayers] = useState<MatchPlayer[]>([]);
   const [matchComplete, setMatchComplete] = useState(false);
-  const [unsubscribe, setUnsubscribe] = useState<() => void | null>(() => null);
+  const [unsubscribe, setUnsubscribe] = useState<(() => void) | null>(() => null);
   
   const { toast } = useToast();
 
@@ -50,7 +50,8 @@ export const useArenaMatch = () => {
         query = query.eq('subject_focus', subjectFocus);
       }
 
-      let { data: existingMatch } = await query.single();
+      const { data: existingMatches } = await query;
+      let existingMatch = existingMatches && existingMatches.length > 0 ? existingMatches[0] : null;
 
       let matchId: string;
 

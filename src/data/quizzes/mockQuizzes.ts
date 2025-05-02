@@ -12,7 +12,7 @@ export const mockQuizQuestions: QuizQuestion[] = [
     option_c: 'Fixed curriculum for all students',
     option_d: 'Learning without assessment',
     correct_answer: 'b',
-    difficulty: 'beginner',
+    difficulty: 'easy',
     category: 'Education'
   },
   {
@@ -23,7 +23,7 @@ export const mockQuizQuestions: QuizQuestion[] = [
     option_c: 'QuorumForge agent fabric',
     option_d: 'Simple rule-based system',
     correct_answer: 'c',
-    difficulty: 'intermediate',
+    difficulty: 'medium',
     category: 'Technology'
   },
   {
@@ -34,7 +34,7 @@ export const mockQuizQuestions: QuizQuestion[] = [
     option_c: 'Around 400',
     option_d: 'Around 1000',
     correct_answer: 'c',
-    difficulty: 'beginner',
+    difficulty: 'easy',
     category: 'Education'
   },
   {
@@ -45,7 +45,7 @@ export const mockQuizQuestions: QuizQuestion[] = [
     option_c: 'Leitner System',
     option_d: 'SuperMemo 18',
     correct_answer: 'b',
-    difficulty: 'intermediate',
+    difficulty: 'medium',
     category: 'Education'
   },
   {
@@ -56,7 +56,7 @@ export const mockQuizQuestions: QuizQuestion[] = [
     option_c: 'Python-first micro-service',
     option_d: 'JavaScript-based full stack',
     correct_answer: 'c',
-    difficulty: 'advanced',
+    difficulty: 'hard',
     category: 'Technology'
   }
 ];
