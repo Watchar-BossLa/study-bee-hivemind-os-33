@@ -23,11 +23,12 @@ describe('ConsensusService', () => {
     // Clear all mocks
     jest.clearAllMocks();
     
-    // Get properly mocked constructor instances
-    mockConsensusCalculator = new (ConsensusCalculator as jest.MockedClass<typeof ConsensusCalculator>)();
-    mockVoteIntegrityService = new (VoteIntegrityService as jest.MockedClass<typeof VoteIntegrityService>)();
-    mockVoteHistoryStorage = new (VoteHistoryStorage as jest.MockedClass<typeof VoteHistoryStorage>)();
-    mockVoteWeightCalculator = new (VoteWeightCalculator as jest.MockedClass<typeof VoteWeightCalculator>)();
+    // Create mock instances with proper typing
+    // We need to cast the mocked constructor to access the mock instance
+    mockConsensusCalculator = jest.mocked(new ConsensusCalculator());
+    mockVoteIntegrityService = jest.mocked(new VoteIntegrityService());
+    mockVoteHistoryStorage = jest.mocked(new VoteHistoryStorage());
+    mockVoteWeightCalculator = jest.mocked(new VoteWeightCalculator());
     
     // Setup default mock return values
     mockVoteIntegrityService.validateVotes = jest.fn().mockReturnValue(true);
