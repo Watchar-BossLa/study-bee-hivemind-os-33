@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react"
 
 export type Theme = "light" | "dark" | "system" | "dynamic"
@@ -51,12 +50,15 @@ export function ThemeProvider({
       root.classList.add(systemTheme)
       setResolvedTheme(systemTheme)
     } else if (theme === "dynamic") {
+      // For dynamic mode, we first determine the base theme (light or dark)
       const baseTheme = getSystemTheme()
-      root.classList.add(baseTheme, "dynamic")
+      root.classList.add(baseTheme, "dynamic") // Add both base theme and dynamic class
       setResolvedTheme(baseTheme)
 
+      // Function to update theme based on time and system preference
       const checkTime = () => {
         const currentBaseTheme = getSystemTheme()
+        // Keep the dynamic class but update the base theme class
         root.classList.remove("light", "dark")
         root.classList.add(currentBaseTheme)
         setResolvedTheme(currentBaseTheme)
@@ -72,6 +74,7 @@ export function ThemeProvider({
       // Use addEventListener with named function for proper cleanup
       mediaQuery.addEventListener("change", handleChange)
 
+      // Check periodically for any time-based changes
       const interval = setInterval(checkTime, 60000) // Check every minute
       
       return () => {
@@ -79,6 +82,7 @@ export function ThemeProvider({
         mediaQuery.removeEventListener("change", handleChange)
       }
     } else {
+      // Direct light or dark theme selection
       root.classList.add(theme)
       setResolvedTheme(theme)
     }

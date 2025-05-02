@@ -69,6 +69,10 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				dynamic: {
+					overlay: 'var(--gradient-overlay)',
+					focus: 'var(--focus-outline-color)'
 				}
 			},
 			borderRadius: {
