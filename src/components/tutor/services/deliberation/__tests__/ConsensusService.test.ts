@@ -12,12 +12,6 @@ jest.mock('../VoteIntegrityService');
 jest.mock('../VoteHistoryStorage');
 jest.mock('../VoteWeightCalculator');
 
-// Get the correct constructor types from Jest
-const MockConsensusCalculator = ConsensusCalculator as jest.MockedClass<typeof ConsensusCalculator>;
-const MockVoteIntegrityService = VoteIntegrityService as jest.MockedClass<typeof VoteIntegrityService>;
-const MockVoteHistoryStorage = VoteHistoryStorage as jest.MockedClass<typeof VoteHistoryStorage>;
-const MockVoteWeightCalculator = VoteWeightCalculator as jest.MockedClass<typeof VoteWeightCalculator>;
-
 describe('ConsensusService', () => {
   let mockConsensusCalculator: jest.Mocked<ConsensusCalculator>;
   let mockVoteIntegrityService: jest.Mocked<VoteIntegrityService>;
@@ -29,15 +23,36 @@ describe('ConsensusService', () => {
     // Clear all mocks
     jest.clearAllMocks();
     
-    // Create proper mocked instances
-    mockConsensusCalculator = new MockConsensusCalculator();
-    mockVoteIntegrityService = new MockVoteIntegrityService();
-    mockVoteHistoryStorage = new MockVoteHistoryStorage();
-    mockVoteWeightCalculator = new MockVoteWeightCalculator();
+    // Create mock instances correctly
+    mockConsensusCalculator = {
+      calculateConsensus: jest.fn(),
+      isConsensusReached: jest.fn(),
+      // We need to cast here because the private method isn't part of the public interface
+    } as unknown as jest.Mocked<ConsensusCalculator>;
     
-    // Setup mocks methods
-    mockVoteIntegrityService.validateVotes = jest.fn().mockReturnValue(true);
-    mockVoteWeightCalculator.calculateWeights = jest.fn().mockReturnValue(
+    mockVoteIntegrityService = {
+      validateVotes: jest.fn(),
+      secureVote: jest.fn(),
+      verifyVote: jest.fn(),
+      detectOutliers: jest.fn()
+    } as jest.Mocked<VoteIntegrityService>;
+    
+    mockVoteHistoryStorage = {
+      recordVotes: jest.fn(),
+      getVoteHistory: jest.fn(),
+      addVoteToHistory: jest.fn(),
+      getCachedDecision: jest.fn(),
+      getAgentConsensusAlignment: jest.fn()
+    } as jest.Mocked<VoteHistoryStorage>;
+    
+    mockVoteWeightCalculator = {
+      calculateWeights: jest.fn(),
+      calculateWeight: jest.fn()
+    } as jest.Mocked<VoteWeightCalculator>;
+    
+    // Setup default mock return values
+    mockVoteIntegrityService.validateVotes.mockReturnValue(true);
+    mockVoteWeightCalculator.calculateWeights.mockReturnValue(
       new Map([
         ['agent1', 0.7],
         ['agent2', 0.3]
@@ -45,14 +60,14 @@ describe('ConsensusService', () => {
     );
     
     // Setup calculator mock
-    mockConsensusCalculator.calculateConsensus = jest.fn().mockReturnValue({
+    mockConsensusCalculator.calculateConsensus.mockReturnValue({
       suggestion: 'Option A',
       confidence: 0.75
     });
     
     // Setup history mock
-    mockVoteHistoryStorage.recordVotes = jest.fn();
-    mockVoteHistoryStorage.getVoteHistory = jest.fn().mockReturnValue([{
+    mockVoteHistoryStorage.recordVotes.mockImplementation(() => {});
+    mockVoteHistoryStorage.getVoteHistory.mockReturnValue([{
       topic: 'topic-123',
       votes: [{ agentId: 'agent1', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' }],
       consensus: 'Option A',
@@ -97,7 +112,7 @@ describe('ConsensusService', () => {
         { agentId: 'agent2', confidence: 0.5, suggestion: 'Option B', reasoning: 'Reason 2' }
       ];
       
-      mockVoteIntegrityService.validateVotes = jest.fn().mockReturnValue(false);
+      mockVoteIntegrityService.validateVotes.mockReturnValue(false);
       
       // Act & Assert
       await expect(consensusService.processVotes('topic-123', votes))
@@ -118,7 +133,7 @@ describe('ConsensusService', () => {
         timestamp: new Date()
       }];
       
-      mockVoteHistoryStorage.getVoteHistory = jest.fn().mockReturnValue(mockHistoricalData);
+      mockVoteHistoryStorage.getVoteHistory.mockReturnValue(mockHistoricalData);
       
       // Act
       const result = await consensusService.getHistoricalConsensus('topic-123');
