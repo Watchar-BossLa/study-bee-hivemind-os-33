@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/components/theme/ThemeProvider';
 
-type ThemeSettings = {
+export type ThemeSettings = {
   fontFamily: string;
   fontScale: number;
   animationSpeed: number;
@@ -20,12 +20,18 @@ const defaultSettings: ThemeSettings = {
   reduceMotion: 'off',
 };
 
-export function useThemeSettings() {
+interface UseThemeSettingsReturn {
+  settings: ThemeSettings;
+  updateSettings: (newSettings: Partial<ThemeSettings>) => void;
+  resetSettings: () => void;
+}
+
+export function useThemeSettings(): UseThemeSettingsReturn {
   const { theme } = useTheme();
   const [settings, setSettings] = useState<ThemeSettings>(() => {
     // Try to load settings from localStorage on initial load
     const savedSettings = localStorage.getItem('study-bee-theme-settings');
-    return savedSettings ? JSON.parse(savedSettings) : defaultSettings;
+    return savedSettings ? JSON.parse(savedSettings) as ThemeSettings : defaultSettings;
   });
 
   // Apply settings to DOM whenever they change
@@ -50,9 +56,6 @@ export function useThemeSettings() {
       document.documentElement.classList.remove('reduce-motion', 'reduce-motion-strong');
     }
     
-    // Apply contrast level
-    // This would apply different contrast variables in a real implementation
-    
     // Log changes for debugging
     console.log('Applied theme settings:', settings);
     
@@ -60,10 +63,10 @@ export function useThemeSettings() {
 
   return {
     settings,
-    updateSettings: (newSettings: Partial<ThemeSettings>) => {
+    updateSettings: (newSettings: Partial<ThemeSettings>): void => {
       setSettings(prev => ({ ...prev, ...newSettings }));
     },
-    resetSettings: () => {
+    resetSettings: (): void => {
       setSettings(defaultSettings);
     }
   };

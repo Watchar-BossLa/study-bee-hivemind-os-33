@@ -12,15 +12,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeCustomizer } from "./ThemeCustomizer";
-import { toast } from "@/hooks/use-toast";
 import { useThemeChange } from "@/hooks/useThemeChange";
 
-export function ThemeToggle() {
+export function ThemeToggle(): React.ReactElement {
   const { theme, setTheme } = useTheme();
-  const [customizerOpen, setCustomizerOpen] = React.useState(false);
+  const [customizerOpen, setCustomizerOpen] = React.useState<boolean>(false);
 
   // Use the hook to announce theme changes
-  useThemeChange((theme, resolvedTheme, themeVersion) => {
+  useThemeChange((theme: string, resolvedTheme: string, themeVersion: number): void => {
     // This callback runs whenever theme changes
     console.log(`Theme changed to ${theme}, resolved as ${resolvedTheme}`);
   });

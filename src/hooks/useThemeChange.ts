@@ -2,11 +2,17 @@
 import { useEffect } from 'react';
 import { useTheme } from '@/components/theme/ThemeProvider';
 
+type ThemeChangeCallback = (theme: string, resolvedTheme: string, themeVersion: number) => void;
+
 /**
  * Hook that triggers a callback whenever the theme changes
  * Useful for analytics, accessibility announcements, or syncing theme with backend preferences
  */
-export function useThemeChange(callback: (theme: string, resolvedTheme: string, themeVersion: number) => void) {
+export function useThemeChange(callback: ThemeChangeCallback): { 
+  theme: string; 
+  resolvedTheme: string; 
+  themeVersion: number;
+} {
   const { theme, resolvedTheme, themeVersion } = useTheme();
   
   useEffect(() => {

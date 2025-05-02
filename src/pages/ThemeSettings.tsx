@@ -7,14 +7,14 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { useThemeSettings } from '@/hooks/useThemeSettings';
 import { ThemeCustomizer } from '@/components/theme/ThemeCustomizer';
-import { PaletteIcon, ResetIcon } from 'lucide-react';
+import { PaletteIcon, RepeatIcon } from 'lucide-react';
 
-const ThemeSettings = () => {
-  const [customizerOpen, setCustomizerOpen] = React.useState(false);
+const ThemeSettings = (): React.ReactElement => {
+  const [customizerOpen, setCustomizerOpen] = React.useState<boolean>(false);
   const { resolvedTheme } = useTheme();
   const { resetSettings } = useThemeSettings();
   
-  const handleResetSettings = () => {
+  const handleResetSettings = (): void => {
     resetSettings();
   };
   
@@ -38,7 +38,7 @@ const ThemeSettings = () => {
                 className="flex items-center gap-2"
                 onClick={handleResetSettings}
               >
-                <ResetIcon size={16} />
+                <RepeatIcon size={16} />
                 Reset to Default
               </Button>
               

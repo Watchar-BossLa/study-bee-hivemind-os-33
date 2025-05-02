@@ -14,7 +14,14 @@ export type ThemePreset = {
   createdAt: number;
 };
 
-export function useThemePresets() {
+interface UseThemePresetsReturn {
+  presets: ThemePreset[];
+  savePreset: (preset: Omit<ThemePreset, 'id' | 'createdAt'>) => ThemePreset;
+  applyPreset: (presetId: string) => boolean;
+  deletePreset: (presetId: string) => void;
+}
+
+export function useThemePresets(): UseThemePresetsReturn {
   const { setTheme, setCustomStyles } = useTheme();
   const [presets, setPresets] = useState<ThemePreset[]>([]);
 
@@ -23,7 +30,7 @@ export function useThemePresets() {
     const savedPresets = localStorage.getItem('study-bee-theme-presets');
     if (savedPresets) {
       try {
-        setPresets(JSON.parse(savedPresets));
+        setPresets(JSON.parse(savedPresets) as ThemePreset[]);
       } catch (e) {
         console.error('Failed to load theme presets', e);
       }
@@ -37,7 +44,7 @@ export function useThemePresets() {
     }
   }, [presets]);
 
-  const savePreset = (preset: Omit<ThemePreset, 'id' | 'createdAt'>) => {
+  const savePreset = (preset: Omit<ThemePreset, 'id' | 'createdAt'>): ThemePreset => {
     const newPreset: ThemePreset = {
       ...preset,
       id: `preset_${Date.now()}`,
@@ -54,7 +61,7 @@ export function useThemePresets() {
     return newPreset;
   };
 
-  const applyPreset = (presetId: string) => {
+  const applyPreset = (presetId: string): boolean => {
     const preset = presets.find(p => p.id === presetId);
     if (!preset) {
       toast({
@@ -88,7 +95,7 @@ export function useThemePresets() {
     return true;
   };
 
-  const deletePreset = (presetId: string) => {
+  const deletePreset = (presetId: string): void => {
     setPresets(prev => prev.filter(p => p.id !== presetId));
     
     toast({
