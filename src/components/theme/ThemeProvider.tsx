@@ -1,33 +1,36 @@
 
-import { createContext, useContext, useEffect, useState } from "react"
+"use client";
 
-export type Theme = "light" | "dark" | "system" | "dynamic"
+import * as React from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+
+type Theme = "dark" | "light" | "system" | "dynamic";
 
 type ThemeProviderProps = {
-  children: React.ReactNode
-  defaultTheme?: Theme
-  storageKey?: string
-}
+  children: React.ReactNode;
+  defaultTheme?: Theme;
+  storageKey?: string;
+};
 
 type ThemeProviderState = {
-  theme: Theme
-  setTheme: (theme: Theme) => void
-  resolvedTheme: "light" | "dark" // Actual applied theme after system/dynamic resolution
-  themeVersion: number // Added to track theme version for forced updates
-  customStyles: Record<string, string> // Storage for custom style variables
-  setCustomStyles: (styles: Record<string, string>) => void
-}
+  theme: Theme;
+  resolvedTheme: string;
+  setTheme: (theme: Theme) => void;
+  themeVersion: number;
+  customStyles: Record<string, string> | null;
+  setCustomStyles: (styles: Record<string, string> | null) => void;
+};
 
 const initialState: ThemeProviderState = {
   theme: "system",
+  resolvedTheme: "",
   setTheme: () => null,
-  resolvedTheme: "light",
   themeVersion: 1,
-  customStyles: {},
+  customStyles: null,
   setCustomStyles: () => null,
-}
+};
 
-const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
+const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
@@ -35,144 +38,138 @@ export function ThemeProvider({
   storageKey = "study-bee-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  )
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light")
-  const [themeVersion, setThemeVersion] = useState<number>(1)
-  const [customStyles, setCustomStyles] = useState<Record<string, string>>({})
-
-  // Effect to apply the current theme
-  useEffect(() => {
-    const root = window.document.documentElement
-    // First, remove all theme classes to start fresh
-    root.classList.remove("light", "dark", "dynamic")
-
-    // Helper to determine system preference
-    const getSystemTheme = (): "light" | "dark" => {
-      return window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light"
+  const [theme, setTheme] = useState<Theme>(() => {
+    // Get the theme from local storage or use the default theme
+    if (typeof localStorage !== "undefined") {
+      const storedTheme = localStorage.getItem(storageKey);
+      if (storedTheme && isValidTheme(storedTheme)) {
+        return storedTheme as Theme;
+      }
     }
+    return defaultTheme;
+  });
 
-    // Apply theme based on selection
-    if (theme === "system") {
-      const systemTheme = getSystemTheme()
-      root.classList.add(systemTheme)
-      setResolvedTheme(systemTheme)
-    } else if (theme === "dynamic") {
-      // For dynamic mode, we first determine the base theme (light or dark)
-      const baseTheme = getSystemTheme()
-      // Important: Add baseTheme first, then dynamic
-      // This ensures CSS rules for .dynamic.light or .dynamic.dark work correctly
-      root.classList.add(baseTheme, "dynamic")
-      setResolvedTheme(baseTheme)
+  // Custom styles storage
+  const [customStyles, setCustomStylesState] = useState<Record<string, string> | null>(() => {
+    const storedStyles = localStorage.getItem(storageKey + "-custom-styles");
+    return storedStyles ? JSON.parse(storedStyles) : null;
+  });
 
-      // Function to update theme based on system preference
-      const updateDynamicTheme = () => {
-        const currentBaseTheme = getSystemTheme()
-        // Remove both light and dark classes first
-        root.classList.remove("light", "dark")
-        // Then add the current base theme while keeping "dynamic" class
-        root.classList.add(currentBaseTheme)
-        setResolvedTheme(currentBaseTheme)
-      }
+  // Theme version (increments when significant changes are made to the theme)
+  const [themeVersion, setThemeVersion] = useState<number>(() => {
+    const storedVersion = localStorage.getItem(storageKey + "-version");
+    return storedVersion ? parseInt(storedVersion) : 1;
+  });
 
-      // Initial check
-      updateDynamicTheme()
-      
-      // Listen for system theme changes
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-      const handleChange = () => updateDynamicTheme()
-      
-      mediaQuery.addEventListener("change", handleChange)
+  // Update local storage when the theme or custom styles change
+  useEffect(() => {
+    localStorage.setItem(storageKey, theme);
+  }, [theme, storageKey]);
 
-      // Cleanup
-      return () => {
-        mediaQuery.removeEventListener("change", handleChange)
-      }
+  useEffect(() => {
+    if (customStyles) {
+      localStorage.setItem(storageKey + "-custom-styles", JSON.stringify(customStyles));
     } else {
-      // Direct light or dark theme selection
-      root.classList.add(theme)
-      setResolvedTheme(theme)
+      localStorage.removeItem(storageKey + "-custom-styles");
     }
-
-    // Add an accessibility announcement for screen readers
-    const announcer = document.getElementById('theme-change-announcer') || (() => {
-      const el = document.createElement('div')
-      el.id = 'theme-change-announcer'
-      el.setAttribute('aria-live', 'polite')
-      document.body.appendChild(el)
-      return el
-    })()
-    
-    // Enhanced announcement that includes context for dynamic mode
-    const announcementText = (theme as Theme) === "dynamic"
-      ? `Theme changed to dynamic with ${resolvedTheme} base`
-      : `Theme changed to ${theme}`;
-    
-    announcer.textContent = announcementText
-  }, [theme, resolvedTheme])
-
-  // Apply custom styles when they change
-  useEffect(() => {
-    // Skip if no custom styles defined
-    if (Object.keys(customStyles).length === 0) return;
-    
-    const root = window.document.documentElement
-    
-    // Apply each custom style as a CSS variable
-    Object.entries(customStyles).forEach(([key, value]) => {
-      root.style.setProperty(`--${key}`, value);
+    // Increment theme version when custom styles change
+    setThemeVersion(prev => {
+      const newVersion = prev + 1;
+      localStorage.setItem(storageKey + "-version", newVersion.toString());
+      return newVersion;
     });
-    
-    // Increment theme version to force updates in components
-    setThemeVersion(prev => prev + 1);
-    
-    // Save custom styles to localStorage for persistence
-    localStorage.setItem('study-bee-theme-custom-styles', JSON.stringify(customStyles));
-    
+  }, [customStyles, storageKey]);
+
+  // Apply custom styles to the root element
+  useEffect(() => {
+    if (customStyles) {
+      Object.entries(customStyles).forEach(([key, value]) => {
+        document.documentElement.style.setProperty(`--${key}`, value);
+      });
+    }
+    return () => {
+      // Reset custom styles when component unmounts
+      if (customStyles) {
+        Object.keys(customStyles).forEach((key) => {
+          document.documentElement.style.removeProperty(`--${key}`);
+        });
+      }
+    };
   }, [customStyles]);
 
-  // Load custom styles on initial mount
+  // Set the theme class on the HTML element
   useEffect(() => {
-    const savedStyles = localStorage.getItem('study-bee-theme-custom-styles');
-    if (savedStyles) {
-      try {
-        const parsedStyles = JSON.parse(savedStyles);
-        setCustomStyles(parsedStyles);
-      } catch (e) {
-        console.error('Failed to parse saved theme styles', e);
-      }
+    const root = window.document.documentElement;
+
+    root.classList.remove("light", "dark");
+
+    if (theme === "system" || theme === "dynamic") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+      root.classList.add(systemTheme);
+      return;
     }
-  }, []);
+
+    root.classList.add(theme);
+  }, [theme]);
+
+  // Set up a listener for system theme changes when in system or dynamic mode
+  useEffect(() => {
+    if (theme !== "system" && theme !== "dynamic") return;
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = () => {
+      const root = window.document.documentElement;
+      const systemTheme = mediaQuery.matches ? "dark" : "light";
+      root.classList.remove("light", "dark");
+      root.classList.add(systemTheme);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, [theme]);
+
+  // Get the resolved theme (actual theme being shown)
+  const resolvedTheme = React.useMemo(() => {
+    if (theme === "system" || theme === "dynamic") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+      return systemTheme;
+    }
+    return theme;
+  }, [theme]);
+
+  const setCustomStyles = (styles: Record<string, string> | null) => {
+    setCustomStylesState(styles);
+  };
 
   const value = {
     theme,
     resolvedTheme,
+    setTheme,
     themeVersion,
     customStyles,
-    setCustomStyles: (styles: Record<string, string>) => {
-      setCustomStyles(prev => ({...prev, ...styles}));
-    },
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme)
-      setTheme(theme)
-    },
-  }
+    setCustomStyles,
+  };
 
   return (
     <ThemeProviderContext.Provider {...props} value={value}>
       {children}
     </ThemeProviderContext.Provider>
-  )
+  );
+}
+
+function isValidTheme(theme: string): boolean {
+  return ["dark", "light", "system", "dynamic"].includes(theme);
 }
 
 export const useTheme = () => {
-  const context = useContext(ThemeProviderContext)
+  const context = useContext(ThemeProviderContext);
 
   if (context === undefined)
-    throw new Error("useTheme must be used within a ThemeProvider")
+    throw new Error("useTheme must be used within a ThemeProvider");
 
-  return context
-}
+  return context;
+};

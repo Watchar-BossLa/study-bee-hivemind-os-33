@@ -1,120 +1,61 @@
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
+"use client";
+
+import * as React from "react";
+import { Moon, Sun, Palette } from "lucide-react";
+import { useTheme } from "@/components/theme/ThemeProvider";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator
-} from "@/components/ui/dropdown-menu"
-import { Moon, Sun, Laptop, Sparkles, Palette } from "lucide-react"
-import { useTheme, type Theme } from "./ThemeProvider"
-import { ThemeCustomizer } from "./ThemeCustomizer"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/dropdown-menu";
+import { ThemeCustomizer } from "./ThemeCustomizer";
+import { toast } from "@/hooks/use-toast";
+import { useThemeChange } from "@/hooks/useThemeChange";
 
 export function ThemeToggle() {
-  const { theme, setTheme, resolvedTheme } = useTheme()
-  const [customizerOpen, setCustomizerOpen] = useState(false)
+  const { theme, setTheme } = useTheme();
+  const [customizerOpen, setCustomizerOpen] = React.useState(false);
 
-  // Map of theme icons and their colors
-  const themeIcons = {
-    light: <Sun className="h-[1.2rem] w-[1.2rem] text-yellow-500" />,
-    dark: <Moon className="h-[1.2rem] w-[1.2rem] text-blue-500" />,
-    system: <Laptop className="h-[1.2rem] w-[1.2rem] text-green-500" />,
-    dynamic: <Sparkles className="h-[1.2rem] w-[1.2rem] text-purple-500" />
-  }
-
-  // Get appropriate icon based on current theme
-  const renderIcon = () => {
-    if (theme === 'dynamic') {
-      return (
-        <>
-          {/* Show the base layer icon (either sun or moon) */}
-          <Sun className={cn(
-            "h-[1.2rem] w-[1.2rem] transition-all absolute",
-            resolvedTheme === "dark" ? "opacity-0" : "opacity-100"
-          )} />
-          <Moon className={cn(
-            "h-[1.2rem] w-[1.2rem] transition-all absolute",
-            resolvedTheme === "dark" ? "opacity-100" : "opacity-0"
-          )} />
-          {/* Overlay the sparkles to indicate dynamic mode */}
-          <Sparkles className="h-[1.2rem] w-[1.2rem] transition-all text-purple-500" />
-        </>
-      );
-    }
-
-    if (theme === 'light') return <Sun className="h-[1.2rem] w-[1.2rem]" />;
-    if (theme === 'dark') return <Moon className="h-[1.2rem] w-[1.2rem]" />;
-    
-    // For system, show either sun or moon based on system preference
-    return resolvedTheme === 'dark' 
-      ? <Moon className="h-[1.2rem] w-[1.2rem]" />
-      : <Sun className="h-[1.2rem] w-[1.2rem]" />;
-  }
+  // Use the hook to announce theme changes
+  useThemeChange((theme, resolvedTheme, themeVersion) => {
+    // This callback runs whenever theme changes
+    console.log(`Theme changed to ${theme}, resolved as ${resolvedTheme}`);
+  });
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="relative"
-            aria-label={`Current theme: ${theme === 'dynamic' ? `dynamic ${resolvedTheme}` : theme}`}
-          >
-            <div className="relative flex items-center justify-center">
-              {renderIcon()}
-            </div>
-            
-            {/* Active theme indicator */}
-            <span className={cn(
-              "absolute top-0 right-0 flex h-2 w-2 rounded-full", 
-              theme === "dynamic" ? "bg-gradient-to-r from-purple-400 to-pink-400" : 
-              theme === "light" ? "bg-yellow-400" :
-              theme === "dark" ? "bg-blue-400" : "bg-green-400"
-            )} />
+          <Button variant="ghost" size="icon" aria-label="Toggle theme">
+            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)}>
-            <DropdownMenuRadioItem value="light" className="cursor-pointer">
-              <Sun className="mr-2 h-4 w-4 text-yellow-500" />
-              <span>Light</span>
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="dark" className="cursor-pointer">
-              <Moon className="mr-2 h-4 w-4 text-blue-500" />
-              <span>Dark</span>
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="system" className="cursor-pointer">
-              <Laptop className="mr-2 h-4 w-4 text-green-500" />
-              <span>System</span>
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="dynamic" className="cursor-pointer">
-              <Sparkles className="mr-2 h-4 w-4 text-purple-500" />
-              <span>Dynamic</span>
-            </DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-          
-          <DropdownMenuSeparator />
-          
-          <DropdownMenuItem 
-            className="cursor-pointer"
-            onClick={() => setCustomizerOpen(true)}
-          >
-            <Palette className="mr-2 h-4 w-4 text-primary" />
-            <span>Customize Theme</span>
+          <DropdownMenuItem onClick={() => setTheme("light")}>
+            Light
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTheme("dark")}>
+            Dark
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTheme("system")}>
+            System
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTheme("dynamic")}>
+            Dynamic
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setCustomizerOpen(true)}>
+            <Palette className="mr-2 h-4 w-4" />
+            Customize
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      
-      <ThemeCustomizer 
-        open={customizerOpen} 
-        onOpenChange={setCustomizerOpen} 
-      />
+
+      <ThemeCustomizer open={customizerOpen} onOpenChange={setCustomizerOpen} />
     </>
-  )
+  );
 }

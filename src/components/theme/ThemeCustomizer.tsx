@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Slider } from "@/components/ui/slider"
-import { Palette, FileText, Sparkles, Sliders, CircleCheck } from "lucide-react"
+import { Palette, FileText, Sparkles, Sliders, CircleCheck, BookmarkIcon } from "lucide-react"
 import { useTheme } from "./ThemeProvider"
 import { cn } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
+import { ThemePresets } from "./ThemePresets"
+import { useThemeSettings } from "@/hooks/useThemeSettings"
 
 export type ColorPalette = {
   name: string;
@@ -85,11 +87,13 @@ interface ThemeCustomizerProps {
 
 export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { settings, updateSettings } = useThemeSettings();
   const [selectedPalette, setSelectedPalette] = useState<string>("Default");
-  const [selectedFont, setSelectedFont] = useState<string>(fontOptions[0].value);
-  const [fontScale, setFontScale] = useState<number[]>([1]);
-  const [animationSpeed, setAnimationSpeed] = useState<number[]>([1]);
-  const [contrastLevel, setContrastLevel] = useState<number[]>([1]);
+  const [selectedFont, setSelectedFont] = useState<string>(settings.fontFamily);
+  const [fontScale, setFontScale] = useState<number[]>([settings.fontScale]);
+  const [animationSpeed, setAnimationSpeed] = useState<number[]>([settings.animationSpeed]);
+  const [contrastLevel, setContrastLevel] = useState<number[]>([settings.contrastLevel]);
+  const [reduceMotion, setReduceMotion] = useState<string>(settings.reduceMotion);
   
   const handlePaletteChange = (paletteName: string) => {
     setSelectedPalette(paletteName);
@@ -104,7 +108,7 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
   
   const handleFontChange = (font: string) => {
     setSelectedFont(font);
-    document.documentElement.style.setProperty('--font-family', font);
+    updateSettings({ fontFamily: font });
     
     toast({
       title: "Font updated",
@@ -114,6 +118,14 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
   
   const handleSaveTheme = () => {
     // Here we would save the complete theme configuration
+    updateSettings({
+      fontFamily: selectedFont,
+      fontScale: fontScale[0],
+      animationSpeed: animationSpeed[0],
+      contrastLevel: contrastLevel[0],
+      colorPalette: selectedPalette,
+      reduceMotion: reduceMotion as 'off' | 'subtle' | 'strong',
+    });
     
     toast({
       title: "Theme saved",
@@ -126,17 +138,23 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
   
   const applyFontScale = (value: number[]) => {
     setFontScale(value);
-    document.documentElement.style.setProperty('--font-scale', value[0].toString());
+    updateSettings({ fontScale: value[0] });
   };
   
   const applyAnimationSpeed = (value: number[]) => {
     setAnimationSpeed(value);
-    document.documentElement.style.setProperty('--animation-speed', `${value[0]}s`);
+    updateSettings({ animationSpeed: value[0] });
   };
   
   const applyContrastLevel = (value: number[]) => {
     setContrastLevel(value);
-    // Would adjust contrast variables in a real implementation
+    updateSettings({ contrastLevel: value[0] });
+  };
+
+  const handleReduceMotionChange = (value: string) => {
+    if (!value) return;
+    setReduceMotion(value);
+    updateSettings({ reduceMotion: value as 'off' | 'subtle' | 'strong' });
   };
 
   return (
@@ -152,7 +170,7 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
         </SheetHeader>
 
         <Tabs defaultValue="colors" className="mt-6">
-          <TabsList className="grid grid-cols-3">
+          <TabsList className="grid grid-cols-4">
             <TabsTrigger value="colors" className="flex items-center gap-2">
               <Palette size={16} />
               <span className="hidden sm:inline">Colors</span>
@@ -164,6 +182,10 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
             <TabsTrigger value="effects" className="flex items-center gap-2">
               <Sparkles size={16} />
               <span className="hidden sm:inline">Effects</span>
+            </TabsTrigger>
+            <TabsTrigger value="presets" className="flex items-center gap-2">
+              <BookmarkIcon size={16} />
+              <span className="hidden sm:inline">Presets</span>
             </TabsTrigger>
           </TabsList>
           
@@ -298,12 +320,22 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
             
             <div className="pt-4">
               <h3 className="text-sm font-medium mb-2">Reduce Motion</h3>
-              <ToggleGroup type="single" variant="outline" className="grid grid-cols-3">
+              <ToggleGroup 
+                type="single" 
+                variant="outline" 
+                className="grid grid-cols-3"
+                value={reduceMotion}
+                onValueChange={handleReduceMotionChange}
+              >
                 <ToggleGroupItem value="off">Off</ToggleGroupItem>
                 <ToggleGroupItem value="subtle">Subtle</ToggleGroupItem>
                 <ToggleGroupItem value="strong">Strong</ToggleGroupItem>
               </ToggleGroup>
             </div>
+          </TabsContent>
+
+          <TabsContent value="presets" className="mt-4">
+            <ThemePresets />
           </TabsContent>
         </Tabs>
 

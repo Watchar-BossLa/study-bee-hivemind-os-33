@@ -17,10 +17,14 @@ import Qualifications from './pages/Qualifications';
 import StudyGroups from './pages/StudyGroups';
 import CollaborativeNotes from './pages/CollaborativeNotes';
 import QuorumDashboard from './pages/QuorumDashboard';
+import ThemeSettings from './pages/ThemeSettings';
+import { ThemePresetLoader } from './components/theme/ThemePresetLoader';
+import { Toaster } from './components/ui/toaster';
 
 const App = () => {
   return (
     <Router>
+      <ThemePresetLoader />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/courses" element={<Courses />} />
@@ -36,9 +40,13 @@ const App = () => {
         <Route path="/study-groups" element={<StudyGroups />} />
         <Route path="/notes" element={<CollaborativeNotes />} />
         <Route path="/dashboard/quorum" element={<QuorumDashboard />} />
+        <Route path="/settings/theme" element={<ThemeSettings />} />
         <Route path="/wip" element={<NotImplemented />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <Toaster />
+      {/* Screen reader announcement for theme changes */}
+      <div id="theme-change-announcer" className="sr-only" aria-live="polite"></div>
     </Router>
   );
 };

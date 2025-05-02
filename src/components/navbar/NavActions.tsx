@@ -1,7 +1,8 @@
 
 import { Button } from "@/components/ui/button";
-import { Search, Command } from "lucide-react";
+import { Search, Command, Settings } from "lucide-react";
 import { ThemeToggle } from '../theme/ThemeToggle';
+import { Link } from "react-router-dom";
 
 interface NavActionsProps {
   setCommandOpen: (open: boolean) => void;
@@ -11,6 +12,11 @@ export const NavActions = ({ setCommandOpen }: NavActionsProps) => {
   return (
     <div className="flex items-center gap-2">
       <ThemeToggle />
+      <Link to="/settings/theme" aria-label="Theme settings">
+        <Button variant="ghost" size="icon" className="hidden md:flex">
+          <Settings className="h-5 w-5" />
+        </Button>
+      </Link>
       <Button 
         variant="ghost" 
         size="icon" 
