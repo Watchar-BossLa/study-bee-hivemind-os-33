@@ -1,13 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Book, Check, Video, FileText, Clock, Users, Award } from 'lucide-react';
-import { subjectAreas } from '@/data/qualifications';
+import { useNavigate } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { SectionErrorBoundary } from '@/components/error/SectionErrorBoundary';
 import CourseSection from './components/CourseSection';
-import LearningDialog from './LearningDialog';
+import CourseProgress from './components/CourseProgress';
+import { Book, BookOpen, Check } from 'lucide-react';
+import { SubjectArea } from '@/types/qualifications';
+import { subjectAreas } from '@/data/qualifications';
+import { CourseQuizzes } from '@/components/quiz/CourseQuizzes';
 
 interface LearningContentProps {
   subjectId?: string;
@@ -15,346 +17,206 @@ interface LearningContentProps {
   courseId?: string;
 }
 
-const LearningContent = ({ subjectId, moduleId, courseId }: LearningContentProps) => {
-  const params = useParams();
-  const sid = subjectId || params.subjectId;
-  const mid = moduleId || params.moduleId;
-  const cid = courseId || params.courseId;
-  
-  const [activeTab, setActiveTab] = useState('content');
-  const [selectedLesson, setSelectedLesson] = useState<any>(null);
-  const [progress, setProgress] = useState(0);
-  
-  const [courseData, setCourseData] = useState<{
-    title: string;
-    description: string;
-    instructor: string;
-    totalStudents: number;
-    totalLessons: number;
-    duration: string;
-    sections: {
-      id: string;
-      title: string;
-      lessons: {
-        id: string;
-        title: string;
-        type: 'video' | 'reading' | 'quiz' | 'exercise';
-        duration: string;
-        content: string;
-        completed: boolean;
-      }[];
-    }[];
-  } | null>(null);
-  
+const mockSections = [
+  {
+    id: "s1",
+    title: "Introduction to the Course",
+    lessons: [
+      {
+        id: "l1",
+        title: "Course Overview",
+        type: "video",
+        duration: "10:25",
+        content: "<p>Welcome to the course! This video provides an overview of what you'll learn.</p>",
+        completed: true
+      },
+      {
+        id: "l2",
+        title: "Learning Objectives",
+        type: "reading",
+        duration: "5 min",
+        content: "<p>By the end of this course, you'll be able to understand and apply the core concepts...</p>",
+        completed: true
+      }
+    ]
+  },
+  {
+    id: "s2",
+    title: "Key Concepts",
+    lessons: [
+      {
+        id: "l3",
+        title: "Fundamental Principles",
+        type: "video",
+        duration: "15:30",
+        content: "<p>In this lesson, we'll cover the fundamental principles that form the foundation of this subject.</p>",
+        completed: false
+      },
+      {
+        id: "l4",
+        title: "Applied Examples",
+        type: "interactive",
+        duration: "20 min",
+        content: "<p>This interactive lesson will walk you through practical examples of applying these concepts.</p>",
+        completed: false
+      },
+      {
+        id: "l5",
+        title: "Common Misconceptions",
+        type: "reading",
+        duration: "8 min",
+        content: "<p>Let's address some common misconceptions about these concepts.</p>",
+        completed: false
+      }
+    ]
+  }
+];
+
+const LearningContent: React.FC<LearningContentProps> = ({ subjectId, moduleId, courseId }) => {
+  const [activeTab, setActiveTab] = useState<string>("content");
+  const [currentSubject, setCurrentSubject] = useState<SubjectArea | undefined>();
+  const [currentModule, setCurrentModule] = useState<any>();
+  const [currentCourse, setCurrentCourse] = useState<any>();
+  const [sections] = useState(mockSections);
+  const [currentLesson, setCurrentLesson] = useState<any>(null);
+  const navigate = useNavigate();
+
   useEffect(() => {
-    if (sid && mid && cid) {
-      const subject = subjectAreas.find(s => s.id === sid);
-      const module = subject?.modules.find(m => m.id === mid);
-      const course = module?.courses.find(c => c.id === cid);
-      
-      if (course) {
-        const mockCourseData = {
-          title: course.name,
-          description: course.description || 'This course provides comprehensive coverage of key concepts and practices.',
-          instructor: 'Dr. Jennifer Williams',
-          totalStudents: 1240 + Math.floor(Math.random() * 500),
-          totalLessons: 12 + Math.floor(Math.random() * 8),
-          duration: '4-6 weeks',
-          sections: [
-            {
-              id: 's1',
-              title: 'Introduction',
-              lessons: [
-                {
-                  id: 'l1',
-                  title: `Welcome to ${course.name}`,
-                  type: 'video' as const,
-                  duration: '5:20',
-                  content: 'Welcome to the course! In this video, we will go over what you will learn.',
-                  completed: true
-                },
-                {
-                  id: 'l2',
-                  title: 'Course Overview',
-                  type: 'reading' as const,
-                  duration: '10 min',
-                  content: 'This document provides an overview of the course syllabus and expectations.',
-                  completed: true
-                },
-                {
-                  id: 'l3',
-                  title: 'Pre-Assessment Quiz',
-                  type: 'quiz' as const,
-                  duration: '15 min',
-                  content: 'Test your initial knowledge with this quick assessment.',
-                  completed: false
-                }
-              ]
-            },
-            {
-              id: 's2',
-              title: 'Core Concepts',
-              lessons: [
-                {
-                  id: 'l4',
-                  title: 'Fundamental Principles',
-                  type: 'video' as const,
-                  duration: '18:45',
-                  content: 'This lecture covers the fundamental principles that form the foundation of this subject.',
-                  completed: false
-                },
-                {
-                  id: 'l5',
-                  title: 'Key Terminology',
-                  type: 'reading' as const,
-                  duration: '20 min',
-                  content: 'A glossary of important terms and concepts you will need throughout the course.',
-                  completed: false
-                },
-                {
-                  id: 'l6',
-                  title: 'Application Exercise',
-                  type: 'exercise' as const,
-                  duration: '30 min',
-                  content: 'Apply what you have learned in this practical exercise.',
-                  completed: false
-                },
-                {
-                  id: 'l7',
-                  title: 'Concept Check',
-                  type: 'quiz' as const,
-                  duration: '10 min',
-                  content: 'Check your understanding of the core concepts covered so far.',
-                  completed: false
-                }
-              ]
-            },
-            {
-              id: 's3',
-              title: 'Advanced Topics',
-              lessons: [
-                {
-                  id: 'l8',
-                  title: 'Advanced Techniques',
-                  type: 'video' as const,
-                  duration: '22:15',
-                  content: 'This lecture explores more advanced techniques and methodologies.',
-                  completed: false
-                },
-                {
-                  id: 'l9',
-                  title: 'Case Studies',
-                  type: 'reading' as const,
-                  duration: '25 min',
-                  content: 'Review these real-world case studies to deepen your understanding.',
-                  completed: false
-                },
-                {
-                  id: 'l10',
-                  title: 'Practical Application',
-                  type: 'exercise' as const,
-                  duration: '45 min',
-                  content: 'Apply advanced concepts in this comprehensive practical exercise.',
-                  completed: false
-                }
-              ]
-            },
-            {
-              id: 's4',
-              title: 'Assessment',
-              lessons: [
-                {
-                  id: 'l11',
-                  title: 'Final Review',
-                  type: 'reading' as const,
-                  duration: '30 min',
-                  content: 'A comprehensive review of all course material to prepare for the final assessment.',
-                  completed: false
-                },
-                {
-                  id: 'l12',
-                  title: 'Final Assessment',
-                  type: 'quiz' as const,
-                  duration: '60 min',
-                  content: 'Demonstrate your mastery of the course material with this final assessment.',
-                  completed: false
-                }
-              ]
-            }
-          ]
-        };
-        
-        setCourseData(mockCourseData);
-        
-        const totalLessons = mockCourseData.sections.reduce((sum, section) => sum + section.lessons.length, 0);
-        const completedLessons = mockCourseData.sections.reduce((sum, section) => 
-          sum + section.lessons.filter(lesson => lesson.completed).length, 0);
-        
-        setProgress(Math.round((completedLessons / totalLessons) * 100));
+    if (subjectId) {
+      const subject = subjectAreas.find(s => s.id === subjectId);
+      setCurrentSubject(subject);
+
+      if (subject && moduleId) {
+        const module = subject.modules.find(m => m.id === moduleId);
+        setCurrentModule(module);
+
+        if (module && courseId) {
+          const course = module.courses.find(c => c.id === courseId);
+          setCurrentCourse(course);
+        }
       }
     }
-  }, [sid, mid, cid]);
-  
-  const handleSelectLesson = (lesson: any) => {
-    setSelectedLesson(lesson);
-  };
-  
-  const handleCloseDialog = () => {
-    setSelectedLesson(null);
-  };
-  
-  const handleCompleteLesson = () => {
-    if (selectedLesson && courseData) {
-      const updatedCourseData = {
-        ...courseData,
-        sections: courseData.sections.map(section => ({
-          ...section,
-          lessons: section.lessons.map(lesson => 
-            lesson.id === selectedLesson.id ? { ...lesson, completed: true } : lesson
-          )
-        }))
-      };
-      
-      setCourseData(updatedCourseData);
-      
-      const totalLessons = updatedCourseData.sections.reduce((sum, section) => sum + section.lessons.length, 0);
-      const completedLessons = updatedCourseData.sections.reduce((sum, section) => 
-        sum + section.lessons.filter(lesson => lesson.completed).length, 0);
-      
-      setProgress(Math.round((completedLessons / totalLessons) * 100));
-      
-      setSelectedLesson(null);
-    }
-  };
-  
-  if (!courseData) {
+  }, [subjectId, moduleId, courseId]);
+
+  if (!currentSubject || !currentModule || !currentCourse) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse space-y-4">
-          <div className="h-12 w-64 bg-muted rounded"></div>
-          <div className="h-8 w-32 bg-muted rounded mx-auto"></div>
-        </div>
+      <div className="text-center p-8">
+        <h2 className="text-2xl font-bold mb-4">Course Not Found</h2>
+        <Button onClick={() => navigate('/qualifications')}>
+          Back to Qualifications
+        </Button>
       </div>
     );
   }
-  
+
+  const handleSelectLesson = (lesson: any) => {
+    setCurrentLesson(lesson);
+  };
+
+  const completedLessons = sections.flatMap(s => s.lessons).filter(l => l.completed).length;
+  const totalLessons = sections.flatMap(s => s.lessons).length;
+  const progressPercentage = Math.round((completedLessons / totalLessons) * 100);
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">{courseData.title}</h1>
-        <p className="text-muted-foreground mt-2">{courseData.description}</p>
-        
-        <div className="mt-6 flex flex-wrap gap-6">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-muted-foreground" />
-            <span>{courseData.totalStudents.toLocaleString()} students</span>
+    <SectionErrorBoundary sectionName="LearningContent">
+      <div className="grid md:grid-cols-3 gap-8">
+        <div className="md:col-span-2">
+          <h1 className="text-3xl font-bold mb-2">{currentCourse.name}</h1>
+          <div className="text-muted-foreground mb-6">
+            {currentSubject.name} &gt; {currentModule.name}
           </div>
-          <div className="flex items-center gap-2">
-            <Book className="h-5 w-5 text-muted-foreground" />
-            <span>{courseData.totalLessons} lessons</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-muted-foreground" />
-            <span>{courseData.duration}</span>
-          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsTrigger value="content">
+                <Book className="h-4 w-4 mr-2" />
+                Content
+              </TabsTrigger>
+              <TabsTrigger value="quizzes">
+                <Check className="h-4 w-4 mr-2" />
+                Quizzes
+              </TabsTrigger>
+              <TabsTrigger value="resources">
+                <BookOpen className="h-4 w-4 mr-2" />
+                Resources
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="content">
+              <div className="space-y-6">
+                {currentLesson ? (
+                  <div className="space-y-4">
+                    <Button variant="ghost" onClick={() => setCurrentLesson(null)} className="mb-2">
+                      ← Back to lessons
+                    </Button>
+                    <div className="border rounded-lg p-6">
+                      <h2 className="text-2xl font-bold mb-4">{currentLesson.title}</h2>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+                        <div className="px-2 py-1 bg-muted rounded">
+                          {currentLesson.type}
+                        </div>
+                        <div>{currentLesson.duration}</div>
+                      </div>
+                      <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {sections.map((section) => (
+                      <CourseSection
+                        key={section.id}
+                        section={section}
+                        onSelectLesson={handleSelectLesson}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="quizzes">
+              <CourseQuizzes 
+                subjectId={subjectId} 
+                moduleId={moduleId} 
+                courseId={courseId} 
+              />
+            </TabsContent>
+
+            <TabsContent value="resources">
+              <div className="border rounded-lg p-6">
+                <h2 className="text-2xl font-bold mb-4">Additional Resources</h2>
+                <p className="text-muted-foreground mb-4">
+                  Enhance your learning with these supplementary materials.
+                </p>
+                <ul className="space-y-2">
+                  <li>
+                    <a href="#" className="text-blue-600 hover:underline">Course syllabus</a>
+                  </li>
+                  <li>
+                    <a href="#" className="text-blue-600 hover:underline">Reading list</a>
+                  </li>
+                  <li>
+                    <a href="#" className="text-blue-600 hover:underline">Glossary of terms</a>
+                  </li>
+                  <li>
+                    <a href="#" className="text-blue-600 hover:underline">Reference guide</a>
+                  </li>
+                </ul>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <div>
+          <CourseProgress
+            title={currentCourse.name}
+            progress={progressPercentage}
+            completedLessons={completedLessons}
+            totalLessons={totalLessons}
+          />
         </div>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Progress</span>
-              <span className="text-sm font-medium">{progress}%</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
-          
-          {progress === 100 && (
-            <div className="mt-4 flex items-center gap-2 p-2 bg-primary/10 rounded-md">
-              <Award className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium">Congratulations! You've completed this course.</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-3 mb-8">
-          <TabsTrigger value="content">Course Content</TabsTrigger>
-          <TabsTrigger value="resources">Resources</TabsTrigger>
-          <TabsTrigger value="discussion">Discussion</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="content" className="space-y-6">
-          {courseData.sections.map((section) => (
-            <CourseSection
-              key={section.id}
-              section={section}
-              onSelectLesson={handleSelectLesson}
-            />
-          ))}
-        </TabsContent>
-        
-        <TabsContent value="resources">
-          <Card>
-            <CardHeader>
-              <CardTitle>Course Resources</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 p-3 border rounded-md hover:bg-accent/50 cursor-pointer">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Course Syllabus</p>
-                    <p className="text-sm text-muted-foreground">PDF • 420 KB</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 p-3 border rounded-md hover:bg-accent/50 cursor-pointer">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Supplementary Reading</p>
-                    <p className="text-sm text-muted-foreground">PDF • 1.2 MB</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 p-3 border rounded-md hover:bg-accent/50 cursor-pointer">
-                  <Video className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Course Introduction Video</p>
-                    <p className="text-sm text-muted-foreground">MP4 • 52 MB</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="discussion">
-          <Card>
-            <CardHeader>
-              <CardTitle>Course Discussion</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-muted-foreground">Join the discussion to ask questions and connect with other learners.</p>
-                <Button>Start Discussion</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-      
-      {selectedLesson && (
-        <LearningDialog
-          lesson={selectedLesson}
-          onClose={handleCloseDialog}
-          onComplete={handleCompleteLesson}
-        />
-      )}
-    </div>
+    </SectionErrorBoundary>
   );
 };
 

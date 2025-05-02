@@ -12,23 +12,36 @@ export const useArenaMatch = () => {
   
   const { toast } = useToast();
 
-  const joinMatch = async () => {
+  const joinMatch = async (subjectFocus?: string | null) => {
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error('Not authenticated');
 
-      let { data: existingMatch } = await supabase
+      // Look for existing waiting matches with the same subject focus if specified
+      let query = supabase
         .from('arena_matches')
         .select()
-        .eq('status', 'waiting')
-        .single();
+        .eq('status', 'waiting');
+      
+      if (subjectFocus) {
+        query = query.eq('subject_focus', subjectFocus);
+      }
+
+      let { data: existingMatch } = await query.single();
 
       let matchId: string;
 
       if (!existingMatch) {
+        const insertData: any = { status: 'waiting' };
+        
+        // Add subject focus if specified
+        if (subjectFocus) {
+          insertData.subject_focus = subjectFocus;
+        }
+
         const { data: newMatch, error: createError } = await supabase
           .from('arena_matches')
-          .insert({ status: 'waiting' })
+          .insert(insertData)
           .select()
           .single();
 
@@ -47,8 +60,12 @@ export const useArenaMatch = () => {
       const unsub = subscribeToMatch(matchId);
       setUnsubscribe(() => unsub);
       
+      const subjectMessage = subjectFocus ? 
+        `Joined ${subjectFocus} match` : 
+        "Joined match";
+      
       toast({
-        title: "Joined match",
+        title: subjectMessage,
         description: "Waiting for other players...",
       });
     } catch (error) {
