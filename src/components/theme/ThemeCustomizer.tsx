@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Slider } from "@/components/ui/slider"
-import { Palette, Font, Sparkles, Sliders, CircleCheck } from "lucide-react"
+import { Palette, FileText, Sparkles, Sliders, CircleCheck } from "lucide-react"
 import { useTheme } from "./ThemeProvider"
 import { cn } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
@@ -158,7 +158,7 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
               <span className="hidden sm:inline">Colors</span>
             </TabsTrigger>
             <TabsTrigger value="typography" className="flex items-center gap-2">
-              <Font size={16} />
+              <FileText size={16} />
               <span className="hidden sm:inline">Typography</span>
             </TabsTrigger>
             <TabsTrigger value="effects" className="flex items-center gap-2">
