@@ -2,7 +2,30 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import type { ArenaMatch, MatchPlayer, DbArenaMatch, DbMatchPlayer } from '@/types/arena';
+import type { ArenaMatch, MatchPlayer } from '@/types/arena';
+
+// Define simpler types to avoid excessive type instantiation
+interface DbArenaMatchSimple {
+  id: string;
+  status: string;
+  start_time: string | null;
+  end_time: string | null;
+  subject_focus?: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+interface DbMatchPlayerSimple {
+  id: string;
+  match_id: string;
+  user_id: string;
+  score: number;
+  correct_answers: number;
+  questions_answered: number;
+  total_response_time?: number;
+  streak?: number;
+  created_at: string | null;
+}
 
 export const useArenaMatch = () => {
   const [currentMatch, setCurrentMatch] = useState<ArenaMatch | null>(null);
@@ -32,7 +55,7 @@ export const useArenaMatch = () => {
       let matchId: string;
 
       if (!existingMatch) {
-        const insertData: any = { status: 'waiting' };
+        const insertData: Record<string, unknown> = { status: 'waiting' };
         
         // Add subject focus if specified
         if (subjectFocus) {
@@ -46,6 +69,7 @@ export const useArenaMatch = () => {
           .single();
 
         if (createError) throw createError;
+        if (!newMatch) throw new Error('Failed to create match');
         matchId = newMatch.id;
       } else {
         matchId = existingMatch.id;
@@ -114,7 +138,7 @@ export const useArenaMatch = () => {
       .single();
     
     if (data) {
-      const dbMatch = data as DbArenaMatch;
+      const dbMatch = data as unknown as DbArenaMatchSimple;
       
       const typedMatch: ArenaMatch = {
         id: dbMatch.id,
@@ -138,17 +162,20 @@ export const useArenaMatch = () => {
     
     if (data) {
       // Convert database response to MatchPlayer type
-      const typedPlayers: MatchPlayer[] = data.map((player: DbMatchPlayer) => ({
-        id: player.id,
-        match_id: player.match_id,
-        user_id: player.user_id,
-        score: player.score || 0,
-        correct_answers: player.correct_answers || 0,
-        questions_answered: player.questions_answered || 0,
-        total_response_time: player.total_response_time || 0,
-        streak: player.streak || 0,
-        joined_at: player.created_at || new Date().toISOString()
-      }));
+      const typedPlayers: MatchPlayer[] = data.map((player: unknown) => {
+        const typedPlayer = player as DbMatchPlayerSimple;
+        return {
+          id: typedPlayer.id,
+          match_id: typedPlayer.match_id,
+          user_id: typedPlayer.user_id,
+          score: typedPlayer.score || 0,
+          correct_answers: typedPlayer.correct_answers || 0,
+          questions_answered: typedPlayer.questions_answered || 0,
+          total_response_time: typedPlayer.total_response_time || 0,
+          streak: typedPlayer.streak || 0,
+          joined_at: typedPlayer.created_at || new Date().toISOString()
+        };
+      });
       
       setPlayers(typedPlayers);
       
