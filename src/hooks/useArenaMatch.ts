@@ -4,8 +4,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { ArenaMatch, MatchPlayer } from '@/types/arena';
 
-// Define simpler types to avoid excessive type instantiation
-interface DbArenaMatchSimple {
+// Define simpler types for database responses to avoid excessive type instantiation
+interface DbArenaMatchResponse {
   id: string;
   status: string;
   start_time: string | null;
@@ -15,7 +15,7 @@ interface DbArenaMatchSimple {
   updated_at: string | null;
 }
 
-interface DbMatchPlayerSimple {
+interface DbMatchPlayerResponse {
   id: string;
   match_id: string;
   user_id: string;
@@ -35,7 +35,7 @@ export const useArenaMatch = () => {
   
   const { toast } = useToast();
 
-  const joinMatch = async (subjectFocus?: string | null) => {
+  const joinMatch = async (subjectFocus?: string | null): Promise<void> => {
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error('Not authenticated');
@@ -50,8 +50,9 @@ export const useArenaMatch = () => {
         query = query.eq('subject_focus', subjectFocus);
       }
 
+      // Get existing matches and check if there's one we can join
       const { data: existingMatches } = await query;
-      let existingMatch = existingMatches && existingMatches.length > 0 ? existingMatches[0] : null;
+      const existingMatch = existingMatches && existingMatches.length > 0 ? existingMatches[0] : null;
 
       let matchId: string;
 
@@ -71,9 +72,9 @@ export const useArenaMatch = () => {
 
         if (createError) throw createError;
         if (!newMatch) throw new Error('Failed to create match');
-        matchId = newMatch.id;
+        matchId = newMatch.id as string;
       } else {
-        matchId = existingMatch.id;
+        matchId = existingMatch.id as string;
       }
 
       const { error: joinError } = await supabase
@@ -102,7 +103,7 @@ export const useArenaMatch = () => {
     }
   };
 
-  const subscribeToMatch = (matchId: string) => {
+  const subscribeToMatch = (matchId: string): (() => void) => {
     const playersChannel = supabase.channel(`match_players_${matchId}`)
       .on('postgres_changes', {
         event: '*',
@@ -110,7 +111,7 @@ export const useArenaMatch = () => {
         table: 'match_players',
         filter: `match_id=eq.${matchId}`,
       }, () => {
-        fetchMatchPlayers(matchId);
+        void fetchMatchPlayers(matchId);
       })
       .subscribe();
 
@@ -121,7 +122,7 @@ export const useArenaMatch = () => {
         table: 'arena_matches',
         filter: `id=eq.${matchId}`,
       }, () => {
-        fetchMatch(matchId);
+        void fetchMatch(matchId);
       })
       .subscribe();
 
@@ -131,7 +132,7 @@ export const useArenaMatch = () => {
     };
   };
 
-  const fetchMatch = async (matchId: string) => {
+  const fetchMatch = async (matchId: string): Promise<void> => {
     const { data } = await supabase
       .from('arena_matches')
       .select()
@@ -139,7 +140,7 @@ export const useArenaMatch = () => {
       .single();
     
     if (data) {
-      const dbMatch = data as unknown as DbArenaMatchSimple;
+      const dbMatch = data as DbArenaMatchResponse;
       
       const typedMatch: ArenaMatch = {
         id: dbMatch.id,
@@ -155,7 +156,7 @@ export const useArenaMatch = () => {
     }
   };
 
-  const fetchMatchPlayers = async (matchId: string) => {
+  const fetchMatchPlayers = async (matchId: string): Promise<void> => {
     const { data } = await supabase
       .from('match_players')
       .select()
@@ -163,8 +164,8 @@ export const useArenaMatch = () => {
     
     if (data) {
       // Convert database response to MatchPlayer type
-      const typedPlayers: MatchPlayer[] = data.map((player: unknown) => {
-        const typedPlayer = player as DbMatchPlayerSimple;
+      const typedPlayers: MatchPlayer[] = data.map((player) => {
+        const typedPlayer = player as DbMatchPlayerResponse;
         return {
           id: typedPlayer.id,
           match_id: typedPlayer.match_id,
@@ -192,7 +193,7 @@ export const useArenaMatch = () => {
     }
   };
 
-  const finishMatch = async () => {
+  const finishMatch = async (): Promise<void> => {
     if (!currentMatch) return;
     
     try {

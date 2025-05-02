@@ -2,7 +2,7 @@
 import { CurriculumQuiz, QuizAttempt } from '@/types/quiz';
 import { QuizQuestion } from '@/types/arena';
 
-// Mock quiz questions
+// Mock quiz questions - using difficulty values that match QuizQuestion type
 export const mockQuizQuestions: QuizQuestion[] = [
   {
     id: 'q1',
@@ -61,7 +61,7 @@ export const mockQuizQuestions: QuizQuestion[] = [
   }
 ];
 
-// Mock curriculum quizzes
+// Mock curriculum quizzes - ensure difficulty values match CurriculumQuiz type
 export const mockCurriculumQuizzes: CurriculumQuiz[] = [
   {
     id: 'cq1',

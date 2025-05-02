@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 interface CourseProgressProps {
   progress: number;
   title?: string; // Make title optional
-  completedLessons?: number; // Add these missing props
+  completedLessons?: number; 
   totalLessons?: number;
 }
 
