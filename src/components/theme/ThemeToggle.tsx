@@ -15,19 +15,55 @@ import { cn } from "@/lib/utils"
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme()
 
+  // Map of theme icons and their colors
+  const themeIcons = {
+    light: <Sun className="h-[1.2rem] w-[1.2rem] text-yellow-500" />,
+    dark: <Moon className="h-[1.2rem] w-[1.2rem] text-blue-500" />,
+    system: <Laptop className="h-[1.2rem] w-[1.2rem] text-green-500" />,
+    dynamic: <Sparkles className="h-[1.2rem] w-[1.2rem] text-purple-500" />
+  }
+
+  // Get appropriate icon based on current theme
+  const renderIcon = () => {
+    if (theme === 'dynamic') {
+      return (
+        <>
+          {/* Show the base layer icon (either sun or moon) */}
+          <Sun className={cn(
+            "h-[1.2rem] w-[1.2rem] transition-all absolute",
+            resolvedTheme === "dark" ? "opacity-0" : "opacity-100"
+          )} />
+          <Moon className={cn(
+            "h-[1.2rem] w-[1.2rem] transition-all absolute",
+            resolvedTheme === "dark" ? "opacity-100" : "opacity-0"
+          )} />
+          {/* Overlay the sparkles to indicate dynamic mode */}
+          <Sparkles className="h-[1.2rem] w-[1.2rem] transition-all text-purple-500" />
+        </>
+      );
+    }
+
+    if (theme === 'light') return <Sun className="h-[1.2rem] w-[1.2rem]" />;
+    if (theme === 'dark') return <Moon className="h-[1.2rem] w-[1.2rem]" />;
+    
+    // For system, show either sun or moon based on system preference
+    return resolvedTheme === 'dark' 
+      ? <Moon className="h-[1.2rem] w-[1.2rem]" />
+      : <Sun className="h-[1.2rem] w-[1.2rem]" />;
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="relative">
-          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          {theme === "dynamic" && (
-            <Sparkles className={cn(
-              "absolute h-[1.2rem] w-[1.2rem] transition-all",
-              resolvedTheme === "dark" ? "opacity-100" : "opacity-0"
-            )} />
-          )}
-          <span className="sr-only">Toggle theme</span>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="relative"
+          aria-label={`Current theme: ${theme === 'dynamic' ? `dynamic ${resolvedTheme}` : theme}`}
+        >
+          <div className="relative flex items-center justify-center">
+            {renderIcon()}
+          </div>
           
           {/* Active theme indicator */}
           <span className={cn(

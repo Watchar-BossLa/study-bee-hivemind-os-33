@@ -96,6 +96,10 @@ export default {
 				"pulse-subtle": {
 					"0%, 100%": { opacity: "1" },
 					"50%": { opacity: "0.8" },
+				},
+				"theme-fade-in": {
+					"0%": { opacity: "0" },
+					"100%": { opacity: "1" },
 				}
 			},
 			animation: {
@@ -103,7 +107,11 @@ export default {
 				"accordion-up": "accordion-up 0.2s ease-out",
 				"float": "float 3s ease-in-out infinite",
 				"pulse-subtle": "pulse-subtle 2s ease-in-out infinite",
+				"theme-fade-in": "theme-fade-in 0.3s ease-out forwards"
 			},
+			transitionProperty: {
+				'theme': 'background-color, color, border-color, text-decoration-color, fill, stroke',
+			}
 		},
 	},
 	plugins: [require("tailwindcss-animate")],

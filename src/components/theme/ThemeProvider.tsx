@@ -35,6 +35,7 @@ export function ThemeProvider({
 
   useEffect(() => {
     const root = window.document.documentElement
+    // First, remove all theme classes to start fresh
     root.classList.remove("light", "dark", "dynamic")
 
     // Helper to determine system preference
@@ -52,33 +53,32 @@ export function ThemeProvider({
     } else if (theme === "dynamic") {
       // For dynamic mode, we first determine the base theme (light or dark)
       const baseTheme = getSystemTheme()
-      root.classList.add(baseTheme, "dynamic") // Add both base theme and dynamic class
+      // Important: Add baseTheme first, then dynamic
+      // This ensures CSS rules for .dynamic.light or .dynamic.dark work correctly
+      root.classList.add(baseTheme, "dynamic")
       setResolvedTheme(baseTheme)
 
-      // Function to update theme based on time and system preference
-      const checkTime = () => {
+      // Function to update theme based on system preference
+      const updateDynamicTheme = () => {
         const currentBaseTheme = getSystemTheme()
-        // Keep the dynamic class but update the base theme class
+        // Remove both light and dark classes first
         root.classList.remove("light", "dark")
+        // Then add the current base theme while keeping "dynamic" class
         root.classList.add(currentBaseTheme)
         setResolvedTheme(currentBaseTheme)
       }
 
       // Initial check
-      checkTime()
+      updateDynamicTheme()
       
       // Listen for system theme changes
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-      const handleChange = () => checkTime()
+      const handleChange = () => updateDynamicTheme()
       
-      // Use addEventListener with named function for proper cleanup
       mediaQuery.addEventListener("change", handleChange)
 
-      // Check periodically for any time-based changes
-      const interval = setInterval(checkTime, 60000) // Check every minute
-      
+      // Cleanup
       return () => {
-        clearInterval(interval)
         mediaQuery.removeEventListener("change", handleChange)
       }
     } else {
@@ -86,6 +86,16 @@ export function ThemeProvider({
       root.classList.add(theme)
       setResolvedTheme(theme)
     }
+
+    // Add an accessibility announcement for screen readers
+    const announcer = document.getElementById('theme-change-announcer') || (() => {
+      const el = document.createElement('div')
+      el.id = 'theme-change-announcer'
+      el.setAttribute('aria-live', 'polite')
+      document.body.appendChild(el)
+      return el
+    })()
+    announcer.textContent = `Theme changed to ${theme === 'dynamic' ? 'dynamic ' + resolvedTheme : theme} mode`
   }, [theme])
 
   const value = {

@@ -1,124 +1,124 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Light mode - improved contrast */
-    --background: 40 100% 97%;
-    --foreground: 20 10% 10%; /* Darker text for better contrast */
+    /* Light mode - significantly improved contrast */
+    --background: 40 100% 98%;
+    --foreground: 20 10% 5%; /* Darker text for much better contrast */
 
-    --card: 40 70% 98%;
-    --card-foreground: 20 10% 10%; /* Darker text */
+    --card: 40 70% 99%;
+    --card-foreground: 20 10% 5%; /* Darker text */
 
-    --popover: 40 70% 98%;
-    --popover-foreground: 20 10% 10%; /* Darker text */
+    --popover: 40 70% 99%;
+    --popover-foreground: 20 10% 5%; /* Darker text */
 
-    --primary: 43 100% 50%;
-    --primary-foreground: 20 10% 10%; /* Darker text */
+    --primary: 43 100% 45%; /* Stronger primary color */
+    --primary-foreground: 40 100% 99%; /* Higher contrast text on primary */
 
     --secondary: 41 85% 45%; /* Stronger secondary color */
     --secondary-foreground: 40 100% 99%; /* Higher contrast */
 
     --muted: 40 20% 88%; /* More distinct muted background */
-    --muted-foreground: 20 10% 30%; /* Better readable muted text */
+    --muted-foreground: 20 10% 25%; /* Better readable muted text */
 
     --accent: 41 80% 88%;
-    --accent-foreground: 20 10% 10%;
+    --accent-foreground: 20 10% 5%;
 
-    --destructive: 0 90% 60%; /* More vibrant destructive */
+    --destructive: 0 90% 55%; /* More vibrant destructive */
     --destructive-foreground: 40 100% 99%; /* Higher contrast */
 
-    --border: 40 30% 82%; /* More visible borders */
-    --input: 40 30% 82%;
-    --ring: 43 100% 45%; /* Stronger focus ring */
+    --border: 40 30% 80%; /* More visible borders */
+    --input: 40 30% 80%;
+    --ring: 43 100% 40%; /* Stronger focus ring */
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5% 20%;
+    --sidebar-foreground: 240 5% 15%;
     --sidebar-primary: 240 6% 8%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 5% 94%;
+    --sidebar-accent: 240 5% 92%;
     --sidebar-accent-foreground: 240 6% 8%;
-    --sidebar-border: 220 13% 88%;
-    --sidebar-ring: 217 92% 58%;
+    --sidebar-border: 220 13% 85%;
+    --sidebar-ring: 217 92% 55%;
   }
 
   .dark {
-    /* Dark mode - improved contrast */
-    --background: 20 10% 8%; /* Darker background */
-    --foreground: 40 30% 95%; /* Brighter text */
+    /* Dark mode - significantly improved contrast */
+    --background: 20 10% 6%; /* Darker background */
+    --foreground: 40 30% 98%; /* Brighter text */
 
-    --card: 20 10% 10%;
-    --card-foreground: 40 30% 95%; /* Brighter text */
+    --card: 20 10% 8%;
+    --card-foreground: 40 30% 98%; /* Brighter text */
 
-    --popover: 20 10% 10%;
-    --popover-foreground: 40 30% 95%; /* Brighter text */
+    --popover: 20 10% 8%;
+    --popover-foreground: 40 30% 98%; /* Brighter text */
 
-    --primary: 43 100% 55%; /* Brighter primary */
-    --primary-foreground: 20 10% 8%; /* Darker background text */
+    --primary: 43 100% 60%; /* Brighter primary */
+    --primary-foreground: 20 10% 6%; /* Darker background text */
 
-    --secondary: 41 85% 55%; /* Brighter secondary */
-    --secondary-foreground: 20 10% 8%; /* Darker background text */
+    --secondary: 41 85% 60%; /* Brighter secondary */
+    --secondary-foreground: 20 10% 6%; /* Darker background text */
 
-    --muted: 20 10% 16%; /* More distinct muted */
-    --muted-foreground: 40 30% 80%; /* Brighter muted text */
+    --muted: 20 10% 15%; /* More distinct muted */
+    --muted-foreground: 40 30% 85%; /* Brighter muted text */
 
-    --accent: 20 10% 16%;
-    --accent-foreground: 40 30% 95%; /* Brighter text */
+    --accent: 20 10% 15%;
+    --accent-foreground: 40 30% 98%; /* Brighter text */
 
-    --destructive: 0 70% 35%; /* More noticeable destructive */
-    --destructive-foreground: 40 30% 95%; /* Brighter text */
+    --destructive: 0 70% 40%; /* More noticeable destructive */
+    --destructive-foreground: 40 30% 98%; /* Brighter text */
 
-    --border: 20 10% 18%; /* More visible borders */
-    --input: 20 10% 18%;
-    --ring: 43 100% 60%; /* Brighter focus ring */
+    --border: 20 10% 16%; /* More visible borders */
+    --input: 20 10% 16%;
+    --ring: 43 100% 65%; /* Brighter focus ring */
 
-    --sidebar-background: 240 6% 8%;
+    --sidebar-background: 240 6% 6%;
     --sidebar-foreground: 240 5% 98%;
-    --sidebar-primary: 224 76% 52%;
+    --sidebar-primary: 224 76% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4% 18%;
+    --sidebar-accent: 240 4% 16%;
     --sidebar-accent-foreground: 240 5% 98%;
-    --sidebar-border: 240 4% 18%;
-    --sidebar-ring: 217 91% 62%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 217 91% 65%;
   }
   
-  /* Dynamic mode - enhances whatever the base theme is */
+  /* Dynamic mode - enhances whatever the base theme is with much clearer overlay */
   .dynamic.light {
     /* Enhanced light mode with purple tint overlay */
-    --gradient-overlay: linear-gradient(102.3deg, rgba(147,39,143,0.2) 5.9%, rgba(234,172,232,0.15) 64%, rgba(246,219,245,0.12) 89%);
-    --focus-outline-color: rgba(147,39,143,0.6);
+    --gradient-overlay: linear-gradient(102.3deg, rgba(147,39,143,0.18) 5.9%, rgba(234,172,232,0.12) 64%, rgba(246,219,245,0.08) 89%);
+    --focus-outline-color: rgba(147,39,143,0.7);
     
     /* Apply higher contrast to text on top of the base theme */
-    --foreground: 20 10% 5%; /* Even darker text for dynamic light */
-    --muted-foreground: 20 10% 25%; /* Stronger muted text */
-    --card-foreground: 20 10% 5%;
-    --accent-foreground: 20 10% 5%;
+    --foreground: 20 10% 3%; /* Even darker text for dynamic light */
+    --muted-foreground: 20 10% 20%; /* Stronger muted text */
+    --card-foreground: 20 10% 3%;
+    --accent-foreground: 20 10% 3%;
     
     /* Increase color vibrancy */
-    --primary: 43 100% 47%; /* More saturated primary */
-    --secondary: 41 90% 45%; /* More saturated secondary */
-    --ring: 43 100% 40%; /* Stronger ring */
+    --primary: 43 100% 42%; /* More saturated primary */
+    --secondary: 41 95% 45%; /* More saturated secondary */
+    --ring: 43 100% 35%; /* Stronger ring */
   }
   
   .dynamic.dark {
     /* Enhanced dark mode with purple tint overlay */
-    --gradient-overlay: linear-gradient(90deg, hsla(277, 75%, 84%, 0.2) 0%, hsla(297, 50%, 51%, 0.15) 100%);
-    --focus-outline-color: hsla(297, 60%, 70%, 0.6);
+    --gradient-overlay: linear-gradient(90deg, hsla(277, 75%, 84%, 0.15) 0%, hsla(297, 50%, 51%, 0.12) 100%);
+    --focus-outline-color: hsla(297, 60%, 70%, 0.7);
     
     /* Apply higher contrast to text on top of the base theme */
-    --foreground: 40 30% 98%; /* Even brighter text for dynamic dark */
-    --muted-foreground: 40 30% 85%; /* Stronger muted text */
-    --card-foreground: 40 30% 98%;
-    --accent-foreground: 40 30% 98%;
+    --foreground: 40 30% 100%; /* Even brighter text for dynamic dark */
+    --muted-foreground: 40 30% 90%; /* Stronger muted text */
+    --card-foreground: 40 30% 100%;
+    --accent-foreground: 40 30% 100%;
     
     /* Increase color vibrancy */
-    --primary: 43 100% 60%; /* More vibrant primary */
-    --secondary: 41 90% 60%; /* More vibrant secondary */
-    --ring: 43 100% 65%; /* Brighter ring */
+    --primary: 43 100% 65%; /* More vibrant primary */
+    --secondary: 41 95% 65%; /* More vibrant secondary */
+    --ring: 43 100% 70%; /* Brighter ring */
+    --border: 20 10% 20%; /* More visible borders in dark dynamic mode */
   }
 }
 
@@ -129,9 +129,10 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
-  /* Dynamic overlay with z-index management */
+  /* Dynamic overlay with z-index management - improved implementation */
   .dynamic body::before {
     content: '';
     position: fixed;
@@ -142,6 +143,7 @@
     background-image: var(--gradient-overlay);
     pointer-events: none;
     z-index: 1;
+    transition: opacity 0.3s ease;
   }
   
   /* Ensure content appears above the gradient overlay */
@@ -149,7 +151,10 @@
   .dynamic header, 
   .dynamic footer, 
   .dynamic dialog, 
-  .dynamic [role="dialog"] {
+  .dynamic [role="dialog"],
+  .dynamic nav,
+  .dynamic section,
+  .dynamic aside {
     position: relative;
     z-index: 2;
   }
@@ -163,11 +168,11 @@
   /* Responsive adjustments for dynamic mode */
   @media (max-width: 640px) {
     .dynamic.light {
-      --gradient-overlay: linear-gradient(135deg, rgba(147,39,143,0.25) 15%, rgba(234,172,232,0.2) 85%);
+      --gradient-overlay: linear-gradient(135deg, rgba(147,39,143,0.2) 15%, rgba(234,172,232,0.15) 85%);
     }
     
     .dynamic.dark {
-      --gradient-overlay: linear-gradient(135deg, hsla(277, 75%, 84%, 0.25) 15%, hsla(297, 50%, 51%, 0.2) 85%);
+      --gradient-overlay: linear-gradient(135deg, hsla(277, 75%, 84%, 0.2) 15%, hsla(297, 50%, 51%, 0.15) 85%);
     }
   }
   
@@ -185,6 +190,19 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
     }
+  }
+
+  /* Hidden accessibility announcer for theme changes */
+  #theme-change-announcer {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 }
 
@@ -240,5 +258,15 @@
   .dynamic button:hover,
   .dynamic a:hover {
     @apply shadow-md;
+  }
+
+  /* High contrast focus indicator for interactive elements */
+  .dynamic button:focus-visible,
+  .dynamic a:focus-visible,
+  .dynamic input:focus-visible,
+  .dynamic select:focus-visible,
+  .dynamic textarea:focus-visible {
+    @apply ring-2 ring-offset-2;
+    ring-color: var(--focus-outline-color);
   }
 }
