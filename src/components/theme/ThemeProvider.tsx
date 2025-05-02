@@ -13,12 +13,18 @@ type ThemeProviderState = {
   theme: Theme
   setTheme: (theme: Theme) => void
   resolvedTheme: "light" | "dark" // Actual applied theme after system/dynamic resolution
+  themeVersion: number // Added to track theme version for forced updates
+  customStyles: Record<string, string> // Storage for custom style variables
+  setCustomStyles: (styles: Record<string, string>) => void
 }
 
 const initialState: ThemeProviderState = {
   theme: "system",
   setTheme: () => null,
   resolvedTheme: "light",
+  themeVersion: 1,
+  customStyles: {},
+  setCustomStyles: () => null,
 }
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
@@ -33,7 +39,10 @@ export function ThemeProvider({
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   )
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light")
+  const [themeVersion, setThemeVersion] = useState<number>(1)
+  const [customStyles, setCustomStyles] = useState<Record<string, string>>({})
 
+  // Effect to apply the current theme
   useEffect(() => {
     const root = window.document.documentElement
     // First, remove all theme classes to start fresh
@@ -105,9 +114,47 @@ export function ThemeProvider({
     announcer.textContent = announcementText
   }, [theme, resolvedTheme])
 
+  // Apply custom styles when they change
+  useEffect(() => {
+    // Skip if no custom styles defined
+    if (Object.keys(customStyles).length === 0) return;
+    
+    const root = window.document.documentElement
+    
+    // Apply each custom style as a CSS variable
+    Object.entries(customStyles).forEach(([key, value]) => {
+      root.style.setProperty(`--${key}`, value);
+    });
+    
+    // Increment theme version to force updates in components
+    setThemeVersion(prev => prev + 1);
+    
+    // Save custom styles to localStorage for persistence
+    localStorage.setItem('study-bee-theme-custom-styles', JSON.stringify(customStyles));
+    
+  }, [customStyles]);
+
+  // Load custom styles on initial mount
+  useEffect(() => {
+    const savedStyles = localStorage.getItem('study-bee-theme-custom-styles');
+    if (savedStyles) {
+      try {
+        const parsedStyles = JSON.parse(savedStyles);
+        setCustomStyles(parsedStyles);
+      } catch (e) {
+        console.error('Failed to parse saved theme styles', e);
+      }
+    }
+  }, []);
+
   const value = {
     theme,
     resolvedTheme,
+    themeVersion,
+    customStyles,
+    setCustomStyles: (styles: Record<string, string>) => {
+      setCustomStyles(prev => ({...prev, ...styles}));
+    },
     setTheme: (theme: Theme) => {
       localStorage.setItem(storageKey, theme)
       setTheme(theme)
