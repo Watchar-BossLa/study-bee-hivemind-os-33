@@ -33,19 +33,21 @@ global.ResizeObserver = class ResizeObserver {
   disconnect = jest.fn();
 };
 
-// Mock for IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
-  constructor(callback: IntersectionObserverCallback) {
-    this.callback = callback;
-  }
-  callback: IntersectionObserverCallback;
-  root = null;
-  rootMargin = "";
-  thresholds = [];
+// Mock for IntersectionObserver - properly implementing the interface
+class MockIntersectionObserver implements IntersectionObserver {
+  readonly root: Element | Document | null = null;
+  readonly rootMargin: string = "";
+  readonly thresholds: ReadonlyArray<number> = [];
+  
+  constructor(private callback: IntersectionObserverCallback) {}
+  
+  disconnect = jest.fn();
   observe = jest.fn();
   unobserve = jest.fn();
-  disconnect = jest.fn();
-};
+  takeRecords = jest.fn().mockReturnValue([]);
+}
+
+global.IntersectionObserver = MockIntersectionObserver;
 
 // Global console mocks to reduce noise during tests
 const originalConsoleError = console.error;

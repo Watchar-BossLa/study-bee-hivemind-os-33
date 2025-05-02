@@ -43,6 +43,7 @@ export const captureException = (
 ): string => {
   logger.error(error);
   if (process.env.NODE_ENV === 'production') {
+    // TypeScript fix: Pass context directly without type mismatch
     return Sentry.captureException(error, context);
   }
   return '';
@@ -51,12 +52,16 @@ export const captureException = (
 // Function to capture messages
 export const captureMessage = (
   message: string, 
-  level?: Sentry.SeverityLevel, 
+  level?: Sentry.SeverityLevel,
   context?: CaptureContext
 ): string => {
-  logger.info(message, context);
+  logger.info(message);
   if (process.env.NODE_ENV === 'production') {
-    return Sentry.captureMessage(message, level || 'info', context);
+    // TypeScript fix: Use overload with correct parameter order
+    if (context) {
+      return Sentry.captureMessage(message, context);
+    }
+    return Sentry.captureMessage(message, level);
   }
   return '';
 };
