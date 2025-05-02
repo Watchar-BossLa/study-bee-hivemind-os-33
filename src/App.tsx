@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
 import Courses from './pages/Courses';
@@ -20,34 +20,45 @@ import QuorumDashboard from './pages/QuorumDashboard';
 import ThemeSettings from './pages/ThemeSettings';
 import { ThemePresetLoader } from './components/theme/ThemePresetLoader';
 import { Toaster } from './components/ui/toaster';
+import { ErrorBoundary } from './components/error/ErrorBoundary';
+import { initSentry } from './services/monitoring/sentry';
+import { logger } from './services/logger/logger';
 
 const App = () => {
+  // Initialize Sentry on component mount
+  useEffect(() => {
+    initSentry();
+    logger.info('Application initialized');
+  }, []);
+
   return (
-    <Router>
-      <ThemePresetLoader />
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/courses" element={<Courses />} />
-        <Route path="/courses/:courseId" element={<CourseContent />} />
-        <Route path="/learning/:courseId" element={<CourseLearning />} />
-        <Route path="/arena" element={<Arena />} />
-        <Route path="/flashcards/review" element={<FlashcardReview />} />
-        <Route path="/flashcards/ocr" element={<OCRFlashcards />} />
-        <Route path="/tutor" element={<GraphTutor />} />
-        <Route path="/live-sessions" element={<LiveStudySessions />} />
-        <Route path="/peer-learning" element={<PeerLearning />} />
-        <Route path="/qualifications" element={<Qualifications />} />
-        <Route path="/study-groups" element={<StudyGroups />} />
-        <Route path="/notes" element={<CollaborativeNotes />} />
-        <Route path="/dashboard/quorum" element={<QuorumDashboard />} />
-        <Route path="/settings/theme" element={<ThemeSettings />} />
-        <Route path="/wip" element={<NotImplemented />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Toaster />
-      {/* Screen reader announcement for theme changes */}
-      <div id="theme-change-announcer" className="sr-only" aria-live="polite"></div>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <ThemePresetLoader />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/courses" element={<Courses />} />
+          <Route path="/courses/:courseId" element={<CourseContent />} />
+          <Route path="/learning/:courseId" element={<CourseLearning />} />
+          <Route path="/arena" element={<Arena />} />
+          <Route path="/flashcards/review" element={<FlashcardReview />} />
+          <Route path="/flashcards/ocr" element={<OCRFlashcards />} />
+          <Route path="/tutor" element={<GraphTutor />} />
+          <Route path="/live-sessions" element={<LiveStudySessions />} />
+          <Route path="/peer-learning" element={<PeerLearning />} />
+          <Route path="/qualifications" element={<Qualifications />} />
+          <Route path="/study-groups" element={<StudyGroups />} />
+          <Route path="/notes" element={<CollaborativeNotes />} />
+          <Route path="/dashboard/quorum" element={<QuorumDashboard />} />
+          <Route path="/settings/theme" element={<ThemeSettings />} />
+          <Route path="/wip" element={<NotImplemented />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+        {/* Screen reader announcement for theme changes */}
+        <div id="theme-change-announcer" className="sr-only" aria-live="polite"></div>
+      </Router>
+    </ErrorBoundary>
   );
 };
 

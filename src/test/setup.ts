@@ -1,5 +1,15 @@
 
 import '@testing-library/jest-dom';
+import { server } from './mocks/server';
+
+// Start API mocking before all tests
+beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }));
+
+// Reset request handlers between tests
+afterEach(() => server.resetHandlers());
+
+// Stop API mocking after all tests
+afterAll(() => server.close());
 
 // Global mock for window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -15,6 +25,27 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: jest.fn(),
   })),
 });
+
+// Mock for ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  observe = jest.fn();
+  unobserve = jest.fn();
+  disconnect = jest.fn();
+};
+
+// Mock for IntersectionObserver
+global.IntersectionObserver = class IntersectionObserver {
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+  }
+  callback: IntersectionObserverCallback;
+  root = null;
+  rootMargin = "";
+  thresholds = [];
+  observe = jest.fn();
+  unobserve = jest.fn();
+  disconnect = jest.fn();
+};
 
 // Global console mocks to reduce noise during tests
 const originalConsoleError = console.error;
