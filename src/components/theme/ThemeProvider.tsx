@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react"
 
 export type Theme = "light" | "dark" | "system" | "dynamic"
@@ -95,8 +96,14 @@ export function ThemeProvider({
       document.body.appendChild(el)
       return el
     })()
-    announcer.textContent = `Theme changed to ${theme}`
-  }, [theme])
+    
+    // Enhanced announcement that includes context for dynamic mode
+    const announcementText = theme === 'dynamic'
+      ? `Theme changed to dynamic with ${resolvedTheme} base`
+      : `Theme changed to ${theme}`;
+    
+    announcer.textContent = announcementText
+  }, [theme, resolvedTheme])
 
   const value = {
     theme,
