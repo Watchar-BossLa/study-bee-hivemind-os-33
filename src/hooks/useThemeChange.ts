@@ -16,7 +16,7 @@ export function useThemeChange(callback: (theme: string, resolvedTheme: string) 
     // Announce theme change for screen readers if needed
     const announcer = document.getElementById('theme-change-announcer');
     if (announcer) {
-      announcer.textContent = `Theme changed to ${theme === 'dynamic' ? 'dynamic ' + resolvedTheme : theme}`;
+      announcer.textContent = `Theme changed to ${theme === "dynamic" ? "dynamic " + resolvedTheme : theme}`;
     }
   }, [theme, resolvedTheme, callback]);
   
