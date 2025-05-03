@@ -49,3 +49,48 @@ export interface DbMatchPlayer {
 
 // Type for answers in arena mode
 export type QuizAnswer = 'a' | 'b' | 'c' | 'd' | 'none';
+
+// Add missing interface for Achievement
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  earned: boolean;
+  earned_at?: string;
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+}
+
+// Add missing interface for LeaderboardEntry
+export interface LeaderboardEntry {
+  user_id: string;
+  username?: string;
+  matches_played: number;
+  matches_won: number;
+  total_score: number;
+  highest_score: number;
+  win_rate: number;
+}
+
+// Add missing interface for ArenaStats
+export interface ArenaStats {
+  user_id: string;
+  matches_played: number;
+  matches_won: number;
+  total_score: number;
+  highest_score: number;
+  questions_answered: number;
+  correct_answers: number;
+  avg_response_time?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Add missing interface for UpdatePlayerProgressParams
+export interface UpdatePlayerProgressParams {
+  match_id_param: string;
+  user_id_param: string;
+  score_to_add: number;
+  is_correct: boolean;
+  response_time_param: number;
+}
