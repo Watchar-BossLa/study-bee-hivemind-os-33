@@ -1,66 +1,93 @@
-
 import { useCallback } from 'react';
+import { v4 as uuidv4 } from '@/lib/uuid';
 import { supabase } from '@/integrations/supabase/client';
 
-// Type for insert data to avoid deep instantiation
-interface MatchInsertData {
-  status: string;
-  subject_focus?: string | null;
-}
-
-/**
- * Hook for creating and joining arena matches
- */
 export const useMatchCreation = () => {
-  const createMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
-    // Create insert data explicitly typed to avoid deep instantiation
-    const insertData: MatchInsertData = { status: 'waiting' };
-    
-    // Add subject focus if specified
-    if (subjectFocus) {
-      insertData.subject_focus = subjectFocus;
+  const findWaitingMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
+    try {
+      const { data: waitingMatches } = await supabase
+        .from('arena_matches')
+        .select('id, subject_focus')
+        .eq('status', 'waiting')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Only consider subject-specific matches when a subject is selected
+      // Otherwise only consider general/random topic matches
+      if (waitingMatches && waitingMatches.length > 0) {
+        const matchedMatch = waitingMatches.find(match => {
+          if (subjectFocus) {
+            return match.subject_focus === subjectFocus;
+          } else {
+            return !match.subject_focus;
+          }
+        });
+        
+        if (matchedMatch) {
+          return matchedMatch.id;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error finding waiting match:', error);
+      return null;
     }
+  }, []);
 
-    const { data: newMatch, error: createError } = await supabase
-      .from('arena_matches')
-      .insert(insertData)
-      .select()
-      .single();
-
-    if (createError || !newMatch) return null;
-    return newMatch.id as string;
+  const createMatch = useCallback(async (subjectFocus?: string | null): Promise<string> => {
+    try {
+      const matchId = uuidv4();
+      
+      // Create new match record
+      await supabase.from('arena_matches').insert({
+        id: matchId,
+        status: 'waiting',
+        subject_focus: subjectFocus || null
+      });
+      
+      return matchId;
+    } catch (error) {
+      console.error('Error creating match:', error);
+      throw error;
+    }
   }, []);
 
   const joinMatchAsPlayer = useCallback(async (matchId: string, userId: string): Promise<boolean> => {
-    const { error: joinError } = await supabase
-      .from('match_players')
-      .insert({ match_id: matchId, user_id: userId });
-
-    return !joinError;
-  }, []);
-
-  const findWaitingMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
-    // Fix for excessively deep type instantiation: Use explicit promise return type
-    // Look for existing waiting matches with the same subject focus if specified
-    let query = supabase
-      .from('arena_matches')
-      .select('id')
-      .eq('status', 'waiting');
-    
-    if (subjectFocus) {
-      query = query.eq('subject_focus', subjectFocus);
+    try {
+      // Check if player already in match
+      const { data: existingPlayer } = await supabase
+        .from('match_players')
+        .select('id')
+        .eq('match_id', matchId)
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (existingPlayer) {
+        return true; // Already joined
+      }
+      
+      // Join match as player
+      await supabase.from('match_players').insert({
+        id: uuidv4(),
+        match_id: matchId,
+        user_id: userId,
+        score: 0,
+        correct_answers: 0,
+        questions_answered: 0,
+        joined_at: new Date().toISOString()
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error joining match:', error);
+      return false;
     }
-
-    // Get existing matches and check if there's one we can join
-    const { data: existingMatches } = await query;
-    const existingMatch = existingMatches && existingMatches.length > 0 ? existingMatches[0] : null;
-    
-    return existingMatch ? (existingMatch.id as string) : null;
   }, []);
 
   return {
+    findWaitingMatch,
     createMatch,
-    joinMatchAsPlayer,
-    findWaitingMatch
+    joinMatchAsPlayer
   };
 };
