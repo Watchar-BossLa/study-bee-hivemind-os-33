@@ -100,9 +100,62 @@ export const useArenaAchievements = () => {
     }
   };
 
+  // Add the checkForAchievements function that was previously in useArena
+  const checkForAchievements = useCallback(async (userId: string, matchId: string) => {
+    try {
+      const { data: playerData } = await supabase
+        .from('match_players')
+        .select('*')
+        .eq('match_id', matchId)
+        .eq('user_id', userId)
+        .single();
+
+      if (!playerData) return;
+      
+      // First match achievement
+      await awardAchievement(userId, 'first-match');
+
+      // Perfect score achievement
+      if (playerData.questions_answered > 0 && playerData.correct_answers === playerData.questions_answered) {
+        await awardAchievement(userId, 'perfect-score');
+      }
+
+      // Check if won the match
+      const { data: allPlayers } = await supabase
+        .from('match_players')
+        .select('*')
+        .eq('match_id', matchId);
+        
+      if (allPlayers) {
+        const isWinner = allPlayers.every(p => p.user_id === userId || p.score < playerData.score);
+        if (isWinner) {
+          await awardAchievement(userId, 'first-win');
+        }
+      }
+      
+      // High score achievement
+      if (playerData.score >= 100) {
+        await awardAchievement(userId, 'high-score');
+      }
+      
+      // Quick responder achievement - safely handle potentially missing property
+      const totalResponseTime = playerData.total_response_time || 0;
+      const averageResponseTime = playerData.questions_answered > 0 ? 
+        totalResponseTime / playerData.questions_answered : 
+        0;
+        
+      if (averageResponseTime <= 5 && playerData.questions_answered >= 3) {
+        await awardAchievement(userId, 'quick-responder');
+      }
+    } catch (error) {
+      console.error('Error checking achievements:', error);
+    }
+  }, [awardAchievement]);
+
   return {
     achievements,
     fetchAchievements,
-    awardAchievement
+    awardAchievement,
+    checkForAchievements
   };
 };

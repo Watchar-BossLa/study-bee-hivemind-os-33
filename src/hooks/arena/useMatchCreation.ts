@@ -2,12 +2,19 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Type for insert data to avoid deep instantiation
+interface MatchInsertData {
+  status: string;
+  subject_focus?: string | null;
+}
+
 /**
  * Hook for creating and joining arena matches
  */
 export const useMatchCreation = () => {
   const createMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
-    const insertData: Record<string, unknown> = { status: 'waiting' };
+    // Create insert data explicitly typed to avoid deep instantiation
+    const insertData: MatchInsertData = { status: 'waiting' };
     
     // Add subject focus if specified
     if (subjectFocus) {
