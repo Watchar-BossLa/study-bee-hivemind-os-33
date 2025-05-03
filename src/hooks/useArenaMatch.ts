@@ -1,90 +1,68 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { ArenaMatch, MatchPlayer } from '@/types/arena';
-
-// Define simpler types for database responses to avoid excessive type instantiation
-interface DbArenaMatchResponse {
-  id: string;
-  status: string;
-  start_time: string | null;
-  end_time: string | null;
-  subject_focus?: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-interface DbMatchPlayerResponse {
-  id: string;
-  match_id: string;
-  user_id: string;
-  score: number;
-  correct_answers: number;
-  questions_answered: number;
-  total_response_time?: number;
-  streak?: number;
-  created_at: string | null;
-}
+import { useMatchSubscription } from './arena/useMatchSubscription';
+import { useMatchFetch } from './arena/useMatchFetch';
+import { useMatchCreation } from './arena/useMatchCreation';
+import { useMatchActions } from './arena/useMatchActions';
 
 export const useArenaMatch = () => {
   const [currentMatch, setCurrentMatch] = useState<ArenaMatch | null>(null);
   const [players, setPlayers] = useState<MatchPlayer[]>([]);
   const [matchComplete, setMatchComplete] = useState(false);
-  const [unsubscribe, setUnsubscribe] = useState<(() => void) | null>(() => null);
   
   const { toast } = useToast();
+  const { setupSubscription, clearSubscription } = useMatchSubscription();
+  const { fetchMatch, fetchMatchPlayers } = useMatchFetch();
+  const { createMatch, joinMatchAsPlayer, findWaitingMatch } = useMatchCreation();
+  const { activateMatch, finishMatch: finishMatchAction } = useMatchActions();
+
+  const updateMatchData = useCallback(async (matchId: string) => {
+    const match = await fetchMatch(matchId);
+    if (match) {
+      setCurrentMatch(match);
+    }
+  }, [fetchMatch]);
+
+  const updatePlayersData = useCallback(async (matchId: string) => {
+    const matchPlayers = await fetchMatchPlayers(matchId);
+    setPlayers(matchPlayers);
+    
+    // Check if we should activate the match when enough players have joined
+    if (matchPlayers.length >= 2 && currentMatch?.status === 'waiting') {
+      await activateMatch(matchId);
+    }
+  }, [fetchMatchPlayers, currentMatch, activateMatch]);
 
   const joinMatch = async (subjectFocus?: string | null): Promise<void> => {
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error('Not authenticated');
 
-      // Look for existing waiting matches with the same subject focus if specified
-      let query = supabase
-        .from('arena_matches')
-        .select()
-        .eq('status', 'waiting');
+      // Find an existing match or create a new one
+      let matchId = await findWaitingMatch(subjectFocus);
       
-      if (subjectFocus) {
-        query = query.eq('subject_focus', subjectFocus);
+      if (!matchId) {
+        matchId = await createMatch(subjectFocus);
+        if (!matchId) throw new Error('Failed to create match');
       }
 
-      // Get existing matches and check if there's one we can join
-      const { data: existingMatches } = await query;
-      const existingMatch = existingMatches && existingMatches.length > 0 ? existingMatches[0] : null;
+      // Join as a player
+      const joined = await joinMatchAsPlayer(matchId, user.id);
+      if (!joined) throw new Error('Failed to join match');
 
-      let matchId: string;
-
-      if (!existingMatch) {
-        const insertData: Record<string, unknown> = { status: 'waiting' };
-        
-        // Add subject focus if specified
-        if (subjectFocus) {
-          insertData.subject_focus = subjectFocus;
-        }
-
-        const { data: newMatch, error: createError } = await supabase
-          .from('arena_matches')
-          .insert(insertData)
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        if (!newMatch) throw new Error('Failed to create match');
-        matchId = newMatch.id as string;
-      } else {
-        matchId = existingMatch.id as string;
-      }
-
-      const { error: joinError } = await supabase
-        .from('match_players')
-        .insert({ match_id: matchId, user_id: user.id });
-
-      if (joinError) throw joinError;
-
-      const unsub = subscribeToMatch(matchId);
-      setUnsubscribe(() => unsub);
+      // Set up subscriptions for real-time updates
+      setupSubscription(
+        matchId, 
+        () => updatePlayersData(matchId),
+        () => updateMatchData(matchId)
+      );
+      
+      // Fetch initial data
+      await updateMatchData(matchId);
+      await updatePlayersData(matchId);
       
       const subjectMessage = subjectFocus ? 
         `Joined ${subjectFocus} match` : 
@@ -103,123 +81,25 @@ export const useArenaMatch = () => {
     }
   };
 
-  const subscribeToMatch = (matchId: string): (() => void) => {
-    const playersChannel = supabase.channel(`match_players_${matchId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'match_players',
-        filter: `match_id=eq.${matchId}`,
-      }, () => {
-        void fetchMatchPlayers(matchId);
-      })
-      .subscribe();
-
-    const matchChannel = supabase.channel(`arena_match_${matchId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'arena_matches',
-        filter: `id=eq.${matchId}`,
-      }, () => {
-        void fetchMatch(matchId);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(playersChannel);
-      supabase.removeChannel(matchChannel);
-    };
-  };
-
-  const fetchMatch = async (matchId: string): Promise<void> => {
-    const { data } = await supabase
-      .from('arena_matches')
-      .select()
-      .eq('id', matchId)
-      .single();
-    
-    if (data) {
-      const dbMatch = data as DbArenaMatchResponse;
-      
-      const typedMatch: ArenaMatch = {
-        id: dbMatch.id,
-        status: dbMatch.status as 'waiting' | 'active' | 'completed',
-        start_time: dbMatch.start_time,
-        end_time: dbMatch.end_time,
-        subject_focus: dbMatch.subject_focus,
-        created_at: dbMatch.created_at,
-        updated_at: dbMatch.updated_at
-      };
-      
-      setCurrentMatch(typedMatch);
-    }
-  };
-
-  const fetchMatchPlayers = async (matchId: string): Promise<void> => {
-    const { data } = await supabase
-      .from('match_players')
-      .select()
-      .eq('match_id', matchId);
-    
-    if (data) {
-      // Convert database response to MatchPlayer type
-      const typedPlayers: MatchPlayer[] = data.map((player) => {
-        const typedPlayer = player as DbMatchPlayerResponse;
-        return {
-          id: typedPlayer.id,
-          match_id: typedPlayer.match_id,
-          user_id: typedPlayer.user_id,
-          score: typedPlayer.score || 0,
-          correct_answers: typedPlayer.correct_answers || 0,
-          questions_answered: typedPlayer.questions_answered || 0,
-          total_response_time: typedPlayer.total_response_time || 0,
-          streak: typedPlayer.streak || 0,
-          joined_at: typedPlayer.created_at || new Date().toISOString()
-        };
-      });
-      
-      setPlayers(typedPlayers);
-      
-      if (typedPlayers.length >= 2 && currentMatch?.status === 'waiting') {
-        await supabase
-          .from('arena_matches')
-          .update({ 
-            status: 'active',
-            start_time: new Date().toISOString()
-          })
-          .eq('id', matchId);
-      }
-    }
-  };
-
   const finishMatch = async (): Promise<void> => {
     if (!currentMatch) return;
     
     try {
-      await supabase
-        .from('arena_matches')
-        .update({ 
-          status: 'completed' as const,
-          end_time: new Date().toISOString()
-        })
-        .eq('id', currentMatch.id);
-      
-      setMatchComplete(true);
+      const success = await finishMatchAction(currentMatch.id);
+      if (success) {
+        setMatchComplete(true);
+      }
     } catch (error) {
       console.error('Error finishing match:', error);
     }
   };
 
   const leaveMatch = useCallback(() => {
-    if (unsubscribe) {
-      unsubscribe();
-    }
-    
+    clearSubscription();
     setCurrentMatch(null);
     setPlayers([]);
     setMatchComplete(false);
-  }, [unsubscribe]);
+  }, [clearSubscription]);
 
   return {
     currentMatch,
