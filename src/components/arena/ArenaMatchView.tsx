@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArenaQuiz } from './ArenaQuiz';
 import { ArenaPlayers } from './ArenaPlayers';
+import { ArenaMatchWaiting } from './ArenaMatchWaiting';
 import { QuizQuestion, MatchPlayer, QuizAnswer, ArenaMatch } from '@/types/arena';
 
 interface ArenaMatchViewProps {

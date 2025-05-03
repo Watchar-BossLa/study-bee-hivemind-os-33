@@ -1,7 +1,8 @@
 
-import { useEffect } from 'react';
+import { useMatchTimerEffect } from './useMatchTimerEffect';
+import { useQuestionsLoadEffect } from './useQuestionsLoadEffect';
+import { useMatchCompletionEffect } from './useMatchCompletionEffect';
 import { QuizAnswer, ArenaMatch, MatchPlayer, QuizQuestion } from '@/types/arena';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ArenaEffectsProps {
   currentMatch: ArenaMatch | null;
@@ -24,89 +25,34 @@ interface ArenaEffectsProps {
   leaveMatch: () => void;
 }
 
-export const useArenaEffects = ({
-  currentMatch,
-  players,
-  questions,
-  currentQuestionIndex,
-  matchComplete,
-  selectedAnswer,
-  timeLeft,
-  setTimeLeft,
-  answerQuestion,
-  moveToNextQuestion,
-  resetTimer,
-  finishMatch,
-  fetchQuestions,
-  fetchUserStats,
-  fetchLeaderboard,
-  resetQuestions,
-  checkForAchievements
-}: ArenaEffectsProps) => {
-  // Handle active match timer
-  useEffect(() => {
-    if (!currentMatch || currentMatch.status !== 'active' || matchComplete || !questions.length) {
-      return;
-    }
+export const useArenaEffects = (props: ArenaEffectsProps) => {
+  // Use the refactored effect hooks
+  useMatchTimerEffect({
+    currentMatch: props.currentMatch,
+    questions: props.questions,
+    currentQuestionIndex: props.currentQuestionIndex,
+    matchComplete: props.matchComplete,
+    selectedAnswer: props.selectedAnswer,
+    timeLeft: props.timeLeft,
+    setTimeLeft: props.setTimeLeft,
+    answerQuestion: props.answerQuestion,
+    moveToNextQuestion: props.moveToNextQuestion,
+    resetTimer: props.resetTimer,
+    finishMatch: props.finishMatch
+  });
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          if (currentQuestionIndex < questions.length - 1) {
-            // Move to next question when time runs out
-            if (selectedAnswer === null) {
-              // Pass 'none' instead of 'x'
-              answerQuestion('none'); 
-            }
-            moveToNextQuestion(questions.length);
-            resetTimer();
-            return 15;
-          } else {
-            clearInterval(timer);
-            finishMatch();
-            return 0;
-          }
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  useQuestionsLoadEffect({
+    currentMatch: props.currentMatch,
+    questions: props.questions,
+    fetchQuestions: props.fetchQuestions
+  });
 
-    return () => clearInterval(timer);
-  }, [
-    currentMatch, 
-    currentQuestionIndex, 
-    questions.length, 
-    matchComplete, 
-    finishMatch, 
-    selectedAnswer, 
-    answerQuestion,
-    moveToNextQuestion, 
-    resetTimer,
-    setTimeLeft
-  ]);
-
-  // Fetch questions when match becomes active
-  useEffect(() => {
-    if (currentMatch?.status === 'active' && questions.length === 0) {
-      fetchQuestions();
-    }
-  }, [currentMatch?.status, questions.length, fetchQuestions]);
-
-  // Handle match completion
-  useEffect(() => {
-    const handleMatchComplete = async () => {
-      if (matchComplete && currentMatch) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await checkForAchievements(user.id, currentMatch.id);
-        }
-        
-        fetchUserStats();
-        fetchLeaderboard();
-        resetQuestions();
-      }
-    };
-
-    handleMatchComplete();
-  }, [matchComplete, currentMatch, fetchUserStats, fetchLeaderboard, resetQuestions, checkForAchievements]);
+  useMatchCompletionEffect({
+    currentMatch: props.currentMatch,
+    matchComplete: props.matchComplete,
+    checkForAchievements: props.checkForAchievements,
+    fetchUserStats: props.fetchUserStats,
+    fetchLeaderboard: props.fetchLeaderboard,
+    resetQuestions: props.resetQuestions
+  });
 };
