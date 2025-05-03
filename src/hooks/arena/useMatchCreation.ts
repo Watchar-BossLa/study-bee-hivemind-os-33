@@ -40,6 +40,7 @@ export const useMatchCreation = () => {
   }, []);
 
   const findWaitingMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
+    // Fix for excessively deep type instantiation: Use explicit promise return type
     // Look for existing waiting matches with the same subject focus if specified
     let query = supabase
       .from('arena_matches')

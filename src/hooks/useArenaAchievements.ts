@@ -139,7 +139,10 @@ export const useArenaAchievements = () => {
       }
       
       // Quick responder achievement - safely handle potentially missing property
-      const totalResponseTime = playerData.total_response_time || 0;
+      // Fix: Check if total_response_time exists on playerData
+      const totalResponseTime = playerData.total_response_time !== undefined ? 
+        playerData.total_response_time : 0;
+        
       const averageResponseTime = playerData.questions_answered > 0 ? 
         totalResponseTime / playerData.questions_answered : 
         0;
