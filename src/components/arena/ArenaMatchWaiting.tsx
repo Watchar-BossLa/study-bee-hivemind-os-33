@@ -30,6 +30,7 @@ export const ArenaMatchWaiting: React.FC<ArenaMatchWaitingProps> = ({
             <p className="mt-2 text-sm text-muted-foreground">
               The match will start automatically when enough players join
             </p>
+            {/* Only render subject focus if the property exists */}
             {currentMatch.subject_focus && (
               <p className="mt-4 text-sm font-medium">
                 Subject: {subjectAreas.find(s => s.id === currentMatch.subject_focus)?.name || currentMatch.subject_focus}

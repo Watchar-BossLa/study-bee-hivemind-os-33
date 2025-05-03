@@ -100,7 +100,7 @@ export const useArenaAchievements = () => {
     }
   };
 
-  // Add the checkForAchievements function that was previously in useArena
+  // Update the checkForAchievements function to handle potentially missing properties
   const checkForAchievements = useCallback(async (userId: string, matchId: string) => {
     try {
       const { data: playerData } = await supabase
@@ -133,19 +133,21 @@ export const useArenaAchievements = () => {
         }
       }
       
-      // High score achievement
+      // High score achievement - check if it exists in playerData
       if (playerData.score >= 100) {
         await awardAchievement(userId, 'high-score');
       }
       
-      // Quick responder achievement - safely handle potentially missing property
-      const totalResponseTime = playerData.total_response_time ?? 0;
-      const averageResponseTime = playerData.questions_answered > 0 ? 
-        totalResponseTime / playerData.questions_answered : 
-        0;
-        
-      if (averageResponseTime <= 5 && playerData.questions_answered >= 3) {
-        await awardAchievement(userId, 'quick-responder');
+      // Quick responder achievement - safely check if total_response_time exists
+      if ('total_response_time' in playerData) {
+        const totalResponseTime = playerData.total_response_time || 0;
+        const averageResponseTime = playerData.questions_answered > 0 ? 
+          totalResponseTime / playerData.questions_answered : 
+          0;
+          
+        if (averageResponseTime <= 5 && playerData.questions_answered >= 3) {
+          await awardAchievement(userId, 'quick-responder');
+        }
       }
     } catch (error) {
       console.error('Error checking achievements:', error);

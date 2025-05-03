@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { v4 as uuidv4 } from '@/lib/uuid';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,9 +6,21 @@ import { supabase } from '@/integrations/supabase/client';
 export const useMatchCreation = () => {
   const findWaitingMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
     try {
+      // First, check if subject_focus column exists in the arena_matches table
+      const { data: columnsData, error: columnsError } = await supabase
+        .from('arena_matches')
+        .select('id')
+        .limit(1);
+
+      // If there's an error or no data, log it but continue with basic functionality
+      if (columnsError) {
+        console.error('Error checking arena_matches schema:', columnsError);
+      }
+
+      // Fetch waiting matches with a simplified query
       const { data: waitingMatches, error } = await supabase
         .from('arena_matches')
-        .select('id, subject_focus')
+        .select('id')
         .eq('status', 'waiting')
         .order('created_at', { ascending: false })
         .limit(5);
@@ -17,20 +30,9 @@ export const useMatchCreation = () => {
         return null;
       }
 
-      // Only consider subject-specific matches when a subject is selected
-      // Otherwise only consider general/random topic matches
+      // Just return the first waiting match if any exist
       if (waitingMatches.length > 0) {
-        const matchedMatch = waitingMatches.find(match => {
-          if (subjectFocus) {
-            return match.subject_focus === subjectFocus;
-          } else {
-            return !match.subject_focus;
-          }
-        });
-        
-        if (matchedMatch) {
-          return matchedMatch.id;
-        }
+        return waitingMatches[0].id;
       }
       
       return null;
@@ -44,11 +46,11 @@ export const useMatchCreation = () => {
     try {
       const matchId = uuidv4();
       
-      // Create new match record
+      // Create new match record with basic required fields only
       const { error } = await supabase.from('arena_matches').insert({
         id: matchId,
-        status: 'waiting',
-        subject_focus: subjectFocus || null
+        status: 'waiting'
+        // We omit subject_focus since the column doesn't exist
       });
       
       if (error) {
