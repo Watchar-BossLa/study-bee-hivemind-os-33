@@ -7,17 +7,18 @@ export const useMatchCreation = () => {
   const findWaitingMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
     try {
       // First, check if subject_focus column exists in the arena_matches table
+      // by just fetching a single record - we'll handle any errors
       const { data: columnsData, error: columnsError } = await supabase
         .from('arena_matches')
         .select('id')
         .limit(1);
 
-      // If there's an error or no data, log it but continue with basic functionality
+      // Just log schema issues but continue with basic functionality
       if (columnsError) {
         console.error('Error checking arena_matches schema:', columnsError);
       }
 
-      // Fetch waiting matches with a simplified query
+      // Fetch waiting matches with simple query - avoid referencing subject_focus
       const { data: waitingMatches, error } = await supabase
         .from('arena_matches')
         .select('id')
@@ -50,7 +51,7 @@ export const useMatchCreation = () => {
       const { error } = await supabase.from('arena_matches').insert({
         id: matchId,
         status: 'waiting'
-        // We omit subject_focus since the column doesn't exist
+        // We omit subject_focus since the column might not exist
       });
       
       if (error) {

@@ -138,9 +138,9 @@ export const useArenaAchievements = () => {
         await awardAchievement(userId, 'high-score');
       }
       
-      // Quick responder achievement - safely check if total_response_time exists
-      if ('total_response_time' in playerData) {
-        const totalResponseTime = playerData.total_response_time || 0;
+      // Quick responder achievement - safely check for total_response_time
+      if ('total_response_time' in playerData && typeof playerData.total_response_time === 'number') {
+        const totalResponseTime: number = playerData.total_response_time;
         const averageResponseTime = playerData.questions_answered > 0 ? 
           totalResponseTime / playerData.questions_answered : 
           0;

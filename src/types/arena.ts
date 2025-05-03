@@ -17,7 +17,7 @@ export interface ArenaMatch {
   status: 'waiting' | 'active' | 'completed';
   start_time: string | null;
   end_time: string | null;
-  subject_focus?: string | null; // Make this optional since it doesn't exist in DB
+  subject_focus?: string | null; // Optional since it doesn't exist in some DBs
   created_at: string | null;
   updated_at: string | null;
 }
@@ -29,7 +29,7 @@ export interface MatchPlayer {
   score: number;
   correct_answers: number;
   questions_answered: number;
-  total_response_time?: number; // Make this optional since it's missing in some DBs
+  total_response_time?: number; // Optional since it's missing in some DBs
   streak?: number;
   joined_at: string;
 }
@@ -42,7 +42,7 @@ export interface DbMatchPlayer {
   score: number;
   correct_answers: number;
   questions_answered: number;
-  total_response_time?: number; // Make this optional
+  total_response_time?: number; // Optional
   streak?: number;
   created_at: string | null;
 }
@@ -92,5 +92,5 @@ export interface UpdatePlayerProgressParams {
   user_id_param: string;
   score_to_add: number;
   is_correct: boolean;
-  response_time_param?: number; // Make this optional
+  response_time_param?: number; // Optional
 }
