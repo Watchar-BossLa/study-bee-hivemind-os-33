@@ -6,12 +6,13 @@ import Courses from './pages/Courses';
 import CourseContent from './pages/CourseContent';
 import CourseLearning from './pages/CourseLearning';
 import Arena from './pages/Arena';
+import ArenaAdmin from './pages/ArenaAdmin';
 import FlashcardReview from './pages/FlashcardReview';
 import OCRFlashcards from './pages/OCRFlashcards';
 import GraphTutor from './pages/GraphTutor';
 import LiveStudySessions from './pages/LiveStudySessions';
 import PeerLearning from './pages/PeerLearning';
-import NotImplemented from './pages/NotImplemented';
+import NotImplemented from './pages/NotFound';
 import NotFound from './pages/NotFound';
 import Qualifications from './pages/Qualifications';
 import StudyGroups from './pages/StudyGroups';
@@ -41,6 +42,7 @@ const App = () => {
           <Route path="/courses/:courseId" element={<CourseContent />} />
           <Route path="/learning/:courseId" element={<CourseLearning />} />
           <Route path="/arena" element={<Arena />} />
+          <Route path="/arena/admin" element={<ArenaAdmin />} />
           <Route path="/flashcards/review" element={<FlashcardReview />} />
           <Route path="/flashcards/ocr" element={<OCRFlashcards />} />
           <Route path="/tutor" element={<GraphTutor />} />

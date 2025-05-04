@@ -1,15 +1,15 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Users, Flag } from 'lucide-react';
 import { ArenaSubjectSelect } from './ArenaSubjectSelect';
 import { ArenaMatch } from '@/types/arena';
+import { Loader2, Users, Trophy } from 'lucide-react';
 
 interface ArenaHeaderProps {
   isLoading: boolean;
   currentMatch: ArenaMatch | null;
   selectedSubject: string | null;
-  onSelectSubject: (subject: string) => void;
+  onSelectSubject: (subject: string | null) => void;
   onJoinMatch: () => void;
   onLeaveMatch: () => void;
 }
@@ -23,25 +23,47 @@ export const ArenaHeader: React.FC<ArenaHeaderProps> = ({
   onLeaveMatch
 }) => {
   return (
-    <div className="flex items-center justify-between">
-      <h1 className="text-3xl font-bold">Quiz Arena</h1>
-      {!currentMatch ? (
-        <div className="flex items-center gap-4">
-          <ArenaSubjectSelect 
-            selectedSubject={selectedSubject} 
-            onSelectSubject={onSelectSubject}
-          />
-          <Button onClick={onJoinMatch} disabled={isLoading}>
-            <Users className="mr-2 h-4 w-4" />
-            Join Match
+    <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+      <div>
+        <h1 className="text-3xl font-bold">Quiz Arena</h1>
+        <p className="text-muted-foreground">Compete with other students in real-time quiz battles</p>
+      </div>
+      
+      <div className="flex items-center gap-4">
+        {!currentMatch ? (
+          <>
+            <ArenaSubjectSelect 
+              value={selectedSubject} 
+              onChange={onSelectSubject}
+              disabled={isLoading} 
+            />
+            <Button 
+              onClick={onJoinMatch} 
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading
+                </>
+              ) : (
+                <>
+                  <Users className="h-4 w-4" />
+                  Join Match
+                </>
+              )}
+            </Button>
+          </>
+        ) : (
+          <Button 
+            onClick={onLeaveMatch} 
+            variant="outline"
+          >
+            Leave Match
           </Button>
-        </div>
-      ) : (
-        <Button onClick={onLeaveMatch} variant="outline">
-          <Flag className="mr-2 h-4 w-4" />
-          Leave Match
-        </Button>
-      )}
+        )}
+      </div>
     </div>
   );
 };
