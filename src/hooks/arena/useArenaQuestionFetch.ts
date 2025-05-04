@@ -20,14 +20,22 @@ export const useArenaQuestionFetch = (matchId: string | null) => {
       setError(null);
       
       // Fetch match details to get the subject focus (if it exists)
-      const { data: matchData } = await supabase
-        .from('arena_matches')
-        .select('subject_focus')
-        .eq('id', matchId)
-        .single();
-      
-      // Use subject focus from match if available, otherwise use provided category
-      const questionCategory = matchData?.subject_focus || category;
+      let questionCategory = category;
+      try {
+        const { data: matchData, error: matchError } = await supabase
+          .from('arena_matches')
+          .select('*')
+          .eq('id', matchId)
+          .single();
+        
+        // Only use subject_focus if it exists in the returned data
+        if (!matchError && matchData && 'subject_focus' in matchData) {
+          questionCategory = matchData.subject_focus || category;
+        }
+      } catch (err) {
+        console.error('Error checking match data:', err);
+        // Continue with provided category if there's an error
+      }
       
       // Fetch questions from our service
       const fetchedQuestions = await arenaQuestionService.fetchQuestions(questionCategory);

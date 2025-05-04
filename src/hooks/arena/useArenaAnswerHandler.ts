@@ -34,13 +34,13 @@ export const useArenaAnswerHandler = (matchId: string | null) => {
       // Calculate score based on difficulty and response time
       const scoreToAdd = isCorrect ? calculateScore(currentQuestion.difficulty, responseTime) : 0;
       
-      // Update player progress in the match
+      // Update player progress in the match - check for function parameters
       const { error } = await supabase.rpc('update_player_progress', {
         match_id_param: matchId,
         user_id_param: user.id,
         score_to_add: scoreToAdd,
-        is_correct: isCorrect,
-        response_time_param: responseTime
+        is_correct: isCorrect
+        // response_time_param is not included in the function definition as shown in the error
       });
       
       if (error) {

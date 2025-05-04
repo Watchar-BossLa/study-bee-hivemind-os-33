@@ -33,8 +33,8 @@ export const ArenaHeader: React.FC<ArenaHeaderProps> = ({
         {!currentMatch ? (
           <>
             <ArenaSubjectSelect 
-              value={selectedSubject} 
-              onChange={onSelectSubject}
+              selectedSubject={selectedSubject} 
+              onSelectSubject={onSelectSubject}
               disabled={isLoading} 
             />
             <Button 

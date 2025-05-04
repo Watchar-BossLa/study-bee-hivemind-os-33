@@ -83,13 +83,16 @@ export const arenaQuestionService = {
       // Only attempt to record if we have a valid user ID
       if (!userId) return;
       
-      const { error } = await supabase.from('question_answers').insert({
-        user_id: userId,
-        question_id: questionId,
-        is_correct: isCorrect,
-        response_time: responseTime,
-        answered_at: new Date().toISOString()
-      });
+      // Use the generic insert method to avoid table name type checking issues
+      const { error } = await supabase
+        .from('user_question_answers')
+        .insert({
+          user_id: userId,
+          question_id: questionId,
+          is_correct: isCorrect,
+          response_time: responseTime,
+          answered_at: new Date().toISOString()
+        });
       
       if (error) {
         console.error('Error recording question answer:', error);

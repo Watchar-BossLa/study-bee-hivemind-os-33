@@ -7,14 +7,16 @@ import { subjectAreas } from '@/data/qualifications';
 interface ArenaSubjectSelectProps {
   selectedSubject: string | null;
   onSelectSubject: (subject: string) => void;
+  disabled?: boolean;
 }
 
 export const ArenaSubjectSelect: React.FC<ArenaSubjectSelectProps> = ({
   selectedSubject,
-  onSelectSubject
+  onSelectSubject,
+  disabled = false
 }) => {
   return (
-    <Select value={selectedSubject || ''} onValueChange={onSelectSubject}>
+    <Select value={selectedSubject || ''} onValueChange={onSelectSubject} disabled={disabled}>
       <SelectTrigger className="w-[200px]">
         <SelectValue placeholder="Select Subject" />
       </SelectTrigger>
