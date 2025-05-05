@@ -64,12 +64,14 @@ export const arenaChatService = {
         table: 'arena_typing_status',
         filter: `match_id=eq.${matchId}`
       }, async () => {
-        // Query for all current typing statuses when any change occurs
-        const { data } = await supabase
-          .rpc('get_typing_status', { match_id_param: matchId });
+        // Use raw SQL query instead of RPC to get typing status
+        const { data, error } = await supabase
+          .from('arena_typing_status')
+          .select('*')
+          .eq('match_id', matchId);
         
-        if (data) {
-          onTypingChange(data as TypingStatus[]);
+        if (data && !error) {
+          onTypingChange(data as unknown as TypingStatus[]);
         }
       })
       .subscribe();
@@ -92,11 +94,13 @@ export const arenaChatService = {
     content: string
   ): Promise<boolean> => {
     try {
+      // Insert directly to the table instead of using RPC
       const { error } = await supabase
-        .rpc('insert_chat_message', {
-          match_id_param: matchId,
-          user_id_param: userId,
-          content_param: content
+        .from('arena_chat_messages')
+        .insert({
+          match_id: matchId,
+          user_id: userId,
+          content: content
         });
 
       return !error;
@@ -119,11 +123,16 @@ export const arenaChatService = {
     isTyping: boolean
   ): Promise<boolean> => {
     try {
+      // Use upsert directly instead of RPC
       const { error } = await supabase
-        .rpc('update_typing_status', {
-          match_id_param: matchId,
-          user_id_param: userId,
-          is_typing_param: isTyping
+        .from('arena_typing_status')
+        .upsert({
+          match_id: matchId,
+          user_id: userId,
+          is_typing: isTyping,
+          last_updated: new Date().toISOString()
+        }, {
+          onConflict: 'user_id, match_id'
         });
 
       return !error;
@@ -140,11 +149,12 @@ export const arenaChatService = {
    */
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
+      // Delete directly from table instead of using RPC
       await supabase
-        .rpc('delete_typing_status', {
-          match_id_param: matchId,
-          user_id_param: userId
-        });
+        .from('arena_typing_status')
+        .delete()
+        .eq('match_id', matchId)
+        .eq('user_id', userId);
     } catch (error) {
       console.error('Error clearing typing status:', error);
     }
@@ -157,14 +167,19 @@ export const arenaChatService = {
    */
   fetchChatMessages: async (matchId: string): Promise<ChatMessage[]> => {
     try {
+      // Use direct query instead of RPC
       const { data, error } = await supabase
-        .rpc('get_chat_messages', { match_id_param: matchId });
+        .from('arena_chat_messages')
+        .select('*')
+        .eq('match_id', matchId)
+        .order('created_at', { ascending: true })
+        .limit(100);
       
       if (error) {
         throw error;
       }
       
-      return data as ChatMessage[];
+      return data as unknown as ChatMessage[];
     } catch (error) {
       console.error('Error fetching chat messages:', error);
       return [];
