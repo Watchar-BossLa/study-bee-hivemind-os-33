@@ -2,9 +2,9 @@
 // This file extends the Supabase database types with our custom tables
 import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
 
-// Extend Database type via declaration merging
+// Extend Database type via module augmentation
 declare module '@/integrations/supabase/types' {
-  export interface Database extends Omit<SupabaseDatabase, 'public'> {
+  interface Database extends Omit<SupabaseDatabase, 'public'> {
     public: {
       Tables: {
         arena_chat_messages: {
