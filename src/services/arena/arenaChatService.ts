@@ -72,7 +72,7 @@ export const arenaChatService = {
           .eq('match_id', matchId);
         
         if (data && !error) {
-          onTypingChange(data as TypingStatus[]);
+          onTypingChange(data as unknown as TypingStatus[]);
         }
       })
       .subscribe();
@@ -180,7 +180,7 @@ export const arenaChatService = {
         throw error;
       }
       
-      return data as ChatMessage[];
+      return data as unknown as ChatMessage[];
     } catch (error) {
       console.error('Error fetching chat messages:', error);
       return [];
