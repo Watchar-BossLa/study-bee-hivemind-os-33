@@ -19,16 +19,8 @@ export const useArenaChat = (matchId: string | null) => {
     const fetchInitialMessages = async () => {
       setIsLoading(true);
       try {
-        const { data } = await supabase
-          .from('arena_chat_messages')
-          .select('*')
-          .eq('match_id', matchId)
-          .order('created_at', { ascending: true })
-          .limit(50);
-        
-        if (data) {
-          setMessages(data as ChatMessage[]);
-        }
+        const data = await arenaChatService.fetchChatMessages(matchId);
+        setMessages(data);
       } catch (error) {
         console.error('Error loading chat messages:', error);
       } finally {

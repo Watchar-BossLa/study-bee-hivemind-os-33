@@ -66,9 +66,7 @@ export const arenaChatService = {
       }, async () => {
         // Query for all current typing statuses when any change occurs
         const { data } = await supabase
-          .from('arena_typing_status')
-          .select('*')
-          .eq('match_id', matchId);
+          .rpc('get_typing_status', { match_id_param: matchId });
         
         if (data) {
           onTypingChange(data as TypingStatus[]);
@@ -95,11 +93,10 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from('arena_chat_messages')
-        .insert({
-          match_id: matchId,
-          user_id: userId,
-          content: content
+        .rpc('insert_chat_message', {
+          match_id_param: matchId,
+          user_id_param: userId,
+          content_param: content
         });
 
       return !error;
@@ -123,14 +120,10 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from('arena_typing_status')
-        .upsert({
-          match_id: matchId,
-          user_id: userId,
-          is_typing: isTyping,
-          last_updated: new Date().toISOString()
-        }, {
-          onConflict: 'match_id,user_id'
+        .rpc('update_typing_status', {
+          match_id_param: matchId,
+          user_id_param: userId,
+          is_typing_param: isTyping
         });
 
       return !error;
@@ -148,11 +141,33 @@ export const arenaChatService = {
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
       await supabase
-        .from('arena_typing_status')
-        .delete()
-        .match({ match_id: matchId, user_id: userId });
+        .rpc('delete_typing_status', {
+          match_id_param: matchId,
+          user_id_param: userId
+        });
     } catch (error) {
       console.error('Error clearing typing status:', error);
+    }
+  },
+
+  /**
+   * Fetch chat messages for a match
+   * @param matchId The match ID
+   * @returns A promise that resolves with the messages
+   */
+  fetchChatMessages: async (matchId: string): Promise<ChatMessage[]> => {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_chat_messages', { match_id_param: matchId });
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data as ChatMessage[];
+    } catch (error) {
+      console.error('Error fetching chat messages:', error);
+      return [];
     }
   }
 };
