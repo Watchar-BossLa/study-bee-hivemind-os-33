@@ -148,9 +148,9 @@ export const arenaChatService = {
    */
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
-      // Use explicit type assertion to avoid excessive type instantiation depth
-      const client = supabase;
-      await client
+      // Create a typed client variable to avoid excessive type instantiation depth
+      const typedClient = supabase;
+      await typedClient
         .from(TYPING_STATUS_TABLE as TableNames)
         .delete()
         .eq('match_id', matchId)

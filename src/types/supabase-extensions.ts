@@ -1,5 +1,6 @@
+
 // This file extends the Supabase database types with our custom tables
-import { Database as SupabaseDatabase } from '@/integrations/supabase/types';
+import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
 
 // Use declaration merging to extend the Database type
 declare module '@/integrations/supabase/types' {
