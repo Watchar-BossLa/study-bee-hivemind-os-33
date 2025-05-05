@@ -4,7 +4,7 @@ import type { Database as SupabaseDatabase } from '@/integrations/supabase/types
 
 // Use declaration merging to extend the Database interface
 declare module '@/integrations/supabase/types' {
-  interface Database extends SupabaseDatabase {
+  interface Database {
     public: {
       Tables: SupabaseDatabase['public']['Tables'] & {
         arena_chat_messages: {
