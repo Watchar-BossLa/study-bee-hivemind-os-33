@@ -83,19 +83,27 @@ export const arenaQuestionService = {
       // Only attempt to record if we have a valid user ID
       if (!userId) return;
       
-      // Use the generic insert method to avoid table name type checking issues
-      const { error } = await supabase
-        .from('user_question_answers')
-        .insert({
+      // Since 'user_question_answers' is not in the Supabase types,
+      // we'll use the generic fetch API instead of the typed client
+      // This is a temporary solution until the table is added to the types
+      const response = await fetch(`${supabase.supabaseUrl}/rest/v1/user_question_answers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabase.supabaseKey,
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+        },
+        body: JSON.stringify({
           user_id: userId,
           question_id: questionId,
           is_correct: isCorrect,
           response_time: responseTime,
           answered_at: new Date().toISOString()
-        });
+        })
+      });
       
-      if (error) {
-        console.error('Error recording question answer:', error);
+      if (!response.ok) {
+        console.error('Error recording question answer:', await response.text());
       }
     } catch (error) {
       console.error('Unexpected error recording answer:', error);

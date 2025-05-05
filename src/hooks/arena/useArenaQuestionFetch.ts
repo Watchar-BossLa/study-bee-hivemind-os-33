@@ -30,7 +30,9 @@ export const useArenaQuestionFetch = (matchId: string | null) => {
         
         // Only use subject_focus if it exists in the returned data
         if (!matchError && matchData && 'subject_focus' in matchData) {
-          questionCategory = matchData.subject_focus || category;
+          // Type assertion to handle the unknown type
+          const subjectFocus = matchData.subject_focus as string | null;
+          questionCategory = subjectFocus || category;
         }
       } catch (err) {
         console.error('Error checking match data:', err);
