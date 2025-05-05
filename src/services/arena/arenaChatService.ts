@@ -60,12 +60,12 @@ export const arenaChatService = {
       }, async () => {
         // Fetch the current typing status data
         const { data, error } = await supabase
-          .from('arena_typing_status')
+          .from('arena_typing_status' as any)
           .select('*')
           .eq('match_id', matchId);
         
         if (data && !error) {
-          onTypingChange(data as unknown as TypingStatus[]);
+          onTypingChange(data as TypingStatus[]);
         }
       })
       .subscribe();
@@ -89,7 +89,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from('arena_chat_messages')
+        .from('arena_chat_messages' as any)
         .insert({
           match_id: matchId,
           user_id: userId,
@@ -117,7 +117,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from('arena_typing_status')
+        .from('arena_typing_status' as any)
         .upsert({
           match_id: matchId,
           user_id: userId,
@@ -142,7 +142,7 @@ export const arenaChatService = {
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
       await supabase
-        .from('arena_typing_status')
+        .from('arena_typing_status' as any)
         .delete()
         .eq('match_id', matchId)
         .eq('user_id', userId);
@@ -159,7 +159,7 @@ export const arenaChatService = {
   fetchChatMessages: async (matchId: string): Promise<ChatMessage[]> => {
     try {
       const { data, error } = await supabase
-        .from('arena_chat_messages')
+        .from('arena_chat_messages' as any)
         .select('*')
         .eq('match_id', matchId)
         .order('created_at', { ascending: true })
@@ -169,7 +169,7 @@ export const arenaChatService = {
         throw error;
       }
       
-      return data as unknown as ChatMessage[];
+      return data as ChatMessage[];
     } catch (error) {
       console.error('Error fetching chat messages:', error);
       return [];

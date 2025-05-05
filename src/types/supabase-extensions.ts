@@ -3,7 +3,7 @@
 
 // Module augmentation syntax for extending existing Database interface
 declare module '@/integrations/supabase/types' {
-  export interface Database {
+  interface Database {
     public: {
       Tables: {
         arena_chat_messages: {
@@ -67,11 +67,7 @@ declare module '@/integrations/supabase/types' {
             }
           ];
         };
-      } & Database['public']['Tables'];
-      Views: Database['public']['Views'];
-      Functions: Database['public']['Functions'];
-      Enums: Database['public']['Enums'];
-      CompositeTypes: Database['public']['CompositeTypes'];
+      };
     };
   }
 }
