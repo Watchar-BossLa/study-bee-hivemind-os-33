@@ -1,14 +1,12 @@
-
 // This file extends the Supabase database types with our custom tables
-import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
+import { Database as SupabaseDatabase } from '@/integrations/supabase/types';
 
 // Use declaration merging to extend the Database type
 declare module '@/integrations/supabase/types' {
-  // Extend the existing Database interface
-  export interface Database extends SupabaseDatabase {
+  interface Database {
     public: {
       Tables: {
-        // Include existing tables
+        // Keep existing tables
         arena_matches: SupabaseDatabase['public']['Tables']['arena_matches'];
         arena_stats: SupabaseDatabase['public']['Tables']['arena_stats'];
         flashcards: SupabaseDatabase['public']['Tables']['flashcards'];
