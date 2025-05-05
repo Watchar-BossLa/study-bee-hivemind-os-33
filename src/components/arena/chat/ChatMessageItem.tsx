@@ -9,18 +9,18 @@ interface ChatMessageItemProps {
 }
 
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message, players }) => {
-  // Check if the message is from the current user (simplified approach)
-  const currentUser = async () => {
-    const { data } = await supabase.auth.getUser();
-    return data?.user?.id;
-  };
-  
+  // Check if the message is from the current user
   const [isCurrentUser, setIsCurrentUser] = React.useState(false);
   
   React.useEffect(() => {
-    currentUser().then(userId => {
-      setIsCurrentUser(userId === message.user_id);
-    });
+    const checkCurrentUser = async (): Promise<void> => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        setIsCurrentUser(data.user.id === message.user_id);
+      }
+    };
+    
+    checkCurrentUser();
   }, [message.user_id]);
   
   // Find if the user is a player in the match

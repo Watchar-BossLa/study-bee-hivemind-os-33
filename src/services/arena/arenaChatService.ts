@@ -1,22 +1,13 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RealtimeChannel } from '@supabase/supabase-js';
-import '@/types/supabase-extensions';  // Import the extended types
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import type { Database } from '@/integrations/supabase/types';
 
-export type ChatMessage = {
-  id: string;
-  match_id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-};
-
-export type TypingStatus = {
-  user_id: string;
-  match_id: string;
-  is_typing: boolean;
-  last_updated: string;
-};
+/**
+ * Types for chat messages and typing status
+ */
+export type ChatMessage = Database['public']['Tables']['arena_chat_messages']['Row'];
+export type TypingStatus = Database['public']['Tables']['arena_typing_status']['Row'];
 
 /**
  * Service for handling arena chat functionality and typing indicators
@@ -65,15 +56,15 @@ export const arenaChatService = {
         table: 'arena_typing_status',
         filter: `match_id=eq.${matchId}`
       }, async () => {
-        // Use raw SQL query instead of RPC to get typing status
-        const { data, error } = await supabase
+        // Fetch the current typing status data
+        const result = await supabase
           .from('arena_typing_status')
           .select('*')
           .eq('match_id', matchId);
         
-        if (data && !error) {
-          // Safe type casting with unknown intermediate
-          onTypingChange(data as unknown as TypingStatus[]);
+        if (result.data && !result.error) {
+          // Type assertion that preserves the correct type
+          onTypingChange(result.data as TypingStatus[]);
         }
       })
       .subscribe();
@@ -96,8 +87,8 @@ export const arenaChatService = {
     content: string
   ): Promise<boolean> => {
     try {
-      // Insert directly to the table instead of using RPC
-      const { error } = await supabase
+      // Insert directly to the table
+      const result = await supabase
         .from('arena_chat_messages')
         .insert({
           match_id: matchId,
@@ -105,7 +96,7 @@ export const arenaChatService = {
           content: content
         });
 
-      return !error;
+      return !result.error;
     } catch (error) {
       console.error('Error sending chat message:', error);
       return false;
@@ -125,8 +116,8 @@ export const arenaChatService = {
     isTyping: boolean
   ): Promise<boolean> => {
     try {
-      // Use upsert directly instead of RPC
-      const { error } = await supabase
+      // Use upsert for the typing status
+      const result = await supabase
         .from('arena_typing_status')
         .upsert({
           match_id: matchId,
@@ -137,7 +128,7 @@ export const arenaChatService = {
           onConflict: 'user_id, match_id'
         });
 
-      return !error;
+      return !result.error;
     } catch (error) {
       console.error('Error updating typing status:', error);
       return false;
@@ -151,7 +142,7 @@ export const arenaChatService = {
    */
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
-      // Delete directly from table instead of using RPC
+      // Delete the typing status record
       await supabase
         .from('arena_typing_status')
         .delete()
@@ -169,20 +160,19 @@ export const arenaChatService = {
    */
   fetchChatMessages: async (matchId: string): Promise<ChatMessage[]> => {
     try {
-      // Use direct query instead of RPC
-      const { data, error } = await supabase
+      // Fetch chat messages
+      const result = await supabase
         .from('arena_chat_messages')
         .select('*')
         .eq('match_id', matchId)
         .order('created_at', { ascending: true })
         .limit(100);
       
-      if (error) {
-        throw error;
+      if (result.error) {
+        throw result.error;
       }
       
-      // Safe type casting with unknown intermediate
-      return data as unknown as ChatMessage[];
+      return result.data as ChatMessage[];
     } catch (error) {
       console.error('Error fetching chat messages:', error);
       return [];
