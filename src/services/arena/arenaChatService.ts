@@ -1,7 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
+
+// Import types extension file to ensure the module augmentation is applied
+import '@/types/supabase-extensions';
 
 /**
  * Types for chat messages and typing status
@@ -57,14 +59,13 @@ export const arenaChatService = {
         filter: `match_id=eq.${matchId}`
       }, async () => {
         // Fetch the current typing status data
-        const result = await supabase
+        const { data, error } = await supabase
           .from('arena_typing_status')
           .select('*')
           .eq('match_id', matchId);
         
-        if (result.data && !result.error) {
-          // Type assertion with the correct extended type
-          onTypingChange(result.data as unknown as TypingStatus[]);
+        if (data && !error) {
+          onTypingChange(data as unknown as TypingStatus[]);
         }
       })
       .subscribe();
@@ -87,16 +88,15 @@ export const arenaChatService = {
     content: string
   ): Promise<boolean> => {
     try {
-      // Insert directly to the table with type assertion
-      const result = await supabase
-        .from('arena_chat_messages' as any)
+      const { error } = await supabase
+        .from('arena_chat_messages')
         .insert({
           match_id: matchId,
           user_id: userId,
           content: content
         });
 
-      return !result.error;
+      return !error;
     } catch (error) {
       console.error('Error sending chat message:', error);
       return false;
@@ -116,9 +116,8 @@ export const arenaChatService = {
     isTyping: boolean
   ): Promise<boolean> => {
     try {
-      // Use upsert for the typing status with type assertion
-      const result = await supabase
-        .from('arena_typing_status' as any)
+      const { error } = await supabase
+        .from('arena_typing_status')
         .upsert({
           match_id: matchId,
           user_id: userId,
@@ -128,7 +127,7 @@ export const arenaChatService = {
           onConflict: 'user_id, match_id'
         });
 
-      return !result.error;
+      return !error;
     } catch (error) {
       console.error('Error updating typing status:', error);
       return false;
@@ -142,9 +141,8 @@ export const arenaChatService = {
    */
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
-      // Delete the typing status record with type assertion
       await supabase
-        .from('arena_typing_status' as any)
+        .from('arena_typing_status')
         .delete()
         .eq('match_id', matchId)
         .eq('user_id', userId);
@@ -160,19 +158,18 @@ export const arenaChatService = {
    */
   fetchChatMessages: async (matchId: string): Promise<ChatMessage[]> => {
     try {
-      // Fetch chat messages with type assertion
-      const result = await supabase
-        .from('arena_chat_messages' as any)
+      const { data, error } = await supabase
+        .from('arena_chat_messages')
         .select('*')
         .eq('match_id', matchId)
         .order('created_at', { ascending: true })
         .limit(100);
       
-      if (result.error) {
-        throw result.error;
+      if (error) {
+        throw error;
       }
       
-      return result.data as unknown as ChatMessage[];
+      return data as unknown as ChatMessage[];
     } catch (error) {
       console.error('Error fetching chat messages:', error);
       return [];
