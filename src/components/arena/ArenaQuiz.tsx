@@ -7,6 +7,7 @@ import { QuizHeader } from './quiz/QuizHeader';
 import { QuizContent } from './quiz/QuizContent';
 import { MatchComplete } from './quiz/MatchComplete';
 import { QuizLoadingError } from './quiz/QuizLoadingError';
+import { cn } from '@/lib/utils';
 
 interface ArenaQuizProps {
   question: QuizQuestion;
@@ -19,6 +20,7 @@ interface ArenaQuizProps {
   players: MatchPlayer[];
   loading?: boolean;
   error?: string | null;
+  className?: string;
 }
 
 export const ArenaQuiz = ({
@@ -31,7 +33,8 @@ export const ArenaQuiz = ({
   matchComplete,
   players,
   loading = false,
-  error = null
+  error = null,
+  className
 }: ArenaQuizProps) => {
   if (matchComplete) {
     return <MatchComplete players={players} />;
@@ -44,7 +47,7 @@ export const ArenaQuiz = ({
 
   return (
     <>
-      <Card className="col-span-2">
+      <Card className={cn(className)}>
         <CardHeader>
           <QuizHeader
             questionNumber={questionNumber}
@@ -65,7 +68,8 @@ export const ArenaQuiz = ({
           Select the correct answer before time runs out!
         </CardFooter>
       </Card>
-      <div className="col-span-2 md:col-span-1">
+      
+      <div className="col-span-2 md:col-span-1 hidden md:block">
         <ArenaPlayers players={players} live />
       </div>
     </>

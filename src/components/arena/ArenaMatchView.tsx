@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArenaQuiz } from './ArenaQuiz';
 import { ArenaPlayers } from './ArenaPlayers';
 import { ArenaMatchWaiting } from './ArenaMatchWaiting';
+import { ArenaChat } from './chat/ArenaChat';
 import { QuizQuestion, MatchPlayer, QuizAnswer, ArenaMatch } from '@/types/arena';
 
 interface ArenaMatchViewProps {
@@ -32,36 +33,59 @@ export const ArenaMatchView: React.FC<ArenaMatchViewProps> = ({
 }) => {
   if (matchComplete) {
     return (
-      <Card className="col-span-2">
-        <CardHeader>
-          <CardTitle>Match Complete</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ArenaPlayers players={players} showResults />
-          <div className="mt-4 flex justify-center">
-            <Button onClick={onJoinMatch}>Play Again</Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>Match Complete</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ArenaPlayers players={players} showResults />
+            <div className="mt-4 flex justify-center">
+              <Button onClick={onJoinMatch}>Play Again</Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <div className="md:col-span-1 h-full">
+          <ArenaChat matchId={currentMatch.id} players={players} />
+        </div>
+      </div>
     );
   }
 
   if (currentMatch.status === 'active' && questions.length > 0) {
     return (
-      <ArenaQuiz 
-        question={questions[currentQuestionIndex]} 
-        timeLeft={timeLeft}
-        selectedAnswer={selectedAnswer}
-        onAnswer={onAnswer as (answer: QuizAnswer) => void}
-        questionNumber={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        matchComplete={matchComplete}
-        players={players}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <ArenaQuiz 
+          question={questions[currentQuestionIndex]} 
+          timeLeft={timeLeft}
+          selectedAnswer={selectedAnswer}
+          onAnswer={onAnswer as (answer: QuizAnswer) => void}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          matchComplete={matchComplete}
+          players={players}
+          className="md:col-span-2"
+        />
+        
+        <div className="md:col-span-1 h-full">
+          <ArenaChat matchId={currentMatch.id} players={players} />
+        </div>
+      </div>
     );
   }
 
   return (
-    <ArenaMatchWaiting currentMatch={currentMatch} players={players} />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <ArenaMatchWaiting 
+        currentMatch={currentMatch} 
+        players={players}
+        className="md:col-span-2" 
+      />
+      
+      <div className="md:col-span-1 h-full">
+        <ArenaChat matchId={currentMatch.id} players={players} />
+      </div>
+    </div>
   );
 };

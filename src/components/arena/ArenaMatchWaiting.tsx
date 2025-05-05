@@ -1,46 +1,58 @@
 
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Users } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArenaMatch, MatchPlayer } from '@/types/arena';
 import { ArenaPlayers } from './ArenaPlayers';
-import { MatchPlayer, ArenaMatch } from '@/types/arena';
-import { subjectAreas } from '@/data/qualifications';
+import { Clock, Users } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ArenaMatchWaitingProps {
   currentMatch: ArenaMatch;
   players: MatchPlayer[];
+  className?: string;
 }
 
 export const ArenaMatchWaiting: React.FC<ArenaMatchWaitingProps> = ({ 
   currentMatch, 
-  players 
+  players,
+  className 
 }) => {
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Waiting for Players</CardTitle>
-          <CardDescription>
-            {players.length} / 4 players have joined
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex items-center justify-center py-6">
-          <div className="text-center">
-            <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="mt-2 text-sm text-muted-foreground">
-              The match will start automatically when enough players join
-            </p>
-            {/* Only render subject focus if the property exists */}
-            {currentMatch.subject_focus && (
-              <p className="mt-4 text-sm font-medium">
-                Subject: {subjectAreas.find(s => s.id === currentMatch.subject_focus)?.name || currentMatch.subject_focus}
-              </p>
-            )}
+    <Card className={cn(className)}>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className="h-5 w-5" /> 
+            Waiting for Players
           </div>
-        </CardContent>
-      </Card>
-      
-      <ArenaPlayers players={players} />
-    </>
+          <div className="flex items-center gap-1">
+            <Users className="h-4 w-4" />
+            <span className="text-sm font-normal">{players.length} joined</span>
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="text-center py-4">
+            <p className="text-lg mb-2">
+              Waiting for more players to join...
+            </p>
+            <p className="text-sm text-muted-foreground">
+              The match will start automatically when enough players join.
+            </p>
+          </div>
+          
+          {currentMatch.subject_focus && (
+            <div className="mb-4 text-center">
+              <span className="px-2 py-1 bg-muted rounded text-sm">
+                {currentMatch.subject_focus}
+              </span>
+            </div>
+          )}
+
+          <ArenaPlayers players={players} />
+        </div>
+      </CardContent>
+    </Card>
   );
 };

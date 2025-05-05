@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useArenaMatch } from './useArenaMatch';
 import { useArenaQuestion } from './useArenaQuestion';
@@ -78,6 +77,7 @@ export const useArena = () => {
     setIsLoading(false);
 
     return () => {
+      // Also ensure chat cleanup happens when component unmounts
       leaveMatch();
     };
   }, [fetchUserStats, fetchLeaderboard, fetchAchievements, leaveMatch]);

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -99,6 +98,9 @@ export const useArenaMatch = () => {
     setCurrentMatch(null);
     setPlayers([]);
     setMatchComplete(false);
+    
+    // Clear any chat or typing status - this will be handled in useArenaChat cleanup
+    
   }, [clearSubscription]);
 
   return {
