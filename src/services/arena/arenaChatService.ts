@@ -16,7 +16,7 @@ const CHAT_MESSAGES_TABLE = 'arena_chat_messages';
 const TYPING_STATUS_TABLE = 'arena_typing_status';
 
 // Type-safe table references
-type TableNames = keyof Database['public']['Tables'];
+type TablesEnum = keyof Database['public']['Tables'];
 
 /**
  * Service for handling arena chat functionality and typing indicators
@@ -67,7 +67,7 @@ export const arenaChatService = {
       }, async () => {
         // Fetch the current typing status data
         const { data, error } = await supabase
-          .from(TYPING_STATUS_TABLE as TableNames)
+          .from(TYPING_STATUS_TABLE as TablesEnum)
           .select('*')
           .eq('match_id', matchId);
         
@@ -96,7 +96,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from(CHAT_MESSAGES_TABLE as TableNames)
+        .from(CHAT_MESSAGES_TABLE as TablesEnum)
         .insert({
           match_id: matchId,
           user_id: userId,
@@ -124,7 +124,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from(TYPING_STATUS_TABLE as TableNames)
+        .from(TYPING_STATUS_TABLE as TablesEnum)
         .upsert({
           match_id: matchId,
           user_id: userId,
@@ -148,10 +148,9 @@ export const arenaChatService = {
    */
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
-      // Create a typed client variable to avoid excessive type instantiation depth
       const typedClient = supabase;
       await typedClient
-        .from(TYPING_STATUS_TABLE as TableNames)
+        .from(TYPING_STATUS_TABLE as TablesEnum)
         .delete()
         .eq('match_id', matchId)
         .eq('user_id', userId);
@@ -168,7 +167,7 @@ export const arenaChatService = {
   fetchChatMessages: async (matchId: string): Promise<ChatMessage[]> => {
     try {
       const { data, error } = await supabase
-        .from(CHAT_MESSAGES_TABLE as TableNames)
+        .from(CHAT_MESSAGES_TABLE as TablesEnum)
         .select('*')
         .eq('match_id', matchId)
         .order('created_at', { ascending: true })
