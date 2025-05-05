@@ -83,27 +83,35 @@ export const arenaQuestionService = {
       // Only attempt to record if we have a valid user ID
       if (!userId) return;
       
-      // Since 'user_question_answers' is not in the Supabase types,
-      // we'll use the generic fetch API instead of the typed client
-      // This is a temporary solution until the table is added to the types
-      const response = await fetch(`${supabase.supabaseUrl}/rest/v1/user_question_answers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabase.supabaseKey,
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          question_id: questionId,
-          is_correct: isCorrect,
-          response_time: responseTime,
-          answered_at: new Date().toISOString()
-        })
+      // Use RPC call instead of direct table access
+      // This avoids the need to access protected properties and handles the case
+      // where the table might not be explicitly defined in the types
+      const { error } = await supabase.rpc('record_user_answer', {
+        user_id_param: userId,
+        question_id_param: questionId,
+        is_correct_param: isCorrect,
+        response_time_param: responseTime,
+        answered_at_param: new Date().toISOString()
       });
       
-      if (!response.ok) {
-        console.error('Error recording question answer:', await response.text());
+      if (error) {
+        console.error('Error recording question answer:', error);
+        
+        // Fallback to direct table insert if RPC fails
+        // Using the .from() API which doesn't require accessing protected properties
+        const { error: insertError } = await supabase
+          .from('user_question_answers')
+          .insert({
+            user_id: userId,
+            question_id: questionId,
+            is_correct: isCorrect,
+            response_time: responseTime,
+            answered_at: new Date().toISOString()
+          });
+          
+        if (insertError) {
+          console.error('Fallback insert also failed:', insertError);
+        }
       }
     } catch (error) {
       console.error('Unexpected error recording answer:', error);
