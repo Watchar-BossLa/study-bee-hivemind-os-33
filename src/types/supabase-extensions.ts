@@ -4,7 +4,7 @@ import type { Database as SupabaseDatabase } from '@/integrations/supabase/types
 
 // Extend Database type via module augmentation
 declare module '@/integrations/supabase/types' {
-  interface Database extends Omit<SupabaseDatabase, 'public'> {
+  interface Database {
     public: {
       Tables: {
         arena_chat_messages: {
