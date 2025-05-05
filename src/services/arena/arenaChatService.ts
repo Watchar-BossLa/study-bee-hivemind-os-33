@@ -148,8 +148,7 @@ export const arenaChatService = {
    */
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
-      const typedClient = supabase;
-      await typedClient
+      await supabase
         .from(TYPING_STATUS_TABLE as TablesEnum)
         .delete()
         .eq('match_id', matchId)
