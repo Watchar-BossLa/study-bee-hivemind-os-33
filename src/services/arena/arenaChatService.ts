@@ -72,6 +72,7 @@ export const arenaChatService = {
           .eq('match_id', matchId);
         
         if (data && !error) {
+          // Safe type casting with unknown intermediate
           onTypingChange(data as unknown as TypingStatus[]);
         }
       })
@@ -180,6 +181,7 @@ export const arenaChatService = {
         throw error;
       }
       
+      // Safe type casting with unknown intermediate
       return data as unknown as ChatMessage[];
     } catch (error) {
       console.error('Error fetching chat messages:', error);

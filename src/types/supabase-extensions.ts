@@ -1,9 +1,12 @@
 
-import { Database as OriginalDatabase } from '@/integrations/supabase/types';
+// This file extends the Supabase database types with our custom tables
 
-// Extend the Database type to include the new chat tables
+// Import the Database type for declaration merging
+import '@/integrations/supabase/types';
+
+// Extend the Database interface via declaration merging
 declare module '@/integrations/supabase/types' {
-  interface Database extends OriginalDatabase {
+  interface Database {
     public: {
       Tables: {
         arena_chat_messages: {
@@ -67,11 +70,11 @@ declare module '@/integrations/supabase/types' {
             }
           ];
         };
-      } & OriginalDatabase['public']['Tables'];
-      Views: OriginalDatabase['public']['Views'];
-      Functions: OriginalDatabase['public']['Functions'];
-      Enums: OriginalDatabase['public']['Enums'];
-      CompositeTypes: OriginalDatabase['public']['CompositeTypes'];
+      } & Database['public']['Tables'];
+      Views: Database['public']['Views'];
+      Functions: Database['public']['Functions'];
+      Enums: Database['public']['Enums'];
+      CompositeTypes: Database['public']['CompositeTypes'];
     };
   }
 }
