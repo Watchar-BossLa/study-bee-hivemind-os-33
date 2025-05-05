@@ -63,8 +63,8 @@ export const arenaChatService = {
           .eq('match_id', matchId);
         
         if (result.data && !result.error) {
-          // Type assertion that preserves the correct type
-          onTypingChange(result.data as TypingStatus[]);
+          // Type assertion with the correct extended type
+          onTypingChange(result.data as unknown as TypingStatus[]);
         }
       })
       .subscribe();
@@ -87,9 +87,9 @@ export const arenaChatService = {
     content: string
   ): Promise<boolean> => {
     try {
-      // Insert directly to the table
+      // Insert directly to the table with type assertion
       const result = await supabase
-        .from('arena_chat_messages')
+        .from('arena_chat_messages' as any)
         .insert({
           match_id: matchId,
           user_id: userId,
@@ -116,9 +116,9 @@ export const arenaChatService = {
     isTyping: boolean
   ): Promise<boolean> => {
     try {
-      // Use upsert for the typing status
+      // Use upsert for the typing status with type assertion
       const result = await supabase
-        .from('arena_typing_status')
+        .from('arena_typing_status' as any)
         .upsert({
           match_id: matchId,
           user_id: userId,
@@ -142,9 +142,9 @@ export const arenaChatService = {
    */
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
-      // Delete the typing status record
+      // Delete the typing status record with type assertion
       await supabase
-        .from('arena_typing_status')
+        .from('arena_typing_status' as any)
         .delete()
         .eq('match_id', matchId)
         .eq('user_id', userId);
@@ -160,9 +160,9 @@ export const arenaChatService = {
    */
   fetchChatMessages: async (matchId: string): Promise<ChatMessage[]> => {
     try {
-      // Fetch chat messages
+      // Fetch chat messages with type assertion
       const result = await supabase
-        .from('arena_chat_messages')
+        .from('arena_chat_messages' as any)
         .select('*')
         .eq('match_id', matchId)
         .order('created_at', { ascending: true })
@@ -172,7 +172,7 @@ export const arenaChatService = {
         throw result.error;
       }
       
-      return result.data as ChatMessage[];
+      return result.data as unknown as ChatMessage[];
     } catch (error) {
       console.error('Error fetching chat messages:', error);
       return [];
