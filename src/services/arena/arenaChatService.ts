@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import '@/types/supabase-extensions';  // Import the extended types
 
 export type ChatMessage = {
   id: string;
@@ -71,7 +72,7 @@ export const arenaChatService = {
           .eq('match_id', matchId);
         
         if (data && !error) {
-          onTypingChange(data as unknown as TypingStatus[]);
+          onTypingChange(data as TypingStatus[]);
         }
       })
       .subscribe();
@@ -179,7 +180,7 @@ export const arenaChatService = {
         throw error;
       }
       
-      return data as unknown as ChatMessage[];
+      return data as ChatMessage[];
     } catch (error) {
       console.error('Error fetching chat messages:', error);
       return [];
