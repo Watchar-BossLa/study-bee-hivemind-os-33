@@ -11,10 +11,9 @@ import '@/types/supabase-extensions';
 export type ChatMessage = Database['public']['Tables']['arena_chat_messages']['Row'];
 export type TypingStatus = Database['public']['Tables']['arena_typing_status']['Row'];
 
-// Type-safe table names
-type TableName = keyof Database['public']['Tables'];
-const CHAT_MESSAGES_TABLE = 'arena_chat_messages' as TableName;
-const TYPING_STATUS_TABLE = 'arena_typing_status' as TableName;
+// Define table names as string literals to avoid type recursion
+const CHAT_MESSAGES_TABLE = 'arena_chat_messages';
+const TYPING_STATUS_TABLE = 'arena_typing_status';
 
 /**
  * Service for handling arena chat functionality and typing indicators
@@ -34,7 +33,7 @@ export const arenaChatService = {
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
-        table: 'arena_chat_messages',
+        table: CHAT_MESSAGES_TABLE,
         filter: `match_id=eq.${matchId}`
       }, (payload) => {
         onMessage(payload.new as ChatMessage);
@@ -60,7 +59,7 @@ export const arenaChatService = {
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'arena_typing_status',
+        table: TYPING_STATUS_TABLE,
         filter: `match_id=eq.${matchId}`
       }, async () => {
         // Fetch the current typing status data
