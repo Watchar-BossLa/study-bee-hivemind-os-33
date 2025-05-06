@@ -1,12 +1,11 @@
 
 // This file extends the Supabase database types with our custom tables
-import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
 
 // Use declaration merging to extend the Database interface
 declare module '@/integrations/supabase/types' {
-  interface Database {
+  export interface Database {
     public: {
-      Tables: SupabaseDatabase['public']['Tables'] & {
+      Tables: {
         arena_chat_messages: {
           Row: {
             id: string;
@@ -69,10 +68,6 @@ declare module '@/integrations/supabase/types' {
           ];
         };
       };
-      Views: SupabaseDatabase['public']['Views'];
-      Functions: SupabaseDatabase['public']['Functions'];
-      Enums: SupabaseDatabase['public']['Enums'];
-      CompositeTypes: SupabaseDatabase['public']['CompositeTypes'];
     };
   }
 }
