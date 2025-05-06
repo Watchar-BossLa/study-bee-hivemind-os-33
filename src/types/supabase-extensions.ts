@@ -1,7 +1,7 @@
 
 // This file extends the Supabase database types with our custom tables
 
-// Use declaration merging to extend the Database interface
+// Use proper declaration merging to extend the Database interface
 declare module '@/integrations/supabase/types' {
   interface Database {
     public: {
@@ -67,7 +67,7 @@ declare module '@/integrations/supabase/types' {
             }
           ];
         };
-      };
+      } & Record<string, unknown>;
     };
   }
 }
