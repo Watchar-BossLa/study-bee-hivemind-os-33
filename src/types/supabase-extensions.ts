@@ -3,7 +3,7 @@
 
 // Use declaration merging to extend the Database interface
 declare module '@/integrations/supabase/types' {
-  export interface Database {
+  interface Database {
     public: {
       Tables: {
         arena_chat_messages: {
