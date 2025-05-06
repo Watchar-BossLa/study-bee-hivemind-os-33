@@ -67,7 +67,7 @@ declare module '@/integrations/supabase/types' {
             }
           ];
         };
-      } & Record<string, unknown>;
+      };
     };
   }
 }
