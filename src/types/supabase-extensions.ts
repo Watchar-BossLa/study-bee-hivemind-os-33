@@ -1,23 +1,23 @@
 
 // This file extends the Supabase database types with our custom tables
 
-// Use declaration merging to extend the Database interface
-import type { Database as SupabaseDB } from '@/integrations/supabase/types';
+// Instead of re-declaring Database interface, use proper module augmentation
+import '@/integrations/supabase/types';
 
 // Extend the Database interface with our custom tables
 declare module '@/integrations/supabase/types' {
-  interface Database extends SupabaseDB {
+  interface Database {
     public: {
       Tables: {
-        // Include existing tables
-        arena_matches: SupabaseDB['public']['Tables']['arena_matches'];
-        arena_stats: SupabaseDB['public']['Tables']['arena_stats'];
-        flashcards: SupabaseDB['public']['Tables']['flashcards'];
-        match_players: SupabaseDB['public']['Tables']['match_players'];
-        ocr_uploads: SupabaseDB['public']['Tables']['ocr_uploads'];
-        profiles: SupabaseDB['public']['Tables']['profiles'];
-        quiz_questions: SupabaseDB['public']['Tables']['quiz_questions'];
-        user_achievements: SupabaseDB['public']['Tables']['user_achievements'];
+        // Include existing tables from the original definition
+        arena_matches: Database['public']['Tables']['arena_matches'];
+        arena_stats: Database['public']['Tables']['arena_stats'];
+        flashcards: Database['public']['Tables']['flashcards'];
+        match_players: Database['public']['Tables']['match_players'];
+        ocr_uploads: Database['public']['Tables']['ocr_uploads'];
+        profiles: Database['public']['Tables']['profiles'];
+        quiz_questions: Database['public']['Tables']['quiz_questions'];
+        user_achievements: Database['public']['Tables']['user_achievements'];
         
         // New chat-related tables
         arena_chat_messages: {
@@ -82,10 +82,6 @@ declare module '@/integrations/supabase/types' {
           ];
         };
       };
-      Views: SupabaseDB['public']['Views'];
-      Functions: SupabaseDB['public']['Functions'];
-      Enums: SupabaseDB['public']['Enums'];
-      CompositeTypes: SupabaseDB['public']['CompositeTypes'];
     };
   }
 }
