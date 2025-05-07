@@ -15,11 +15,6 @@ export type TypingStatus = Database['public']['Tables']['arena_typing_status']['
 const CHAT_MESSAGES_TABLE = 'arena_chat_messages';
 const TYPING_STATUS_TABLE = 'arena_typing_status';
 
-// Safer approach to handle table names without causing deep recursion
-const fromTable = <T extends keyof Database['public']['Tables']>(tableName: T) => {
-  return tableName;
-};
-
 /**
  * Service for handling arena chat functionality and typing indicators
  */
@@ -69,7 +64,7 @@ export const arenaChatService = {
       }, async () => {
         // Fetch the current typing status data
         const { data, error } = await supabase
-          .from(TYPING_STATUS_TABLE)
+          .from(TYPING_STATUS_TABLE as 'arena_typing_status')
           .select('*')
           .eq('match_id', matchId);
         
@@ -98,7 +93,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from(CHAT_MESSAGES_TABLE)
+        .from(CHAT_MESSAGES_TABLE as 'arena_chat_messages')
         .insert({
           match_id: matchId,
           user_id: userId,
@@ -126,7 +121,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from(TYPING_STATUS_TABLE)
+        .from(TYPING_STATUS_TABLE as 'arena_typing_status')
         .upsert({
           match_id: matchId,
           user_id: userId,
@@ -151,7 +146,7 @@ export const arenaChatService = {
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
       await supabase
-        .from(TYPING_STATUS_TABLE)
+        .from(TYPING_STATUS_TABLE as 'arena_typing_status')
         .delete()
         .eq('match_id', matchId)
         .eq('user_id', userId);
@@ -168,7 +163,7 @@ export const arenaChatService = {
   fetchChatMessages: async (matchId: string): Promise<ChatMessage[]> => {
     try {
       const { data, error } = await supabase
-        .from(CHAT_MESSAGES_TABLE)
+        .from(CHAT_MESSAGES_TABLE as 'arena_chat_messages')
         .select('*')
         .eq('match_id', matchId)
         .order('created_at', { ascending: true })
