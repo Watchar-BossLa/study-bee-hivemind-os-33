@@ -1,14 +1,15 @@
 
 // This file extends the Supabase database types with our custom tables
 
-// Import existing types without creating a new Database type
-import '@/integrations/supabase/types';
+// Import existing Database type only for type checking, not declaration
+import type { Database as ImportedDatabase } from '@/integrations/supabase/types';
 
 // Use module augmentation to extend the Database interface
 declare module '@/integrations/supabase/types' {
-  export interface Database {
+  interface Database {
     public: {
       Tables: {
+        // New tables that we're adding
         arena_chat_messages: {
           Row: {
             id: string;
