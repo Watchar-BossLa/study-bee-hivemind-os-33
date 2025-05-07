@@ -1,11 +1,9 @@
-
 // This file extends the Supabase database types with our custom tables
 
 /**
  * Using module augmentation to extend the Supabase database types
  * https://www.typescriptlang.org/docs/handbook/declaration-merging.html#module-augmentation
  */
-import '@/integrations/supabase/types';
 
 declare module '@/integrations/supabase/types' {
   export interface Database {
