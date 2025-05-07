@@ -16,6 +16,12 @@ const CHAT_MESSAGES_TABLE = 'arena_chat_messages';
 const TYPING_STATUS_TABLE = 'arena_typing_status';
 
 /**
+ * Type guard to ensure table names are valid
+ */
+type TableNames = keyof Database['public']['Tables'];
+const asTable = <T extends string>(name: T): TableNames => name as TableNames;
+
+/**
  * Service for handling arena chat functionality and typing indicators
  */
 export const arenaChatService = {
@@ -64,7 +70,7 @@ export const arenaChatService = {
       }, async () => {
         // Fetch the current typing status data
         const { data, error } = await supabase
-          .from(TYPING_STATUS_TABLE)
+          .from(asTable(TYPING_STATUS_TABLE))
           .select('*')
           .eq('match_id', matchId);
         
@@ -93,7 +99,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from(CHAT_MESSAGES_TABLE)
+        .from(asTable(CHAT_MESSAGES_TABLE))
         .insert({
           match_id: matchId,
           user_id: userId,
@@ -121,7 +127,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from(TYPING_STATUS_TABLE)
+        .from(asTable(TYPING_STATUS_TABLE))
         .upsert({
           match_id: matchId,
           user_id: userId,
@@ -146,7 +152,7 @@ export const arenaChatService = {
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
       await supabase
-        .from(TYPING_STATUS_TABLE)
+        .from(asTable(TYPING_STATUS_TABLE))
         .delete()
         .eq('match_id', matchId)
         .eq('user_id', userId);
@@ -163,7 +169,7 @@ export const arenaChatService = {
   fetchChatMessages: async (matchId: string): Promise<ChatMessage[]> => {
     try {
       const { data, error } = await supabase
-        .from(CHAT_MESSAGES_TABLE)
+        .from(asTable(CHAT_MESSAGES_TABLE))
         .select('*')
         .eq('match_id', matchId)
         .order('created_at', { ascending: true })
