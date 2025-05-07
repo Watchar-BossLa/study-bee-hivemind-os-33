@@ -1,12 +1,12 @@
 
 // This file extends the Supabase database types with our custom tables
 
-// We need to use proper module augmentation without redefining Database
-import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
+// Import existing types without creating a new Database type
+import '@/integrations/supabase/types';
 
-// Extend the Supabase Database type
+// Use module augmentation to extend the Database interface
 declare module '@/integrations/supabase/types' {
-  interface Database {
+  export interface Database {
     public: {
       Tables: {
         arena_chat_messages: {
@@ -70,7 +70,7 @@ declare module '@/integrations/supabase/types' {
             }
           ];
         };
-      } & SupabaseDatabase['public']['Tables'];
+      };
     };
   }
 }
