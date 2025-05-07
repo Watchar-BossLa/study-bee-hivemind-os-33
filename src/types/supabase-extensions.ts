@@ -1,21 +1,13 @@
+
 // This file extends the Supabase database types with our custom tables
-import type { Database as OriginalDatabase } from '@/integrations/supabase/types';
 
 // Use declaration merging to extend the Database interface
+import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
+
 declare module '@/integrations/supabase/types' {
-  interface Database {
+  interface Database extends SupabaseDatabase {
     public: {
-      Tables: {
-        // Keep existing tables
-        arena_matches: OriginalDatabase['public']['Tables']['arena_matches'];
-        arena_stats: OriginalDatabase['public']['Tables']['arena_stats'];
-        flashcards: OriginalDatabase['public']['Tables']['flashcards'];
-        match_players: OriginalDatabase['public']['Tables']['match_players'];
-        ocr_uploads: OriginalDatabase['public']['Tables']['ocr_uploads'];
-        profiles: OriginalDatabase['public']['Tables']['profiles'];
-        quiz_questions: OriginalDatabase['public']['Tables']['quiz_questions'];
-        user_achievements: OriginalDatabase['public']['Tables']['user_achievements'];
-        
+      Tables: SupabaseDatabase['public']['Tables'] & {
         // Add new chat-related tables
         arena_chat_messages: {
           Row: {
@@ -79,10 +71,10 @@ declare module '@/integrations/supabase/types' {
           ];
         };
       };
-      Views: OriginalDatabase['public']['Views'];
-      Functions: OriginalDatabase['public']['Functions'];
-      Enums: OriginalDatabase['public']['Enums'];
-      CompositeTypes: OriginalDatabase['public']['CompositeTypes'];
+      Views: SupabaseDatabase['public']['Views'];
+      Functions: SupabaseDatabase['public']['Functions'];
+      Enums: SupabaseDatabase['public']['Enums'];
+      CompositeTypes: SupabaseDatabase['public']['CompositeTypes'];
     };
   }
 }

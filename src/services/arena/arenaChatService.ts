@@ -12,8 +12,8 @@ export type ChatMessage = Database['public']['Tables']['arena_chat_messages']['R
 export type TypingStatus = Database['public']['Tables']['arena_typing_status']['Row'];
 
 // Define table names as constants to avoid repetition
-const CHAT_MESSAGES_TABLE = 'arena_chat_messages';
-const TYPING_STATUS_TABLE = 'arena_typing_status';
+const CHAT_MESSAGES_TABLE = 'arena_chat_messages' as const;
+const TYPING_STATUS_TABLE = 'arena_typing_status' as const;
 
 /**
  * Service for handling arena chat functionality and typing indicators
@@ -63,12 +63,12 @@ export const arenaChatService = {
         filter: `match_id=eq.${matchId}`
       }, async () => {
         // Fetch the current typing status data
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from(TYPING_STATUS_TABLE)
           .select('*')
           .eq('match_id', matchId);
         
-        if (data && !error) {
+        if (data) {
           onTypingChange(data as TypingStatus[]);
         }
       })
