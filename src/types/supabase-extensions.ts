@@ -1,26 +1,25 @@
 
 // This file extends the Supabase database types with our custom tables
 
-// We need to use declaration merging to extend the Database interface
-// Use 'import type' to avoid actually importing the module
-import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
+// Use declaration merging to extend the Database interface
+import type { Database as SupabaseDB } from '@/integrations/supabase/types';
 
-// Use module augmentation to extend the Database interface
+// Extend the Database interface with our custom tables
 declare module '@/integrations/supabase/types' {
-  interface Database extends SupabaseDatabase {
+  interface Database extends SupabaseDB {
     public: {
       Tables: {
-        // Include all existing tables from the original Database type
-        arena_matches: SupabaseDatabase['public']['Tables']['arena_matches'];
-        arena_stats: SupabaseDatabase['public']['Tables']['arena_stats'];
-        flashcards: SupabaseDatabase['public']['Tables']['flashcards'];
-        match_players: SupabaseDatabase['public']['Tables']['match_players'];
-        ocr_uploads: SupabaseDatabase['public']['Tables']['ocr_uploads'];
-        profiles: SupabaseDatabase['public']['Tables']['profiles'];
-        quiz_questions: SupabaseDatabase['public']['Tables']['quiz_questions'];
-        user_achievements: SupabaseDatabase['public']['Tables']['user_achievements'];
+        // Include existing tables
+        arena_matches: SupabaseDB['public']['Tables']['arena_matches'];
+        arena_stats: SupabaseDB['public']['Tables']['arena_stats'];
+        flashcards: SupabaseDB['public']['Tables']['flashcards'];
+        match_players: SupabaseDB['public']['Tables']['match_players'];
+        ocr_uploads: SupabaseDB['public']['Tables']['ocr_uploads'];
+        profiles: SupabaseDB['public']['Tables']['profiles'];
+        quiz_questions: SupabaseDB['public']['Tables']['quiz_questions'];
+        user_achievements: SupabaseDB['public']['Tables']['user_achievements'];
         
-        // New tables that we're adding
+        // New chat-related tables
         arena_chat_messages: {
           Row: {
             id: string;
@@ -83,10 +82,10 @@ declare module '@/integrations/supabase/types' {
           ];
         };
       };
-      Views: SupabaseDatabase['public']['Views'];
-      Functions: SupabaseDatabase['public']['Functions'];
-      Enums: SupabaseDatabase['public']['Enums'];
-      CompositeTypes: SupabaseDatabase['public']['CompositeTypes'];
+      Views: SupabaseDB['public']['Views'];
+      Functions: SupabaseDB['public']['Functions'];
+      Enums: SupabaseDB['public']['Enums'];
+      CompositeTypes: SupabaseDB['public']['CompositeTypes'];
     };
   }
 }

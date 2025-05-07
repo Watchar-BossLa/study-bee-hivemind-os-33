@@ -15,11 +15,13 @@ export type TypingStatus = Database['public']['Tables']['arena_typing_status']['
 const CHAT_MESSAGES_TABLE = 'arena_chat_messages';
 const TYPING_STATUS_TABLE = 'arena_typing_status';
 
-/**
- * Type guard to ensure table names are valid
- */
-type TableNames = keyof Database['public']['Tables'];
-const asTable = <T extends string>(name: T): TableNames => name as TableNames;
+// Type-safe way to handle table names
+type TableName = keyof Database['public']['Tables'];
+
+// Helper function to cast string as a valid table name
+const asTable = <T extends string>(tableName: T): TableName => {
+  return tableName as TableName;
+};
 
 /**
  * Service for handling arena chat functionality and typing indicators
