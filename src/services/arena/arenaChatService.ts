@@ -12,6 +12,7 @@ export type ChatMessage = Database['public']['Tables']['arena_chat_messages']['R
 export type TypingStatus = Database['public']['Tables']['arena_typing_status']['Row'];
 
 // Define table names as constants to avoid repetition
+// Using type literals for better type safety
 const CHAT_MESSAGES_TABLE = 'arena_chat_messages' as const;
 const TYPING_STATUS_TABLE = 'arena_typing_status' as const;
 

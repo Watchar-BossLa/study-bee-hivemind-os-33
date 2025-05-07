@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
-// Import the extensions to ensure they're applied
+// Import extensions to ensure they're applied
 import '@/types/supabase-extensions';
 
 const SUPABASE_URL = "https://zhvhqpdcxgmcdoowahql.supabase.co";

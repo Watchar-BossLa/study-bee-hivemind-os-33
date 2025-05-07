@@ -1,14 +1,16 @@
 
 // This file extends the Supabase database types with our custom tables
 
-// Use declaration merging to extend the Database interface
-import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
+/**
+ * Using module augmentation to extend the Supabase database types
+ * https://www.typescriptlang.org/docs/handbook/declaration-merging.html#module-augmentation
+ */
+import { Database as SupabaseBaseDatabase } from '@/integrations/supabase/types';
 
 declare module '@/integrations/supabase/types' {
-  interface Database extends SupabaseDatabase {
+  export interface Database extends SupabaseBaseDatabase {
     public: {
-      Tables: SupabaseDatabase['public']['Tables'] & {
-        // Add new chat-related tables
+      Tables: SupabaseBaseDatabase['public']['Tables'] & {
         arena_chat_messages: {
           Row: {
             id: string;
@@ -71,10 +73,10 @@ declare module '@/integrations/supabase/types' {
           ];
         };
       };
-      Views: SupabaseDatabase['public']['Views'];
-      Functions: SupabaseDatabase['public']['Functions'];
-      Enums: SupabaseDatabase['public']['Enums'];
-      CompositeTypes: SupabaseDatabase['public']['CompositeTypes'];
+      Views: SupabaseBaseDatabase['public']['Views'];
+      Functions: SupabaseBaseDatabase['public']['Functions'];
+      Enums: SupabaseBaseDatabase['public']['Enums'];
+      CompositeTypes: SupabaseBaseDatabase['public']['CompositeTypes'];
     };
   }
 }
