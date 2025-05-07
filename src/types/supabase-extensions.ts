@@ -1,9 +1,10 @@
 
 // This file extends the Supabase database types with our custom tables
 
-// Use proper declaration merging to extend the Database interface
-import type { Database as OriginalDatabase } from '@/integrations/supabase/types';
+// We need to use proper module augmentation without redefining Database
+import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
 
+// Extend the Supabase Database type
 declare module '@/integrations/supabase/types' {
   interface Database {
     public: {
@@ -69,7 +70,7 @@ declare module '@/integrations/supabase/types' {
             }
           ];
         };
-      } & OriginalDatabase['public']['Tables'];
+      } & SupabaseDatabase['public']['Tables'];
     };
   }
 }

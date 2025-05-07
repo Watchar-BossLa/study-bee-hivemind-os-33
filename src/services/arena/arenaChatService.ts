@@ -11,9 +11,13 @@ import '@/types/supabase-extensions';
 export type ChatMessage = Database['public']['Tables']['arena_chat_messages']['Row'];
 export type TypingStatus = Database['public']['Tables']['arena_typing_status']['Row'];
 
-// Define table names as constants
+// Define table names as constants to avoid repetition
 const CHAT_MESSAGES_TABLE = 'arena_chat_messages';
 const TYPING_STATUS_TABLE = 'arena_typing_status';
+
+// Type assertion helper to ensure Supabase correctly recognizes our table names
+type TableName = keyof Database['public']['Tables'];
+const asTableName = <T extends string>(name: T): TableName => name as TableName;
 
 /**
  * Service for handling arena chat functionality and typing indicators
@@ -64,7 +68,7 @@ export const arenaChatService = {
       }, async () => {
         // Fetch the current typing status data
         const { data, error } = await supabase
-          .from(TYPING_STATUS_TABLE)
+          .from(asTableName(TYPING_STATUS_TABLE))
           .select('*')
           .eq('match_id', matchId);
         
@@ -93,7 +97,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from(CHAT_MESSAGES_TABLE)
+        .from(asTableName(CHAT_MESSAGES_TABLE))
         .insert({
           match_id: matchId,
           user_id: userId,
@@ -121,7 +125,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from(TYPING_STATUS_TABLE)
+        .from(asTableName(TYPING_STATUS_TABLE))
         .upsert({
           match_id: matchId,
           user_id: userId,
@@ -146,7 +150,7 @@ export const arenaChatService = {
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
       await supabase
-        .from(TYPING_STATUS_TABLE)
+        .from(asTableName(TYPING_STATUS_TABLE))
         .delete()
         .eq('match_id', matchId)
         .eq('user_id', userId);
@@ -163,7 +167,7 @@ export const arenaChatService = {
   fetchChatMessages: async (matchId: string): Promise<ChatMessage[]> => {
     try {
       const { data, error } = await supabase
-        .from(CHAT_MESSAGES_TABLE)
+        .from(asTableName(CHAT_MESSAGES_TABLE))
         .select('*')
         .eq('match_id', matchId)
         .order('created_at', { ascending: true })
