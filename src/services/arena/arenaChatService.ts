@@ -64,7 +64,7 @@ export const arenaChatService = {
       }, async () => {
         // Fetch the current typing status data
         const { data } = await supabase
-          .from(TYPING_STATUS_TABLE)
+          .from(TYPING_STATUS_TABLE as any)
           .select('*')
           .eq('match_id', matchId);
         
@@ -93,7 +93,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from(CHAT_MESSAGES_TABLE)
+        .from(CHAT_MESSAGES_TABLE as any)
         .insert({
           match_id: matchId,
           user_id: userId,
@@ -121,7 +121,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from(TYPING_STATUS_TABLE)
+        .from(TYPING_STATUS_TABLE as any)
         .upsert({
           match_id: matchId,
           user_id: userId,
@@ -146,7 +146,7 @@ export const arenaChatService = {
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
       await supabase
-        .from(TYPING_STATUS_TABLE)
+        .from(TYPING_STATUS_TABLE as any)
         .delete()
         .eq('match_id', matchId)
         .eq('user_id', userId);
@@ -163,7 +163,7 @@ export const arenaChatService = {
   fetchChatMessages: async (matchId: string): Promise<ChatMessage[]> => {
     try {
       const { data, error } = await supabase
-        .from(CHAT_MESSAGES_TABLE)
+        .from(CHAT_MESSAGES_TABLE as any)
         .select('*')
         .eq('match_id', matchId)
         .order('created_at', { ascending: true })
