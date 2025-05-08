@@ -3,19 +3,21 @@
  * This file extends the Supabase database types with our custom tables
  */
 
+import type { Database as OriginalDatabase } from '@/integrations/supabase/types';
+
 // Extending the Supabase database types using declaration merging
 declare module '@/integrations/supabase/types' {
-  interface Database {
+  interface Database extends OriginalDatabase {
     public: {
       Tables: {
-        arena_matches: Database['public']['Tables']['arena_matches'];
-        arena_stats: Database['public']['Tables']['arena_stats'];
-        flashcards: Database['public']['Tables']['flashcards'];
-        match_players: Database['public']['Tables']['match_players'];
-        ocr_uploads: Database['public']['Tables']['ocr_uploads'];
-        profiles: Database['public']['Tables']['profiles'];
-        quiz_questions: Database['public']['Tables']['quiz_questions'];
-        user_achievements: Database['public']['Tables']['user_achievements'];
+        arena_matches: OriginalDatabase['public']['Tables']['arena_matches'];
+        arena_stats: OriginalDatabase['public']['Tables']['arena_stats'];
+        flashcards: OriginalDatabase['public']['Tables']['flashcards'];
+        match_players: OriginalDatabase['public']['Tables']['match_players'];
+        ocr_uploads: OriginalDatabase['public']['Tables']['ocr_uploads'];
+        profiles: OriginalDatabase['public']['Tables']['profiles'];
+        quiz_questions: OriginalDatabase['public']['Tables']['quiz_questions'];
+        user_achievements: OriginalDatabase['public']['Tables']['user_achievements'];
         
         arena_chat_messages: {
           Row: {
@@ -79,10 +81,10 @@ declare module '@/integrations/supabase/types' {
           ];
         };
       };
-      Views: Database['public']['Views'];
-      Functions: Database['public']['Functions'];
-      Enums: Database['public']['Enums'];
-      CompositeTypes: Database['public']['CompositeTypes'];
+      Views: OriginalDatabase['public']['Views'];
+      Functions: OriginalDatabase['public']['Functions'];
+      Enums: OriginalDatabase['public']['Enums'];
+      CompositeTypes: OriginalDatabase['public']['CompositeTypes'];
     };
   }
 }

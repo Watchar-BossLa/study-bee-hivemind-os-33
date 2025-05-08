@@ -14,6 +14,7 @@ interface ArenaChatProps {
   players: MatchPlayer[];
 }
 
+// Export as default instead of named export
 const ArenaChat: React.FC<ArenaChatProps> = ({ matchId, players }) => {
   const { 
     messages, 
@@ -99,4 +100,5 @@ const ArenaChat: React.FC<ArenaChatProps> = ({ matchId, players }) => {
   );
 };
 
+// Export default to fix the import issue
 export default ArenaChat;
