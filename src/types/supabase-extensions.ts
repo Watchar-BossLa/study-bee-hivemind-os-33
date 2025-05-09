@@ -5,82 +5,76 @@
 
 import type { Database as OriginalDatabase } from '@/integrations/supabase/types';
 
-// Extending the Supabase database types using declaration merging
+export interface CustomTables {
+  arena_chat_messages: {
+    Row: {
+      id: string;
+      match_id: string;
+      user_id: string;
+      content: string;
+      created_at: string;
+    };
+    Insert: {
+      id?: string;
+      match_id: string;
+      user_id: string;
+      content: string;
+      created_at?: string;
+    };
+    Update: {
+      id?: string;
+      match_id?: string;
+      user_id?: string;
+      content?: string;
+      created_at?: string;
+    };
+    Relationships: [
+      {
+        foreignKeyName: "arena_chat_messages_match_id_fkey";
+        columns: ["match_id"];
+        isOneToOne: false;
+        referencedRelation: "arena_matches";
+        referencedColumns: ["id"];
+      }
+    ];
+  };
+  
+  arena_typing_status: {
+    Row: {
+      user_id: string;
+      match_id: string;
+      is_typing: boolean;
+      last_updated: string;
+    };
+    Insert: {
+      user_id: string;
+      match_id: string;
+      is_typing?: boolean;
+      last_updated?: string;
+    };
+    Update: {
+      user_id?: string;
+      match_id?: string;
+      is_typing?: boolean;
+      last_updated?: string;
+    };
+    Relationships: [
+      {
+        foreignKeyName: "arena_typing_status_match_id_fkey";
+        columns: ["match_id"];
+        isOneToOne: false;
+        referencedRelation: "arena_matches";
+        referencedColumns: ["id"];
+      }
+    ];
+  };
+}
+
+// Extend the Database interface using declaration merging
 declare module '@/integrations/supabase/types' {
   interface Database extends OriginalDatabase {
     public: {
-      Tables: {
-        arena_matches: OriginalDatabase['public']['Tables']['arena_matches'];
-        arena_stats: OriginalDatabase['public']['Tables']['arena_stats'];
-        flashcards: OriginalDatabase['public']['Tables']['flashcards'];
-        match_players: OriginalDatabase['public']['Tables']['match_players'];
-        ocr_uploads: OriginalDatabase['public']['Tables']['ocr_uploads'];
-        profiles: OriginalDatabase['public']['Tables']['profiles'];
-        quiz_questions: OriginalDatabase['public']['Tables']['quiz_questions'];
-        user_achievements: OriginalDatabase['public']['Tables']['user_achievements'];
-        
-        arena_chat_messages: {
-          Row: {
-            id: string;
-            match_id: string;
-            user_id: string;
-            content: string;
-            created_at: string;
-          };
-          Insert: {
-            id?: string;
-            match_id: string;
-            user_id: string;
-            content: string;
-            created_at?: string;
-          };
-          Update: {
-            id?: string;
-            match_id?: string;
-            user_id?: string;
-            content?: string;
-            created_at?: string;
-          };
-          Relationships: [
-            {
-              foreignKeyName: "arena_chat_messages_match_id_fkey";
-              columns: ["match_id"];
-              isOneToOne: false;
-              referencedRelation: "arena_matches";
-              referencedColumns: ["id"];
-            }
-          ];
-        };
-        arena_typing_status: {
-          Row: {
-            user_id: string;
-            match_id: string;
-            is_typing: boolean;
-            last_updated: string;
-          };
-          Insert: {
-            user_id: string;
-            match_id: string;
-            is_typing?: boolean;
-            last_updated?: string;
-          };
-          Update: {
-            user_id?: string;
-            match_id?: string;
-            is_typing?: boolean;
-            last_updated?: string;
-          };
-          Relationships: [
-            {
-              foreignKeyName: "arena_typing_status_match_id_fkey";
-              columns: ["match_id"];
-              isOneToOne: false;
-              referencedRelation: "arena_matches";
-              referencedColumns: ["id"];
-            }
-          ];
-        };
-      };
+      Tables: OriginalDatabase['public']['Tables'] & CustomTables;
       Views: OriginalDatabase['public']['Views'];
       Functions: OriginalDatabase['public']['Functions'];
       Enums: OriginalDatabase['public']['Enums'];
