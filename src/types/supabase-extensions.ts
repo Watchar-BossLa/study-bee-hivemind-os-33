@@ -2,7 +2,7 @@
 /**
  * This file extends the Supabase database types with our custom tables
  */
-import type { Database as OriginalDatabase } from '@/integrations/supabase/types';
+import { Database as OriginalDatabase } from '@/integrations/supabase/types';
 
 // Define the custom tables that are not in the generated types
 interface CustomTables {
@@ -70,7 +70,7 @@ interface CustomTables {
   };
 }
 
-// Extend the Database interface using declaration merging
+// Use declaration merging to extend the original Database interface
 declare module '@/integrations/supabase/types' {
   interface Database extends OriginalDatabase {
     public: {
