@@ -2,11 +2,10 @@
 /**
  * This file extends the Supabase database types with our custom tables
  */
-
 import type { Database as OriginalDatabase } from '@/integrations/supabase/types';
 
 // Define the custom tables that are not in the generated types
-export interface CustomTables {
+interface CustomTables {
   arena_chat_messages: {
     Row: {
       id: string;

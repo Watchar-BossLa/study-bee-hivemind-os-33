@@ -64,12 +64,12 @@ export const arenaChatService = {
       }, async () => {
         // Fetch the current typing status data
         const { data } = await supabase
-          .from<'arena_typing_status', TypingStatus>(TYPING_STATUS_TABLE)
+          .from(TYPING_STATUS_TABLE)
           .select('*')
           .eq('match_id', matchId);
         
         if (data) {
-          onTypingChange(data);
+          onTypingChange(data as TypingStatus[]);
         }
       })
       .subscribe();
@@ -93,7 +93,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from<'arena_chat_messages', Database['public']['Tables']['arena_chat_messages']['Insert']>(CHAT_MESSAGES_TABLE)
+        .from(CHAT_MESSAGES_TABLE)
         .insert({
           match_id: matchId,
           user_id: userId,
@@ -121,7 +121,7 @@ export const arenaChatService = {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from<'arena_typing_status', Database['public']['Tables']['arena_typing_status']['Insert']>(TYPING_STATUS_TABLE)
+        .from(TYPING_STATUS_TABLE)
         .upsert({
           match_id: matchId,
           user_id: userId,
@@ -146,7 +146,7 @@ export const arenaChatService = {
   clearTypingStatus: async (matchId: string, userId: string): Promise<void> => {
     try {
       await supabase
-        .from<'arena_typing_status', Database['public']['Tables']['arena_typing_status']['Row']>(TYPING_STATUS_TABLE)
+        .from(TYPING_STATUS_TABLE)
         .delete()
         .eq('match_id', matchId)
         .eq('user_id', userId);
@@ -163,7 +163,7 @@ export const arenaChatService = {
   fetchChatMessages: async (matchId: string): Promise<ChatMessage[]> => {
     try {
       const { data, error } = await supabase
-        .from<'arena_chat_messages', ChatMessage>(CHAT_MESSAGES_TABLE)
+        .from(CHAT_MESSAGES_TABLE)
         .select('*')
         .eq('match_id', matchId)
         .order('created_at', { ascending: true })
@@ -173,7 +173,7 @@ export const arenaChatService = {
         throw error;
       }
       
-      return data || [];
+      return data as ChatMessage[] || [];
     } catch (error) {
       console.error('Error fetching chat messages:', error);
       return [];
