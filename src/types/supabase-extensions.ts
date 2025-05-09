@@ -5,6 +5,7 @@
 
 import type { Database as OriginalDatabase } from '@/integrations/supabase/types';
 
+// Define the custom tables that are not in the generated types
 export interface CustomTables {
   arena_chat_messages: {
     Row: {
