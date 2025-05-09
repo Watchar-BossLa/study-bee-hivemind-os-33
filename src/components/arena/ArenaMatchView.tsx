@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArenaQuiz } from './ArenaQuiz';
 import { ArenaPlayers } from './ArenaPlayers';
 import { ArenaMatchWaiting } from './ArenaMatchWaiting';
-import ArenaChat from './chat/ArenaChat'; // Changed to default import
+import { ArenaChat } from './chat/ArenaChat';
 import { QuizQuestion, MatchPlayer, QuizAnswer, ArenaMatch } from '@/types/arena';
 
 interface ArenaMatchViewProps {

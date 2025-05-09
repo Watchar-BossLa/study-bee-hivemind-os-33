@@ -1,104 +1,115 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, MessageSquare } from 'lucide-react';
-import { ChatMessageItem } from './ChatMessageItem';
-import { TypingIndicator } from './TypingIndicator';
+import { Send, MessageCircle } from 'lucide-react';
 import { useArenaChat } from '@/hooks/arena/useArenaChat';
-import type { MatchPlayer } from '@/types/arena';
+import { TypingIndicator } from './TypingIndicator';
+import { ChatMessageItem } from './ChatMessageItem';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ArenaChatProps {
   matchId: string | null;
-  players: MatchPlayer[];
+  players: Array<{ user_id: string }>;
 }
 
-// Export as default instead of named export
-const ArenaChat: React.FC<ArenaChatProps> = ({ matchId, players }) => {
+export const ArenaChat: React.FC<ArenaChatProps> = ({ matchId, players }) => {
   const { 
     messages, 
     typingUsers, 
     inputMessage, 
     isLoading, 
     handleInputChange, 
-    sendMessage, 
-    cleanupChat 
+    sendMessage 
   } = useArenaChat(matchId);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   // Scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-  
-  // Clean up when component unmounts or match changes
+
+  // Focus input when chat opens
   useEffect(() => {
-    return () => {
-      cleanupChat();
-    };
-  }, [cleanupChat]);
-  
-  // Handle message submission
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    sendMessage();
+    if (matchId) {
+      inputRef.current?.focus();
+    }
+  }, [matchId]);
+
+  // Handle send on Enter key
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   };
+
+  if (!matchId) {
+    return null;
+  }
+
+  // Get player IDs for filtering typing indicators
+  const playerIds = players.map(p => p.user_id);
+  
+  // Only show typing indicators for players who are actually in the match
+  const activeTypingUsers = typingUsers.filter(userId => 
+    playerIds.includes(userId)
+  );
   
   return (
-    <Card className="flex flex-col h-full">
+    <Card className="h-full flex flex-col">
       <CardHeader className="px-4 py-2 border-b">
-        <CardTitle className="flex items-center text-md">
-          <MessageSquare className="mr-2 h-5 w-5" />
+        <CardTitle className="text-sm font-medium flex items-center">
+          <MessageCircle className="h-4 w-4 mr-2" />
           Match Chat
         </CardTitle>
       </CardHeader>
-      
-      <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-            No messages yet. Be the first to say something!
+      <CardContent className="flex-grow p-0">
+        <ScrollArea className="h-[300px] p-4">
+          <div className="space-y-4">
+            {messages.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                No messages yet. Start the conversation!
+              </div>
+            ) : (
+              messages.map((message) => (
+                <ChatMessageItem 
+                  key={message.id} 
+                  message={message} 
+                  players={players} 
+                />
+              ))
+            )}
+            <div ref={messagesEndRef} />
           </div>
-        ) : (
-          messages.map((message) => (
-            <ChatMessageItem 
-              key={message.id} 
-              message={message} 
-              players={players} 
-            />
-          ))
-        )}
-        
-        {typingUsers.length > 0 && (
-          <TypingIndicator userIds={typingUsers} />
-        )}
-        
-        <div ref={messagesEndRef} />
+          {activeTypingUsers.length > 0 && (
+            <TypingIndicator userIds={activeTypingUsers} />
+          )}
+        </ScrollArea>
       </CardContent>
-      
-      <CardFooter className="border-t p-2">
-        <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
+      <CardFooter className="p-2 border-t">
+        <div className="flex w-full gap-2">
           <Input
+            ref={inputRef}
+            placeholder="Type your message..."
             value={inputMessage}
             onChange={(e) => handleInputChange(e.target.value)}
-            placeholder="Type a message..."
-            disabled={isLoading || !matchId}
-            className="flex-1"
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
+            className="flex-grow"
           />
           <Button 
-            type="submit"
-            size="icon"
-            disabled={isLoading || !inputMessage.trim() || !matchId}
+            size="icon" 
+            onClick={sendMessage} 
+            disabled={isLoading || !inputMessage.trim()}
           >
             <Send className="h-4 w-4" />
-            <span className="sr-only">Send</span>
           </Button>
-        </form>
+        </div>
       </CardFooter>
     </Card>
   );
 };
-
-// Export default to fix the import issue
-export default ArenaChat;
