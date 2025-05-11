@@ -1,171 +1,143 @@
 
-import { SpecializedAgent } from '../../types/agents';
 import { CouncilVote } from '../../types/councils';
-import { Plan } from '../frameworks/CrewAIPlanner';
+import { VoteHistoryStorage } from './VoteHistoryStorage';
 import { VoteWeightCalculator } from './VoteWeightCalculator';
 import { VoteIntegrityService } from './VoteIntegrityService';
 
-export interface VotingOptions {
-  timeLimit?: number; // ms
-  complexityOverride?: 'low' | 'medium' | 'high';
-  boostAgentIds?: string[]; // IDs of agents to boost
-  boostFactor?: number; // How much to boost (0-1)
-  minRequiredVotes?: number;
-  usePerformanceHistory?: boolean;
+interface PlanTask {
+  taskId: string;
+  description: string;
+  status: string;
+  assignedAgentId?: string; // Changed from assignedTo to assignedAgentId
+}
+
+interface Plan {
+  planId: string;
+  type: string;
+  summary: string;
+  tasks?: PlanTask[];
 }
 
 export class VotingService {
+  private historyStorage: VoteHistoryStorage;
   private weightCalculator: VoteWeightCalculator;
   private integrityService: VoteIntegrityService;
-  
+
   constructor() {
+    this.historyStorage = new VoteHistoryStorage();
     this.weightCalculator = new VoteWeightCalculator();
     this.integrityService = new VoteIntegrityService();
   }
 
-  public collectVotes(
-    council: SpecializedAgent[],
-    topic: string,
-    options?: VotingOptions
-  ): CouncilVote[] {
-    return council.map(agent => {
-      // Calculate weight based on expertise, performance, and other factors
-      const weight = this.weightCalculator.calculateWeight(agent, topic);
-      
-      // Apply boost if this agent is in the boost list
-      const boost = this.calculateBoost(agent.id, options);
-      const finalConfidence = Math.min(weight + boost, 0.98);
-      
-      const vote: CouncilVote = {
-        agentId: agent.id,
-        confidence: finalConfidence,
-        suggestion: this.generateSuggestion(agent, topic, weight),
-        reasoning: `Based on ${agent.domain} expertise, ${agent.role} recommends this approach because it aligns with ${this.getReasoningContext(agent.domain, topic)}`
-      };
-      
-      // Secure the vote with a hash
-      this.integrityService.secureVote(vote);
-      
+  public registerVote(
+    councilId: string, 
+    agentId: string, 
+    topicId: string, 
+    decision: string, 
+    confidence: number
+  ): CouncilVote {
+    const voteWeight = this.weightCalculator.calculateVoteWeight(agentId, topicId);
+    
+    const vote: CouncilVote = {
+      councilId,
+      agentId,
+      topicId,
+      decision,
+      confidence,
+      weight: voteWeight,
+      timestamp: new Date().toISOString()
+    };
+    
+    if (this.integrityService.verifyVote(vote)) {
+      this.historyStorage.recordVote(vote);
       return vote;
-    });
-  }
-
-  public collectVotesWithPlan(
-    council: SpecializedAgent[],
-    topic: string,
-    plan: Plan,
-    options?: VotingOptions
-  ): CouncilVote[] {
-    return council.map(agent => {
-      // Calculate baseline weight
-      const weight = this.weightCalculator.calculateWeight(agent, topic);
-      
-      // Boost confidence for agents that have related tasks in the plan
-      const isPlanContributor = plan.members.some(member => member.id === agent.id);
-      const planBoost = isPlanContributor ? 0.15 : 0;
-      
-      // Apply user-requested boosts
-      const userBoost = this.calculateBoost(agent.id, options);
-      
-      // Combine all confidence factors, capped at 0.98
-      const finalConfidence = Math.min(weight + planBoost + userBoost, 0.98);
-      
-      const vote: CouncilVote = {
-        agentId: agent.id,
-        confidence: finalConfidence,
-        suggestion: this.generatePlanAwareSuggestion(agent, topic, plan, weight),
-        reasoning: `Based on ${agent.domain} expertise and role in plan "${plan.title}", ${agent.role} recommends this approach because it aligns with ${this.getReasoningContext(agent.domain, topic)}`
-      };
-      
-      // Secure the vote with a hash
-      this.integrityService.secureVote(vote);
-      
-      return vote;
-    });
+    } else {
+      throw new Error('Vote integrity check failed');
+    }
   }
   
-  /**
-   * Calculate boost value for an agent based on options
-   */
-  private calculateBoost(agentId: string, options?: VotingOptions): number {
-    if (!options || !options.boostAgentIds || !options.boostAgentIds.includes(agentId)) {
-      return 0;
-    }
-    
-    return options.boostFactor || 0.2; // Default boost of 0.2 if not specified
+  public getVotesForTopic(councilId: string, topicId: string): CouncilVote[] {
+    return this.historyStorage.getVotesForTopic(councilId, topicId);
   }
-
-  private generatePlanAwareSuggestion(
-    agent: SpecializedAgent, 
-    topic: string, 
-    plan: Plan, 
-    expertiseMatch: number
-  ): string {
-    // Check if agent is a member of the plan
-    const isMember = plan.members.some(member => member.id === agent.id);
+  
+  public calculateConsensusScore(votes: CouncilVote[]): number {
+    if (votes.length === 0) return 0;
     
-    if (isMember) {
-      // Get assigned tasks for this agent
-      const memberTasks = plan.tasks.filter(task => 
-        task.assignedTo.includes(agent.id)
-      );
-      
-      if (memberTasks.length > 0) {
-        return `Approach ${topic} according to plan "${plan.title}", focusing on: ${memberTasks[0].description}`;
-      }
-    }
+    const decisions = new Map<string, { count: number; weightedScore: number }>();
+    let totalWeight = 0;
     
-    // Fall back to standard suggestion if not involved in specific tasks
-    return this.generateSuggestion(agent, topic, expertiseMatch);
-  }
-
-  private generateSuggestion(agent: SpecializedAgent, topic: string, expertiseMatch: number): string {
-    const suggestions = [
-      `A ${agent.domain}-focused approach to ${topic}`,
-      `${topic} should be addressed through ${agent.domain} principles`,
-      `Incorporating ${agent.domain} methodologies into ${topic}`,
-      `Applying ${agent.domain} frameworks to solve ${topic} challenges`
-    ];
-
-    // Return more specific suggestion for higher expertise match
-    const index = Math.min(Math.floor(expertiseMatch * suggestions.length), suggestions.length - 1);
-    return suggestions[index];
-  }
-
-  private getReasoningContext(domain: string, topic: string): string {
-    const contexts = [
-      `proven ${domain} best practices`,
-      `research in the field of ${domain}`,
-      `established ${domain} frameworks`,
-      `recent advancements in ${domain} theory`
-    ];
-    
-    return contexts[Math.floor(Math.random() * contexts.length)];
-  }
-
-  public groupVotesBySuggestion(votes: CouncilVote[]): Map<string, CouncilVote[]> {
-    const suggestionGroups: Map<string, CouncilVote[]> = new Map();
     votes.forEach(vote => {
-      if (!suggestionGroups.has(vote.suggestion)) {
-        suggestionGroups.set(vote.suggestion, []);
+      if (!decisions.has(vote.decision)) {
+        decisions.set(vote.decision, { count: 0, weightedScore: 0 });
       }
-      suggestionGroups.get(vote.suggestion)!.push(vote);
+      
+      const current = decisions.get(vote.decision)!;
+      current.count += 1;
+      current.weightedScore += vote.weight * vote.confidence;
+      totalWeight += vote.weight;
     });
-    return suggestionGroups;
+    
+    // Find the decision with the highest weighted score
+    let highestScore = 0;
+    let majorityDecision = '';
+    
+    decisions.forEach((value, key) => {
+      if (value.weightedScore > highestScore) {
+        highestScore = value.weightedScore;
+        majorityDecision = key;
+      }
+    });
+    
+    return totalWeight > 0 ? highestScore / totalWeight : 0;
   }
   
-  /**
-   * Find potentially manipulated votes
-   */
-  public detectSuspiciousVotes(votes: CouncilVote[]): CouncilVote[] {
-    // First check vote integrity
-    const tampered = votes.filter(vote => !this.integrityService.verifyVote(vote));
+  public getMajorityDecision(votes: CouncilVote[]): string | null {
+    if (votes.length === 0) return null;
     
-    // Then check for statistical outliers
-    const outliers = this.integrityService.detectOutliers(votes);
+    const decisions = new Map<string, number>();
     
-    // Combine and deduplicate results
-    const allSuspicious = [...tampered, ...outliers];
-    return [...new Set(allSuspicious)];
+    votes.forEach(vote => {
+      const currentCount = decisions.get(vote.decision) || 0;
+      decisions.set(vote.decision, currentCount + (vote.weight * vote.confidence));
+    });
+    
+    let highestCount = 0;
+    let majorityDecision = null;
+    
+    decisions.forEach((count, decision) => {
+      if (count > highestCount) {
+        highestCount = count;
+        majorityDecision = decision;
+      }
+    });
+    
+    return majorityDecision;
+  }
+  
+  public voteOnPlan(plan: Plan, agentId: string, approve: boolean, reason: string): void {
+    console.log(`Agent ${agentId} voted ${approve ? 'to approve' : 'to reject'} plan ${plan.planId}`);
+    console.log(`Reason: ${reason}`);
+    
+    // If approved and there are tasks, assign them
+    if (approve && plan.tasks && plan.tasks.length > 0) {
+      plan.tasks.forEach(task => {
+        if (!task.assignedAgentId) { // Fixed property access
+          // Simple assignment - in a real system this would use agent capabilities
+          task.assignedAgentId = agentId; // Fixed property assignment
+          console.log(`Task ${task.taskId} assigned to agent ${agentId}`);
+        }
+      });
+    }
+  }
+  
+  public getLatestVoteTrends(): Map<string, { up: number; down: number }> {
+    const trends = new Map<string, { up: number; down: number }>();
+    
+    // Simulate trends calculation
+    trends.set('risk_assessment', { up: 7, down: 2 });
+    trends.set('efficiency', { up: 5, down: 4 });
+    trends.set('creativity', { up: 9, down: 1 });
+    
+    return trends;
   }
 }

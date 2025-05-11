@@ -113,7 +113,7 @@ export async function getTypingStatuses(
 }
 
 /**
- * Clean up typing statuses when a user leaves
+ * Clean up typing status when a user leaves
  */
 export async function clearTypingStatus(
   matchId: string,
@@ -137,3 +137,61 @@ export async function clearTypingStatus(
     return { success: false, error: (e as Error).message };
   }
 }
+
+// Create a service object for easier importing and use in other files
+export const arenaChatService = {
+  sendMessage: sendChatMessage,
+  fetchChatMessages: getChatMessages,
+  updateTypingStatus: setTypingStatus,
+  getTypingStatuses,
+  clearTypingStatus,
+  subscribeToChatMessages: (matchId: string, callback: (message: ChatMessage) => void) => {
+    const channel = supabase
+      .channel('arena-chat-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'arena_chat_messages',
+          filter: `match_id=eq.${matchId}`
+        },
+        (payload) => {
+          callback(payload.new as ChatMessage);
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  },
+  subscribeToTypingIndicators: (matchId: string, callback: (statuses: TypingStatus[]) => void) => {
+    const channel = supabase
+      .channel('arena-typing-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'arena_typing_status',
+          filter: `match_id=eq.${matchId}`
+        },
+        async () => {
+          // When typing status changes, fetch all typing statuses
+          const { success, statuses } = await getTypingStatuses(matchId);
+          if (success && statuses) {
+            callback(statuses);
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }
+};
+
+// Export types from this file for convenience
+export type { ChatMessage, TypingStatus };

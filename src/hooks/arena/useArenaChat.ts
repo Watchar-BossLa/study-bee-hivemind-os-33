@@ -19,8 +19,10 @@ export const useArenaChat = (matchId: string | null) => {
     const fetchInitialMessages = async () => {
       setIsLoading(true);
       try {
-        const data = await arenaChatService.fetchChatMessages(matchId);
-        setMessages(data);
+        const response = await arenaChatService.fetchChatMessages(matchId);
+        if (response.success && response.messages) {
+          setMessages(response.messages);
+        }
       } catch (error) {
         console.error('Error loading chat messages:', error);
       } finally {
@@ -108,13 +110,13 @@ export const useArenaChat = (matchId: string | null) => {
 
     setIsLoading(true);
     try {
-      const success = await arenaChatService.sendMessage(
+      const result = await arenaChatService.sendMessage(
         matchId,
         data.user.id,
         inputMessage.trim()
       );
 
-      if (success) {
+      if (result.success) {
         setInputMessage('');
         // Clear typing status immediately after sending
         arenaChatService.updateTypingStatus(matchId, data.user.id, false);
