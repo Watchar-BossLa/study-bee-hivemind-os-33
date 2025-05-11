@@ -1,8 +1,6 @@
 
 // This file extends the Supabase database types with our custom tables
 
-import type { Database as OriginalDatabase } from '@/integrations/supabase/types';
-
 // Extend the tables interface in the Database type
 export interface ExtendedTables {
   arena_chat_messages: {
@@ -72,15 +70,66 @@ export interface ExtendedTables {
 export type ChatMessage = ExtendedTables['arena_chat_messages']['Row'];
 export type TypingStatus = ExtendedTables['arena_typing_status']['Row'];
 
-// Modify Database type definition through augmentation
+// Modify Database type definition through declaration merging
 declare module '@/integrations/supabase/types' {
-  interface Database extends Omit<OriginalDatabase, 'public'> {
+  interface Database {
     public: {
-      Tables: OriginalDatabase['public']['Tables'] & ExtendedTables;
-      Views: OriginalDatabase['public']['Views'];
-      Functions: OriginalDatabase['public']['Functions'];
-      Enums: OriginalDatabase['public']['Enums'];
-      CompositeTypes: OriginalDatabase['public']['CompositeTypes'];
+      Tables: {
+        arena_matches: {
+          Row: { /* ... keep existing code */ };
+          Insert: { /* ... keep existing code */ };
+          Update: { /* ... keep existing code */ };
+          Relationships: [];
+        };
+        arena_stats: {
+          Row: { /* ... keep existing code */ };
+          Insert: { /* ... keep existing code */ };
+          Update: { /* ... keep existing code */ };
+          Relationships: [];
+        };
+        flashcards: {
+          Row: { /* ... keep existing code */ };
+          Insert: { /* ... keep existing code */ };
+          Update: { /* ... keep existing code */ };
+          Relationships: [];
+        };
+        match_players: {
+          Row: { /* ... keep existing code */ };
+          Insert: { /* ... keep existing code */ };
+          Update: { /* ... keep existing code */ };
+          Relationships: [];
+        };
+        ocr_uploads: {
+          Row: { /* ... keep existing code */ };
+          Insert: { /* ... keep existing code */ };
+          Update: { /* ... keep existing code */ };
+          Relationships: [];
+        };
+        profiles: {
+          Row: { /* ... keep existing code */ };
+          Insert: { /* ... keep existing code */ };
+          Update: { /* ... keep existing code */ };
+          Relationships: [];
+        };
+        quiz_questions: {
+          Row: { /* ... keep existing code */ };
+          Insert: { /* ... keep existing code */ };
+          Update: { /* ... keep existing code */ };
+          Relationships: [];
+        };
+        user_achievements: {
+          Row: { /* ... keep existing code */ };
+          Insert: { /* ... keep existing code */ };
+          Update: { /* ... keep existing code */ };
+          Relationships: [];
+        };
+        arena_chat_messages: ExtendedTables['arena_chat_messages'];
+        arena_typing_status: ExtendedTables['arena_typing_status'];
+      };
+      Views: { /* ... keep existing code */ };
+      Functions: { /* ... keep existing code */ };
+      Enums: { /* ... keep existing code */ };
+      CompositeTypes: { /* ... keep existing code */ };
     }
   }
 }
