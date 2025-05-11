@@ -4,13 +4,14 @@ import { PydanticValidator } from '../frameworks/PydanticValidator';
 import { LangChainIntegration } from '../frameworks/LangChainIntegration';
 import { AutogenIntegration } from '../frameworks/AutogenIntegration';
 import { CrewAIPlanner } from '../frameworks/CrewAIPlanner';
-import { AgentToAgentHub } from '../frameworks/AgentToAgentHub';
 import { CouncilService } from '../CouncilService';
 import { LLMRouter } from '../LLMRouter';
 import { LangChainQuotaGuard } from '../frameworks/LangChainQuotaGuard';
 import { AutogenTurnGuard } from '../frameworks/AutogenTurnGuard';
 import { A2AOAuthHandler } from '../frameworks/A2AOAuthHandler';
 import { SwarmMetricsService } from '../metrics/SwarmMetricsService';
+import { A2AHub, createA2AHub } from '../frameworks/A2AHub';
+import { MCPCore } from './MCPCore';
 
 export class FrameworkManager {
   private openAISwarm: OpenAISwarmWrapper;
@@ -18,36 +19,44 @@ export class FrameworkManager {
   private langChainIntegration: LangChainIntegration;
   private autogenIntegration: AutogenIntegration;
   private crewAIPlanner: CrewAIPlanner;
-  private a2aHub: AgentToAgentHub;
+  private a2aHub: A2AHub;
   
   // New services from QuorumForge OS commit matrix
   private langChainQuotaGuard: LangChainQuotaGuard;
   private autogenTurnGuard: AutogenTurnGuard;
   private a2aOAuthHandler: A2AOAuthHandler;
   private swarmMetricsService: SwarmMetricsService;
+  private mcpCore?: MCPCore;
   
-  constructor(councilService: CouncilService, router: LLMRouter) {
+  constructor(councilService: CouncilService, router: LLMRouter, mcpCore?: MCPCore) {
+    this.mcpCore = mcpCore;
+    
     // Initialize metrics and monitoring services
     this.swarmMetricsService = new SwarmMetricsService();
     this.langChainQuotaGuard = new LangChainQuotaGuard();
     this.autogenTurnGuard = new AutogenTurnGuard();
     this.a2aOAuthHandler = new A2AOAuthHandler();
     
-    // Initialize framework integrations - fixing constructor parameter mismatches
+    // Initialize framework integrations
     this.openAISwarm = new OpenAISwarmWrapper();
     this.pydanticValidator = new PydanticValidator();
     this.langChainIntegration = new LangChainIntegration(router);
     this.autogenIntegration = new AutogenIntegration(router);
     this.crewAIPlanner = new CrewAIPlanner(councilService);
-    this.a2aHub = new AgentToAgentHub();
+    
+    // Initialize A2A Hub with OAuth support and MCP-Core integration
+    this.a2aHub = createA2AHub(this.a2aOAuthHandler, this.mcpCore);
     
     // Initialize A2A Hub
     this.initializeA2AHub();
+    
+    console.log('FrameworkManager initialized with MCP-Core integration');
   }
 
   private initializeA2AHub(): void {
     this.a2aHub.registerCapabilities([
-      'tutor', 'assessment', 'knowledge-validation', 'learning-path-design'
+      'tutor', 'assessment', 'knowledge-validation', 'learning-path-design',
+      'adaptive-tutoring', 'progress-tracking', 'skill-assessment'
     ]);
     
     console.log('A2A Hub initialized on secondary port with OAuth-PKCE security');
@@ -73,7 +82,7 @@ export class FrameworkManager {
     return this.crewAIPlanner;
   }
   
-  public getA2AHub(): AgentToAgentHub {
+  public getA2AHub(): A2AHub {
     return this.a2aHub;
   }
   
@@ -89,13 +98,20 @@ export class FrameworkManager {
     return this.swarmMetricsService;
   }
   
+  public getMCPCore(): MCPCore | undefined {
+    return this.mcpCore;
+  }
+  
   public async communicateWithExternalAgent(
     agentId: string, 
     message: string, 
     capabilities: string[]
   ): Promise<any> {
     try {
-      return await this.a2aHub.sendMessage(agentId, message, capabilities);
+      const response = await this.a2aHub.sendMessage(agentId, message, {
+        requiredCapabilities: capabilities
+      });
+      return response.body.content;
     } catch (error) {
       console.error("External agent communication failed:", error);
       throw new Error(`Failed to communicate with external agent: ${(error as Error).message}`);
