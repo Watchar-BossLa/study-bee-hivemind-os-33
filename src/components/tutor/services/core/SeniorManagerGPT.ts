@@ -163,7 +163,7 @@ export class SeniorManagerGPT {
     score -= ((plan.tasks?.length || 0) > 10 ? 0.1 : 0);
     
     // Adjust based on historical performance of similar plans
-    const pastSuccess = this.getPastSuccessRate(plan.type);
+    const pastSuccess = this.getPastSuccessRate(plan.type || 'default');
     score = (score + pastSuccess) / 2;
     
     return Math.min(1.0, Math.max(0.0, score));

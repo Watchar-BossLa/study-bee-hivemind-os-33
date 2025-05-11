@@ -1,3 +1,4 @@
+
 import { A2AOAuthHandler } from './A2AOAuthHandler';
 import { 
   A2AProtocol, 
@@ -401,8 +402,8 @@ export class A2AHub extends EventEmitter {
     this.on('message:received', (message) => {
       // Forward relevant messages to MCP-Core
       if (this.mcpCore && message.header.messageType === A2AMessageType.REQUEST) {
+        // Fix the property access in the object being passed to sendMessage
         this.mcpCore.sendMessage({
-          id: message.header.messageId,
           fromAgentId: message.header.sender.id,
           toAgentId: message.header.recipient.id,
           content: message.body.content,

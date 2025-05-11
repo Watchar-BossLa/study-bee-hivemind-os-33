@@ -4,7 +4,7 @@
 import type { Database as OriginalDatabase } from '@/integrations/supabase/types';
 
 // Extend the tables interface in the Database type
-export interface ExtendedTables extends OriginalDatabase['public']['Tables'] {
+export interface ExtendedTables {
   arena_chat_messages: {
     Row: {
       id: string;
@@ -68,15 +68,15 @@ export interface ExtendedTables extends OriginalDatabase['public']['Tables'] {
   };
 }
 
-// Extend the Database type definition
+// Modify Database type definition to avoid duplicate identifier errors
 declare module '@/integrations/supabase/types' {
   interface Database {
     public: {
-      Tables: ExtendedTables;
+      Tables: OriginalDatabase['public']['Tables'] & ExtendedTables;
       Views: OriginalDatabase['public']['Views'];
       Functions: OriginalDatabase['public']['Functions'];
       Enums: OriginalDatabase['public']['Enums'];
       CompositeTypes: OriginalDatabase['public']['CompositeTypes'];
-    };
+    }
   }
 }
