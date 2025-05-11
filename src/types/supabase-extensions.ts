@@ -1,4 +1,3 @@
-
 // This file extends the Supabase database types with our custom tables
 
 // Extend the tables interface in the Database type
@@ -76,51 +75,267 @@ declare module '@/integrations/supabase/types' {
     public: {
       Tables: {
         arena_matches: {
-          Row: { /* ... keep existing code */ };
-          Insert: { /* ... keep existing code */ };
-          Update: { /* ... keep existing code */ };
+          Row: { 
+            created_at: string | null;
+            end_time: string | null;
+            id: string;
+            start_time: string | null;
+            status: string;
+            updated_at: string | null;
+          };
+          Insert: { 
+            created_at?: string | null;
+            end_time?: string | null;
+            id?: string;
+            start_time?: string | null;
+            status?: string;
+            updated_at?: string | null;
+          };
+          Update: { 
+            created_at?: string | null;
+            end_time?: string | null;
+            id?: string;
+            start_time?: string | null;
+            status?: string;
+            updated_at?: string | null;
+          };
           Relationships: [];
         };
         arena_stats: {
-          Row: { /* ... keep existing code */ };
-          Insert: { /* ... keep existing code */ };
-          Update: { /* ... keep existing code */ };
+          Row: { 
+            correct_answers: number;
+            created_at: string | null;
+            highest_score: number;
+            last_match_date: string | null;
+            matches_played: number;
+            matches_won: number;
+            questions_answered: number;
+            total_score: number;
+            updated_at: string | null;
+            user_id: string;
+          };
+          Insert: { 
+            correct_answers?: number;
+            created_at?: string | null;
+            highest_score?: number;
+            last_match_date?: string | null;
+            matches_played?: number;
+            matches_won?: number;
+            questions_answered?: number;
+            total_score?: number;
+            updated_at?: string | null;
+            user_id: string;
+          };
+          Update: { 
+            correct_answers?: number;
+            created_at?: string | null;
+            highest_score?: number;
+            last_match_date?: string | null;
+            matches_played?: number;
+            matches_won?: number;
+            questions_answered?: number;
+            total_score?: number;
+            updated_at?: string | null;
+            user_id?: string;
+          };
           Relationships: [];
         };
         flashcards: {
-          Row: { /* ... keep existing code */ };
-          Insert: { /* ... keep existing code */ };
-          Update: { /* ... keep existing code */ };
+          Row: { 
+            answer: string;
+            consecutive_correct_answers: number | null;
+            created_at: string;
+            easiness_factor: number | null;
+            id: string;
+            last_reviewed_at: string | null;
+            next_review_at: string | null;
+            question: string;
+            updated_at: string;
+            upload_id: string | null;
+            user_id: string;
+          };
+          Insert: { 
+            answer: string;
+            consecutive_correct_answers?: number | null;
+            created_at?: string;
+            easiness_factor?: number | null;
+            id?: string;
+            last_reviewed_at?: string | null;
+            next_review_at?: string | null;
+            question: string;
+            updated_at?: string;
+            upload_id?: string | null;
+            user_id: string;
+          };
+          Update: { 
+            answer?: string;
+            consecutive_correct_answers?: number | null;
+            created_at?: string;
+            easiness_factor?: number | null;
+            id?: string;
+            last_reviewed_at?: string | null;
+            next_review_at?: string | null;
+            question?: string;
+            updated_at?: string;
+            upload_id?: string | null;
+            user_id?: string;
+          };
           Relationships: [];
         };
         match_players: {
-          Row: { /* ... keep existing code */ };
-          Insert: { /* ... keep existing code */ };
-          Update: { /* ... keep existing code */ };
+          Row: { 
+            correct_answers: number;
+            created_at: string | null;
+            id: string;
+            match_id: string;
+            questions_answered: number;
+            score: number;
+            updated_at: string | null;
+            user_id: string;
+          };
+          Insert: { 
+            correct_answers?: number;
+            created_at?: string | null;
+            id?: string;
+            match_id: string;
+            questions_answered?: number;
+            score?: number;
+            updated_at?: string | null;
+            user_id: string;
+          };
+          Update: { 
+            correct_answers?: number;
+            created_at?: string | null;
+            id?: string;
+            match_id?: string;
+            questions_answered?: number;
+            score?: number;
+            updated_at?: string | null;
+            user_id?: string;
+          };
           Relationships: [];
         };
         ocr_uploads: {
-          Row: { /* ... keep existing code */ };
-          Insert: { /* ... keep existing code */ };
-          Update: { /* ... keep existing code */ };
+          Row: { 
+            created_at: string;
+            error_message: string | null;
+            id: string;
+            image_url: string;
+            status: string;
+            updated_at: string;
+            user_id: string;
+          };
+          Insert: { 
+            created_at?: string;
+            error_message?: string | null;
+            id?: string;
+            image_url: string;
+            status?: string;
+            updated_at?: string;
+            user_id: string;
+          };
+          Update: { 
+            created_at?: string;
+            error_message?: string | null;
+            id?: string;
+            image_url?: string;
+            status?: string;
+            updated_at?: string;
+            user_id?: string;
+          };
           Relationships: [];
         };
         profiles: {
-          Row: { /* ... keep existing code */ };
-          Insert: { /* ... keep existing code */ };
-          Update: { /* ... keep existing code */ };
+          Row: { 
+            avatar_url: string | null;
+            bio: string | null;
+            created_at: string | null;
+            full_name: string | null;
+            id: string;
+            learning_preferences: any | null;
+            updated_at: string | null;
+          };
+          Insert: { 
+            avatar_url?: string | null;
+            bio?: string | null;
+            created_at?: string | null;
+            full_name?: string | null;
+            id: string;
+            learning_preferences?: any | null;
+            updated_at?: string | null;
+          };
+          Update: { 
+            avatar_url?: string | null;
+            bio?: string | null;
+            created_at?: string | null;
+            full_name?: string | null;
+            id?: string;
+            learning_preferences?: any | null;
+            updated_at?: string | null;
+          };
           Relationships: [];
         };
         quiz_questions: {
-          Row: { /* ... keep existing code */ };
-          Insert: { /* ... keep existing code */ };
-          Update: { /* ... keep existing code */ };
+          Row: { 
+            category: string;
+            correct_answer: string;
+            created_at: string | null;
+            difficulty: string;
+            id: string;
+            option_a: string;
+            option_b: string;
+            option_c: string;
+            option_d: string;
+            question: string;
+            updated_at: string | null;
+          };
+          Insert: { 
+            category: string;
+            correct_answer: string;
+            created_at?: string | null;
+            difficulty: string;
+            id?: string;
+            option_a: string;
+            option_b: string;
+            option_c: string;
+            option_d: string;
+            question: string;
+            updated_at?: string | null;
+          };
+          Update: { 
+            category?: string;
+            correct_answer?: string;
+            created_at?: string | null;
+            difficulty?: string;
+            id?: string;
+            option_a?: string;
+            option_b?: string;
+            option_c?: string;
+            option_d?: string;
+            question?: string;
+            updated_at?: string | null;
+          };
           Relationships: [];
         };
         user_achievements: {
-          Row: { /* ... keep existing code */ };
-          Insert: { /* ... keep existing code */ };
-          Update: { /* ... keep existing code */ };
+          Row: { 
+            achievement_id: string;
+            earned_at: string | null;
+            id: string;
+            user_id: string;
+          };
+          Insert: { 
+            achievement_id: string;
+            earned_at?: string | null;
+            id?: string;
+            user_id: string;
+          };
+          Update: { 
+            achievement_id?: string;
+            earned_at?: string | null;
+            id?: string;
+            user_id?: string;
+          };
           Relationships: [];
         };
         arena_chat_messages: ExtendedTables['arena_chat_messages'];
