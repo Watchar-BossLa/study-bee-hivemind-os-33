@@ -3,6 +3,7 @@ import { CouncilVote } from '../../types/councils';
 import { VoteHistoryStorage } from './VoteHistoryStorage';
 import { VoteWeightCalculator } from './VoteWeightCalculator';
 import { VoteIntegrityService } from './VoteIntegrityService';
+import { SpecializedAgent } from '../../types/agents';
 
 interface PlanTask {
   taskId: string;
@@ -41,22 +42,20 @@ export class VotingService {
     councilId: string, 
     agentId: string, 
     topicId: string, 
-    suggestion: string, // Changed from decision to suggestion to match CouncilVote interface
+    suggestion: string,
     confidence: number
   ): CouncilVote {
-    const weight = this.weightCalculator.calculateWeight(agentId, topicId); // Fixed method name
+    const weight = this.weightCalculator.calculateWeight(agentId, topicId);
     
     const vote: CouncilVote = {
       agentId,
-      suggestion, // Using suggestion instead of decision
+      suggestion,
       confidence,
       reasoning: '', // Added required property
-      // Removed councilId as it doesn't exist in CouncilVote interface
-      // Removed weight as it doesn't exist in CouncilVote interface
     };
     
     if (this.integrityService.verifyVote(vote)) {
-      this.historyStorage.recordVotes(topicId, [vote]); // Changed to recordVotes
+      this.historyStorage.recordVotes(topicId, [vote]);
       return vote;
     } else {
       throw new Error('Vote integrity check failed');
@@ -151,17 +150,44 @@ export class VotingService {
     return trends;
   }
 
-  // Add the missing methods required by DeliberationProcessor
-  public collectVotes(council: any[], topic: string, options?: VotingOptions): CouncilVote[] {
+  // Implementing the missing methods required by DeliberationProcessor
+  public collectVotes(
+    council: SpecializedAgent[], 
+    topic: string, 
+    options?: VotingOptions
+  ): CouncilVote[] {
     console.log(`Collecting votes from council for topic: ${topic}`);
     // Implementation would gather votes from council members
-    return [];
+    const votes: CouncilVote[] = [];
+    council.forEach(agent => {
+      votes.push({
+        agentId: agent.id,
+        suggestion: `Suggestion from ${agent.name}`,
+        confidence: 0.8,
+        reasoning: `Reasoning from ${agent.name}`
+      });
+    });
+    return votes;
   }
 
-  public collectVotesWithPlan(council: any[], topic: string, plan: any, options?: VotingOptions): CouncilVote[] {
+  public collectVotesWithPlan(
+    council: SpecializedAgent[], 
+    topic: string, 
+    plan: any, 
+    options?: VotingOptions
+  ): CouncilVote[] {
     console.log(`Collecting votes from council for topic: ${topic} with plan`);
     // Implementation would gather votes with plan consideration
-    return [];
+    const votes: CouncilVote[] = [];
+    council.forEach(agent => {
+      votes.push({
+        agentId: agent.id,
+        suggestion: `Plan-based suggestion from ${agent.name}`,
+        confidence: 0.85,
+        reasoning: `Plan-based reasoning from ${agent.name}`
+      });
+    });
+    return votes;
   }
 
   public groupVotesBySuggestion(votes: CouncilVote[]): Map<string, CouncilVote[]> {

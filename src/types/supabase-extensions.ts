@@ -1,3 +1,4 @@
+
 // This file extends the Supabase database types with our custom tables
 
 // Extend the tables interface in the Database type
@@ -69,7 +70,7 @@ export interface ExtendedTables {
 export type ChatMessage = ExtendedTables['arena_chat_messages']['Row'];
 export type TypingStatus = ExtendedTables['arena_typing_status']['Row'];
 
-// Modify Database type definition through declaration merging
+// Modify Database type definition through augmentation
 declare module '@/integrations/supabase/types' {
   interface Database {
     public: {

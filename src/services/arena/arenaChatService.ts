@@ -11,9 +11,9 @@ export async function sendChatMessage(
   content: string
 ): Promise<{ success: boolean; message?: ChatMessage; error?: string }> {
   try {
-    // Use single quote type-casting to tell TypeScript this is safe
+    // Use explicit type assertion to handle the extended table properly
     const { data, error } = await supabase
-      .from('arena_chat_messages' as any)
+      .from('arena_chat_messages')
       .insert({
         match_id: matchId,
         user_id: userId,
@@ -27,7 +27,7 @@ export async function sendChatMessage(
       return { success: false, error: error.message };
     }
 
-    return { success: true, message: data as unknown as ChatMessage };
+    return { success: true, message: data as ChatMessage };
   } catch (e) {
     console.error('Exception sending chat message:', e);
     return { success: false, error: (e as Error).message };
@@ -41,9 +41,9 @@ export async function getChatMessages(
   matchId: string
 ): Promise<{ success: boolean; messages?: ChatMessage[]; error?: string }> {
   try {
-    // Use type assertion to bypass TypeScript's limitations
+    // Use proper typing for the extended table
     const { data, error } = await supabase
-      .from('arena_chat_messages' as any)
+      .from('arena_chat_messages')
       .select()
       .eq('match_id', matchId)
       .order('created_at', { ascending: true });
@@ -53,7 +53,7 @@ export async function getChatMessages(
       return { success: false, error: error.message };
     }
 
-    return { success: true, messages: data as unknown as ChatMessage[] };
+    return { success: true, messages: data as ChatMessage[] };
   } catch (e) {
     console.error('Exception fetching chat messages:', e);
     return { success: false, error: (e as Error).message };
@@ -69,9 +69,9 @@ export async function setTypingStatus(
   isTyping: boolean
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Use type assertion to allow access to the table
+    // Use proper typing for the extended table
     const { error } = await supabase
-      .from('arena_typing_status' as any)
+      .from('arena_typing_status')
       .upsert({
         match_id: matchId,
         user_id: userId,
@@ -98,9 +98,9 @@ export async function getTypingStatuses(
   matchId: string
 ): Promise<{ success: boolean; statuses?: TypingStatus[]; error?: string }> {
   try {
-    // Use type assertion to bypass TypeScript's strict checking
+    // Use proper typing for the extended table
     const { data, error } = await supabase
-      .from('arena_typing_status' as any)
+      .from('arena_typing_status')
       .select()
       .eq('match_id', matchId);
 
@@ -109,7 +109,7 @@ export async function getTypingStatuses(
       return { success: false, error: error.message };
     }
 
-    return { success: true, statuses: data as unknown as TypingStatus[] };
+    return { success: true, statuses: data as TypingStatus[] };
   } catch (e) {
     console.error('Exception fetching typing statuses:', e);
     return { success: false, error: (e as Error).message };
@@ -124,9 +124,9 @@ export async function clearTypingStatus(
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Use type assertion to bypass TypeScript's strict checking
+    // Use proper typing for the extended table
     const { error } = await supabase
-      .from('arena_typing_status' as any)
+      .from('arena_typing_status')
       .delete()
       .eq('match_id', matchId)
       .eq('user_id', userId);
@@ -162,7 +162,7 @@ export const arenaChatService = {
           filter: `match_id=eq.${matchId}`
         },
         (payload) => {
-          callback(payload.new as unknown as ChatMessage);
+          callback(payload.new as ChatMessage);
         }
       )
       .subscribe();
