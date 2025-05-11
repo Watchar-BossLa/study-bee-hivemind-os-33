@@ -1,15 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-
-// Import types extension to ensure module augmentation is applied
-import '@/types/supabase-extensions';
-
-/**
- * Types for chat messages and typing status
- */
-export type ChatMessage = Database['public']['Tables']['arena_chat_messages']['Row'];
-export type TypingStatus = Database['public']['Tables']['arena_typing_status']['Row'];
+import { ChatMessage, TypingStatus } from '@/types/supabase-extensions';
 
 // Define table names as constants to avoid repetition
 const CHAT_MESSAGES_TABLE = 'arena_chat_messages';
@@ -98,7 +90,7 @@ export const arenaChatService = {
           match_id: matchId,
           user_id: userId,
           content: content
-        } as any); // Use type assertion to bypass TypeScript error temporarily
+        });
 
       return !error;
     } catch (error) {
@@ -127,7 +119,7 @@ export const arenaChatService = {
           user_id: userId,
           is_typing: isTyping,
           last_updated: new Date().toISOString()
-        } as any, {
+        }, {
           onConflict: 'user_id, match_id'
         });
 

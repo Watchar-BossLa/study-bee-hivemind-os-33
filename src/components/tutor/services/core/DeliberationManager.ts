@@ -1,14 +1,18 @@
 
+import { SpecializedAgent } from '../../types/agents';
+import { CouncilDecision } from '../../types/councils'; 
+import { DeliberationService, DeliberationOptions } from '../DeliberationService';
 import { CouncilService } from '../CouncilService';
-import { DeliberationService } from '../DeliberationService';
 import { FrameworkManager } from './FrameworkManager';
-import { CouncilDecision } from '../../types/councils';
 
+/**
+ * Manages deliberation process across multiple agents and councils
+ */
 export class DeliberationManager {
   private deliberationService: DeliberationService;
   private councilService: CouncilService;
   private frameworkManager: FrameworkManager;
-  
+
   constructor(
     deliberationService: DeliberationService,
     councilService: CouncilService,
@@ -18,7 +22,7 @@ export class DeliberationManager {
     this.councilService = councilService;
     this.frameworkManager = frameworkManager;
   }
-  
+
   public async deliberate(
     councilId: string, 
     topic: string, 
@@ -27,67 +31,24 @@ export class DeliberationManager {
     consensusThreshold: number = 0.8
   ): Promise<CouncilDecision> {
     const council = this.councilService.getCouncil(councilId);
+    
     if (!council) {
-      throw new Error(`Council "${councilId}" does not exist`);
+      throw new Error(`Council with ID ${councilId} not found`);
     }
     
-    // Use PydanticValidator to validate input context
-    const validatedContext = this.frameworkManager.getPydanticValidator().validateContext(context);
+    const options: DeliberationOptions = {
+      consensusThreshold,
+      timeLimit: maxTurns * 30000 // 30 seconds per turn
+    };
     
-    // Enhanced deliberation process with CrewAI for complex topics
-    if (this.shouldUseCrewAI(topic, validatedContext)) {
-      const crewPlan = await this.frameworkManager.getCrewAIPlanner().createPlan(topic, council, validatedContext);
-      return this.deliberationService.deliberateWithPlan(
-        council,
-        topic,
-        validatedContext,
-        crewPlan,
-        {
-          consensusThreshold,
-          minRequiredVotes: council.length / 2
-        }
-      );
-    }
-    
-    return this.deliberationService.deliberate(
-      council,
-      topic,
-      validatedContext,
-      {
-        consensusThreshold,
-        minRequiredVotes: council.length / 2
-      }
+    return await this.deliberationService.deliberate(
+      council, 
+      topic, 
+      context, 
+      options
     );
   }
 
-  private shouldUseCrewAI(topic: string, context: Record<string, any>): boolean {
-    // Determine if the topic is complex enough to warrant CrewAI planning
-    const topicComplexity = this.calculateTopicComplexity(topic);
-    return topicComplexity > 0.7 || context.useCrewAI === true;
-  }
-
-  private calculateTopicComplexity(topic: string): number {
-    // Simple heuristic for topic complexity
-    const complexityWords = [
-      'advanced', 'complex', 'detailed', 'comprehensive', 
-      'intricate', 'sophisticated', 'multifaceted'
-    ];
-    
-    let complexity = 0.4; // Base complexity
-    
-    // Increase complexity score based on matching words
-    complexityWords.forEach(word => {
-      if (topic.toLowerCase().includes(word)) {
-        complexity += 0.1;
-      }
-    });
-    
-    // Adjust based on topic length (longer topics tend to be more complex)
-    complexity += Math.min(0.2, topic.length / 500);
-    
-    return Math.min(1.0, complexity);
-  }
-  
   public getRecentDecisions(limit: number = 10): CouncilDecision[] {
     return this.deliberationService.getRecentDecisions(limit);
   }

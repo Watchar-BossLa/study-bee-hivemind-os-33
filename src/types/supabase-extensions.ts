@@ -68,9 +68,13 @@ export interface ExtendedTables {
   };
 }
 
-// Modify Database type definition to avoid duplicate identifier errors
+// Export types for use in the application
+export type ChatMessage = ExtendedTables['arena_chat_messages']['Row'];
+export type TypingStatus = ExtendedTables['arena_typing_status']['Row'];
+
+// Modify Database type definition through augmentation
 declare module '@/integrations/supabase/types' {
-  interface Database {
+  interface Database extends Omit<OriginalDatabase, 'public'> {
     public: {
       Tables: OriginalDatabase['public']['Tables'] & ExtendedTables;
       Views: OriginalDatabase['public']['Views'];

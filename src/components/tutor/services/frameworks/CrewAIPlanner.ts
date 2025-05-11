@@ -11,6 +11,7 @@ export interface Plan {
   estimatedCost?: number;
   assignedAgents?: string[];
   metadata?: Record<string, any>;
+  memberCount?: number;  // Added to fix type errors in DecisionBuilder and VotingService
 }
 
 export class CrewAIPlanner {
@@ -43,7 +44,8 @@ export class CrewAIPlanner {
       ],
       estimatedTime: 10, // minutes
       estimatedCost: 0.05, // dollars
-      assignedAgents: []
+      assignedAgents: [],
+      memberCount: 3 // Added to fix type errors
     };
   }
   
