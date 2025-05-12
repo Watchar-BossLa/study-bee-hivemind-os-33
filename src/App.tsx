@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from 'sonner';
 
-import Index from './pages';
+import Index from './pages/Index';
 import Courses from './pages/Courses';
 import CourseContent from './pages/CourseContent';
 import CourseLearning from './pages/CourseLearning';
