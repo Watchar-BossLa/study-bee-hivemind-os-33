@@ -78,6 +78,37 @@ export class OpenAISwarmWrapper {
   }
   
   /**
+   * Process a list of agents in parallel with a message
+   * @param agents Array of agents to process in parallel
+   * @param message The message to process
+   * @param context Additional context for processing
+   * @returns Array of responses from the agents
+   */
+  async processParallel(
+    agents: any[],
+    message: string,
+    context: Record<string, unknown>
+  ): Promise<any[]> {
+    const tasks = agents.map(agent => ({
+      agent,
+      message,
+      context
+    }));
+    
+    const startTime = Date.now();
+    const results = await this.runSwarm(tasks, 5, "parallel-processing", "agent-responses");
+    const endTime = Date.now();
+    
+    console.log(`Parallel processing completed in ${endTime - startTime}ms`);
+    
+    return results.map((result, index) => ({
+      agentId: agents[index].id || `agent-${index}`,
+      response: result,
+      timestamp: new Date()
+    }));
+  }
+  
+  /**
    * Clear accumulated metrics
    */
   clearMetrics(): void {

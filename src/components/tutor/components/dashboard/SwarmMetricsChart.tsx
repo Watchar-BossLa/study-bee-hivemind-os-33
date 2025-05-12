@@ -4,8 +4,6 @@ import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContai
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { swarmMetricsService } from '../../services/metrics/SwarmMetricsService';
-import { DataTable } from '@/components/ui/data-table';
-import { columns } from './swarm-metrics-columns';
 
 interface SwarmMetricsChartProps {
   hoursBack?: number;

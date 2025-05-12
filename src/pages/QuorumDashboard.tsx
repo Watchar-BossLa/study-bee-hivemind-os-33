@@ -1,7 +1,6 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { PageHeader } from '@/components/ui/page-header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SwarmVisualization } from '../components/tutor/components/dashboard/SwarmVisualization';
@@ -9,11 +8,44 @@ import { SwarmMetricsChart } from '../components/tutor/components/dashboard/Swar
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Activity, BarChart3, Brain, Gauge, MonitorPlay, Network } from 'lucide-react';
+import { swarmMetricsService, SwarmMetricsRecord } from '../components/tutor/services/metrics/SwarmMetricsService';
 
 const QuorumDashboard: React.FC = () => {
   const { toast } = useToast();
+  const [metricsData, setMetricsData] = useState<SwarmMetricsRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    // Generate some mock data for demonstration purposes
+    generateMockMetricsData();
+    setIsLoading(false);
+  }, []);
+
+  const generateMockMetricsData = () => {
+    // Add a few sample metrics if none exist
+    if (swarmMetricsService.getMetricsRecords().length === 0) {
+      const now = Date.now();
+      for (let i = 0; i < 5; i++) {
+        const taskCount = Math.floor(Math.random() * 20) + 5;
+        const agentCount = Math.floor(Math.random() * 5) + 1;
+        swarmMetricsService.recordSwarmExecution(
+          taskCount,
+          agentCount,
+          Math.floor(Math.random() * 2000) + 500, // execution time between 500-2500ms
+          taskCount * 150, // estimated token usage
+          `council-${i % 3 + 1}`,
+          `topic-${i % 4 + 1}`
+        );
+      }
+    }
+    setMetricsData(swarmMetricsService.getMetricsRecords());
+  };
   
   const handleRefresh = () => {
+    setIsLoading(true);
+    generateMockMetricsData();
+    setIsLoading(false);
+    
     toast({
       title: "Dashboard Refreshed",
       description: "The QuorumForge dashboard data has been refreshed.",
@@ -28,10 +60,10 @@ const QuorumDashboard: React.FC = () => {
       </Helmet>
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <PageHeader
-          heading="QuorumForge Dashboard"
-          subheading="Monitor and manage the autonomous agent system"
-        />
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">QuorumForge Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Monitor and manage the autonomous agent system</p>
+        </div>
         <Button onClick={handleRefresh}>Refresh Data</Button>
       </div>
       
@@ -92,14 +124,14 @@ const QuorumDashboard: React.FC = () => {
               </CardContent>
             </Card>
             
-            <SwarmVisualization />
+            <SwarmVisualization metrics={metricsData} isLoading={isLoading} />
           </div>
           
           <SwarmMetricsChart hoursBack={12} />
         </TabsContent>
         
         <TabsContent value="swarms" className="space-y-6">
-          <SwarmVisualization className="h-[400px]" />
+          <SwarmVisualization metrics={metricsData} isLoading={isLoading} className="h-[400px]" />
           <SwarmMetricsChart />
         </TabsContent>
         
