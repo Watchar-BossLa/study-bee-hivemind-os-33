@@ -3,11 +3,11 @@ import { SpecializedAgent } from '../types/agents';
 import { CouncilDecision } from '../types/councils';
 import { VotingService } from './deliberation/VotingService';
 import { ConsensusService } from './deliberation/ConsensusService';
-import { Plan } from './frameworks/CrewAIPlanner';
 import { VoteHistoryStorage } from './deliberation/VoteHistoryStorage';
 import { VoteIntegrityService } from './deliberation/VoteIntegrityService';
 import { DeliberationProcessor } from './deliberation/DeliberationProcessor';
 import { DecisionBuilder } from './deliberation/DecisionBuilder';
+import { Plan } from './deliberation/types/votingTypes';
 
 export interface DeliberationOptions {
   timeLimit?: number; // ms
@@ -62,7 +62,7 @@ export class DeliberationService {
     const decision = this.decisionBuilder.createDecision(
       topic,
       votes,
-      suggestion,
+      suggestion || 'No consensus reached',
       confidence,
       suspiciousVotes
     );
@@ -86,7 +86,7 @@ export class DeliberationService {
     plan: Plan,
     options?: DeliberationOptions
   ): Promise<CouncilDecision> {
-    console.log(`Deliberating with CrewAI plan: ${plan.title}`);
+    console.log(`Deliberating with plan: ${plan.summary}`);
     
     const startTime = Date.now();
     
@@ -98,7 +98,7 @@ export class DeliberationService {
     let decision = this.decisionBuilder.createDecision(
       topic,
       votes,
-      suggestion,
+      suggestion || 'No consensus reached',
       confidence,
       suspiciousVotes
     );

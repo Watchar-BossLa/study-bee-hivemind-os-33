@@ -1,16 +1,18 @@
-import { VotingService, Plan, VotingOptions } from './VotingService';
+
+import { VotingService, VotingOptions } from './VotingService';
 import { CouncilVote } from '../../types/councils';
 import { SpecializedAgent } from '../../types/agents';
-
-// Import the Plan type directly from VotingService instead of CrewAIPlanner
-// This ensures consistent Plan type definitions
+import { Plan } from './types/votingTypes';
+import { ConsensusService } from './ConsensusService';
 
 export class DeliberationProcessor {
   private votingService: VotingService;
+  private consensusService: ConsensusService;
   private thoughtProcesses: Map<string, string[]>;
   
-  constructor(votingService: VotingService) {
+  constructor(votingService: VotingService, consensusService: ConsensusService) {
     this.votingService = votingService;
+    this.consensusService = consensusService;
     this.thoughtProcesses = new Map<string, string[]>();
   }
 
@@ -25,6 +27,62 @@ export class DeliberationProcessor {
     return this.thoughtProcesses.get(topic) || [];
   }
 
+  public processDeliberation(
+    council: SpecializedAgent[],
+    topic: string,
+    context: Record<string, any>,
+    options?: VotingOptions
+  ): { votes: CouncilVote[], suggestion: string | null, confidence: number, suspiciousVotes: CouncilVote[] } {
+    // Record initial thought
+    this.recordThought(topic, `Council of ${council.length} agents deliberating on: ${topic}`);
+    
+    // Collect votes from council
+    const votes = this.votingService.collectVotes(council, topic, options);
+    
+    // Calculate consensus score
+    const consensusScore = this.votingService.calculateConsensusScore(votes);
+    this.recordThought(topic, `Consensus level: ${(consensusScore * 100).toFixed(2)}%`);
+    
+    // Get majority decision
+    const decision = this.votingService.getMajorityDecision(votes);
+    
+    // Get suspicious votes
+    const suspiciousVotes = this.votingService.detectSuspiciousVotes(votes);
+    
+    return {
+      votes,
+      suggestion: decision,
+      confidence: consensusScore,
+      suspiciousVotes
+    };
+  }
+  
+  public processDeliberationWithPlan(
+    council: SpecializedAgent[],
+    topic: string,
+    plan: Plan,
+    options?: VotingOptions
+  ): { votes: CouncilVote[], suggestion: string | null, confidence: number, suspiciousVotes: CouncilVote[] } {
+    this.recordThought(topic, `Council deliberating on ${topic} with plan ${plan.planId}`);
+    
+    // Collect votes considering the plan
+    const votes = this.votingService.collectVotesWithPlan(council, topic, plan, options);
+    
+    // Calculate consensus
+    const consensusScore = this.votingService.calculateConsensusScore(votes);
+    const decision = this.votingService.getMajorityDecision(votes);
+    
+    // Get suspicious votes
+    const suspiciousVotes = this.votingService.detectSuspiciousVotes(votes);
+    
+    return {
+      votes,
+      suggestion: decision,
+      confidence: consensusScore,
+      suspiciousVotes
+    };
+  }
+  
   public async deliberateOnTopic(
     council: SpecializedAgent[],
     topic: string,
@@ -97,9 +155,5 @@ export class DeliberationProcessor {
     });
     
     return disagreements;
-  }
-  
-  public detectAnomalousVotes(votes: CouncilVote[]): CouncilVote[] {
-    return this.votingService.detectSuspiciousVotes(votes);
   }
 }
