@@ -30,7 +30,7 @@ export class DeliberationProcessor {
   public processDeliberation(
     council: SpecializedAgent[],
     topic: string,
-    context: Record<string, any>,
+    context: Record<string, unknown>,
     options?: VotingOptions
   ): { votes: CouncilVote[], suggestion: string | null, confidence: number, suspiciousVotes: CouncilVote[] } {
     // Record initial thought

@@ -33,6 +33,17 @@ export class VoteIntegrityService {
   }
   
   /**
+   * Identify suspicious votes based on patterns or anomalies
+   */
+  public identifySuspiciousVotes(votes: CouncilVote[], topic: string): CouncilVote[] {
+    // For now, detect votes with extremely high or low confidence
+    return votes.filter(vote => 
+      vote.confidence > 0.95 || // Suspiciously high confidence
+      vote.confidence < 0.05    // Suspiciously low confidence
+    );
+  }
+  
+  /**
    * Verify that a vote hasn't been tampered with
    */
   public verifyVote(vote: CouncilVote): boolean {

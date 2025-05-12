@@ -1,29 +1,40 @@
 
 import { CouncilVote, CouncilDecision } from '../../types/councils';
 
-export interface VoteHistorySummary {
-  topicId: string;
-  councilId: string;
+interface VoteHistoryEntry {
+  votes: CouncilVote[];
+  topic: string;
   timestamp: Date;
-  consensus: string;
-  confidenceScore: number;
-  participantCount: number;
-  votingDistribution: Record<string, number>; // suggestion -> count
-  averageConfidence: number;
-  timeToConsensus?: number; // in ms
+  councilId: string;
 }
 
-/**
- * Stores and analyzes voting history for councils
- */
+interface DecisionHistoryEntry {
+  decision: CouncilDecision;
+  councilId: string;
+  topicId: string;
+  timeToDecide: number;
+  timestamp: Date;
+}
+
 export class VoteHistoryStorage {
-  private voteHistory: VoteHistorySummary[] = [];
-  private readonly maxHistorySize: number = 50;
-  private voteCache: Map<string, CouncilDecision> = new Map();
-  private readonly cacheTTL: number = 10 * 60 * 1000; // 10 minutes in ms
-  
+  private voteHistory: VoteHistoryEntry[] = [];
+  private decisionHistory: DecisionHistoryEntry[] = [];
+  private decisionCache: Map<string, CouncilDecision> = new Map();
+
   /**
-   * Record votes in history
+   * Add votes to history
+   */
+  public addVotes(votes: CouncilVote[], topic: string): void {
+    this.voteHistory.push({
+      votes,
+      topic,
+      timestamp: new Date(),
+      councilId: this.extractCouncilId(votes)
+    });
+  }
+
+  /**
+   * Record votes to history
    */
   public recordVotes(
     topicId: string,
@@ -31,131 +42,72 @@ export class VoteHistoryStorage {
     consensus: string,
     confidence: number
   ): void {
-    // Create a simplified decision object for recording
-    const decision: CouncilDecision = {
+    this.voteHistory.push({
+      votes,
       topic: topicId,
-      votes: [...votes],
-      consensus,
-      confidenceScore: confidence,
-      timestamp: new Date()
-    };
-    
-    // Store in cache with fake councilId for testing purposes
-    this.addVoteToHistory(decision, 'test-council', topicId);
+      timestamp: new Date(),
+      councilId: this.extractCouncilId(votes)
+    });
   }
-  
+
   /**
-   * Add a new vote decision to history and cache
+   * Add a council decision to vote history
    */
   public addVoteToHistory(
     decision: CouncilDecision,
     councilId: string,
     topicId: string,
-    timeToConsensus?: number
+    timeToDecide: number
   ): void {
-    // Create vote distribution record
-    const votingDistribution: Record<string, number> = {};
-    for (const vote of decision.votes) {
-      votingDistribution[vote.suggestion] = (votingDistribution[vote.suggestion] || 0) + 1;
-    }
-    
-    // Calculate average confidence
-    const avgConfidence = decision.votes.length > 0 
-      ? decision.votes.reduce((sum, vote) => sum + vote.confidence, 0) / decision.votes.length
-      : 0;
-    
-    // Create history entry
-    const historySummary: VoteHistorySummary = {
-      topicId,
+    this.decisionHistory.push({
+      decision,
       councilId,
-      timestamp: decision.timestamp,
-      consensus: decision.consensus,
-      confidenceScore: decision.confidenceScore,
-      participantCount: decision.votes.length,
-      votingDistribution,
-      averageConfidence: avgConfidence,
-      timeToConsensus
-    };
-    
-    // Add to history, maintaining max size
-    this.voteHistory.unshift(historySummary);
-    if (this.voteHistory.length > this.maxHistorySize) {
-      this.voteHistory.pop();
-    }
-    
-    // Add to cache with expiration
-    const cacheKey = this.generateCacheKey(topicId, councilId);
-    this.voteCache.set(cacheKey, decision);
-    
-    // Set expiration for cache entry
-    setTimeout(() => {
-      this.voteCache.delete(cacheKey);
-    }, this.cacheTTL);
+      topicId,
+      timeToDecide,
+      timestamp: new Date()
+    });
+
+    // Cache the decision for quick lookup
+    this.decisionCache.set(this.generateCacheKey(topicId, councilId), decision);
   }
-  
+
   /**
-   * Check cache for similar topic decision
+   * Get cached decision for a topic and council
    */
-  public getCachedDecision(
-    topic: string,
-    councilId: string
-  ): CouncilDecision | undefined {
-    // Generate cache key and check cache
+  public getCachedDecision(topic: string, councilId: string): CouncilDecision | undefined {
     const cacheKey = this.generateCacheKey(topic, councilId);
-    return this.voteCache.get(cacheKey);
+    return this.decisionCache.get(cacheKey);
   }
-  
+
   /**
-   * Get vote history for a specific council or all councils
+   * Get vote history for a topic
    */
-  public getVoteHistory(topicId?: string): CouncilDecision[] {
-    if (!topicId) {
-      return Array.from(this.voteCache.values());
-    }
-    
-    // Convert the historical summaries to CouncilDecision objects
-    const matchingDecisions: CouncilDecision[] = [];
-    
-    for (const [key, decision] of this.voteCache.entries()) {
-      if (key.includes(topicId)) {
-        matchingDecisions.push(decision);
-      }
-    }
-    
-    return matchingDecisions;
+  public getVoteHistory(topicId: string): CouncilDecision[] {
+    return this.decisionHistory
+      .filter(entry => entry.topicId === topicId)
+      .map(entry => entry.decision);
   }
-  
+
   /**
-   * Get agent performance metrics based on voting
+   * Get all vote history
    */
-  public getAgentConsensusAlignment(agentId: string): number | undefined {
-    // Count how often agent voted with final consensus
-    let alignedVotes = 0;
-    let totalVotes = 0;
-    
-    for (const decision of this.voteCache.values()) {
-      const agentVote = decision.votes.find(vote => vote.agentId === agentId);
-      if (agentVote) {
-        totalVotes++;
-        if (agentVote.suggestion === decision.consensus) {
-          alignedVotes++;
-        }
-      }
-    }
-    
-    return totalVotes > 0 ? alignedVotes / totalVotes : undefined;
+  public getAllVoteHistory(): VoteHistoryEntry[] {
+    return [...this.voteHistory];
   }
-  
+
   /**
-   * Generate cache key from topic and council ID
+   * Generate a cache key for a topic and council
    */
   private generateCacheKey(topic: string, councilId: string): string {
-    // Create a simplified topic key by removing common words and normalizing
-    const simplifiedTopic = topic.toLowerCase()
-      .replace(/\b(the|a|an|and|or|but|in|on|at|to|for|with|by|of|about)\b/g, '')
-      .trim()
-      .replace(/\s+/g, '_');
-    
-    return `${councilId}:${simplifiedTopic}`;
+    return `${councilId}:${topic}`;
+  }
+
+  /**
+   * Extract council ID from votes
+   */
+  private extractCouncilId(votes: CouncilVote[]): string {
+    // Extract unique agent IDs and sort them to create a deterministic council ID
+    const agentIds = [...new Set(votes.map(vote => vote.agentId))].sort();
+    return agentIds.join('-');
   }
 }

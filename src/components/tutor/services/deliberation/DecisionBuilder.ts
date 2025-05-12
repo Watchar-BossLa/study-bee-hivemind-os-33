@@ -1,6 +1,7 @@
 
 import { CouncilDecision, CouncilVote } from '../../types/councils';
-import { Plan } from '../frameworks/CrewAIPlanner';
+import { Plan as CrewAIPlan } from '../frameworks/CrewAIPlanner';
+import { Plan as VotingPlan } from './types/votingTypes';
 
 export class DecisionBuilder {
   /**
@@ -34,7 +35,7 @@ export class DecisionBuilder {
    */
   public addPlanMetadata(
     decision: CouncilDecision,
-    plan: Plan
+    plan: CrewAIPlan
   ): CouncilDecision {
     return {
       ...decision,
@@ -42,7 +43,7 @@ export class DecisionBuilder {
         id: plan.id,
         title: plan.title,
         taskCount: plan.tasks.length,
-        memberCount: plan.members.length
+        memberCount: plan.members?.length || 0
       }
     };
   }

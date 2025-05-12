@@ -7,7 +7,8 @@ import { VoteHistoryStorage } from './deliberation/VoteHistoryStorage';
 import { VoteIntegrityService } from './deliberation/VoteIntegrityService';
 import { DeliberationProcessor } from './deliberation/DeliberationProcessor';
 import { DecisionBuilder } from './deliberation/DecisionBuilder';
-import { Plan } from './deliberation/types/votingTypes';
+import { Plan as VotingPlan } from './deliberation/types/votingTypes';
+import { Plan as CrewAIPlan } from './frameworks/CrewAIPlanner';
 
 export interface DeliberationOptions {
   timeLimit?: number; // ms
@@ -38,7 +39,7 @@ export class DeliberationService {
   public async deliberate(
     council: SpecializedAgent[],
     topic: string,
-    context: Record<string, any>,
+    context: Record<string, unknown>,
     options?: DeliberationOptions
   ): Promise<CouncilDecision> {
     console.log(`Starting deliberation on topic: ${topic}`);
@@ -82,13 +83,25 @@ export class DeliberationService {
   public async deliberateWithPlan(
     council: SpecializedAgent[],
     topic: string,
-    context: Record<string, any>,
-    plan: Plan,
+    context: Record<string, unknown>,
+    plan: VotingPlan,
     options?: DeliberationOptions
   ): Promise<CouncilDecision> {
     console.log(`Deliberating with plan: ${plan.summary}`);
     
     const startTime = Date.now();
+    
+    // Convert plan to ensure it's compatible with CrewAIPlan
+    const compatiblePlan: CrewAIPlan = {
+      id: plan.id,
+      title: plan.title,
+      type: plan.type,
+      summary: plan.summary,
+      tasks: plan.tasks ? plan.tasks.map(task => ({
+        id: task.taskId,
+        description: task.description,
+      })) : []
+    };
     
     // Process the deliberation with plan
     const { votes, suggestion, confidence, suspiciousVotes } = 
@@ -104,7 +117,7 @@ export class DeliberationService {
     );
     
     // Add plan metadata to the decision
-    decision = this.decisionBuilder.addPlanMetadata(decision, plan);
+    decision = this.decisionBuilder.addPlanMetadata(decision, compatiblePlan);
 
     // Add to history
     this.decisions.push(decision);

@@ -32,13 +32,30 @@ export class VotingService {
     this.planVoter = new PlanVoter();
   }
 
+  // Add the missing methods needed by DeliberationProcessor
+  public calculateConsensusScore(votes: CouncilVote[]): number {
+    return this.voteAnalyzer.calculateConsensusScore(votes);
+  }
+
+  public getMajorityDecision(votes: CouncilVote[]): string | null {
+    return this.voteAnalyzer.getMajorityDecision(votes);
+  }
+
+  public detectSuspiciousVotes(votes: CouncilVote[]): CouncilVote[] {
+    return this.voteAnalyzer.detectSuspiciousVotes(votes);
+  }
+
+  public groupVotesBySuggestion(votes: CouncilVote[]): Map<string, CouncilVote[]> {
+    return this.voteAnalyzer.groupVotesBySuggestion(votes);
+  }
+
   public collectVotes(
     council: SpecializedAgent[], 
     topic: string,
     options?: VotingOptions
-  ): VoteCollectionResult {
-    // Fixed the type error by passing the agent instead of just the agentId
-    const votes = council.map(agent => {
+  ): CouncilVote[] {
+    // Create votes from council members
+    const votes: CouncilVote[] = council.map(agent => {
       return {
         agentId: agent.id,
         suggestion: `Simulated vote from ${agent.name}`,
@@ -57,21 +74,20 @@ export class VotingService {
     });
 
     // Calculate consensus using weighted votes
+    const suggestionGroups = this.voteAnalyzer.groupVotesBySuggestion(votes);
     const { suggestion, confidence } = this.consensusCalculator.calculateConsensus(
       weightedVotes, 
-      options?.baseThreshold || 0.6, 
-      options?.minRequiredVotes || 2
+      suggestionGroups,
+      {
+        baseThreshold: options?.baseThreshold || 0.6, 
+        minRequiredVotes: options?.minRequiredVotes || 2
+      }
     );
 
     // Store votes in history
     this.voteHistoryStorage.addVotes(votes, topic);
 
-    return {
-      votes,
-      suggestion,
-      confidence,
-      suspiciousVotes
-    };
+    return votes;
   }
 
   public collectVotesWithPlan(
@@ -79,7 +95,7 @@ export class VotingService {
     topic: string,
     plan: Plan,
     options?: VotingOptions
-  ): VoteCollectionResult {
+  ): CouncilVote[] {
     // Collect votes from council members regarding the plan
     const votes = this.voteCollector.collectVotesWithPlan(council, topic, plan, options);
 
@@ -92,25 +108,10 @@ export class VotingService {
       }
     });
 
-    // Identify suspicious votes
-    const suspiciousVotes = this.voteIntegrityService.identifySuspiciousVotes(votes, topic);
-
-    // Calculate consensus
-    const { suggestion, confidence } = this.consensusCalculator.calculateConsensus(
-      votes,
-      options?.baseThreshold || 0.6,
-      options?.minRequiredVotes || 2
-    );
-
     // Store votes in history
     this.voteHistoryStorage.addVotes(votes, topic);
 
-    return {
-      votes,
-      suggestion,
-      confidence,
-      suspiciousVotes
-    };
+    return votes;
   }
 
   public getRecentVotingTrends(): Map<string, { up: number; down: number }> {

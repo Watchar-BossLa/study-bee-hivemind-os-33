@@ -1,6 +1,5 @@
 
 import { CouncilVote } from '../../../types/councils';
-import { SpecializedAgent } from '../../../types/agents';
 
 export interface PlanTask {
   taskId: string;
@@ -11,10 +10,10 @@ export interface PlanTask {
 
 export interface Plan {
   planId: string;
-  id?: string;       // Added to match CrewAIPlanner's Plan interface
-  title?: string;    // Added to match CrewAIPlanner's Plan interface
+  id: string;       // Changed from optional to required to match CrewAIPlanner's Plan interface
   type: string;
   summary: string;
+  title: string;    // Added as required to match CrewAIPlanner's Plan interface
   tasks?: PlanTask[];
 }
 
