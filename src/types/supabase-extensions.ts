@@ -71,6 +71,7 @@ export type ChatMessage = ExtendedTables['arena_chat_messages']['Row'];
 export type TypingStatus = ExtendedTables['arena_typing_status']['Row'];
 
 // Modify Database type definition through augmentation
+// Using declare instead of interface to prevent duplicate identifier error
 declare module '@/integrations/supabase/types' {
   interface Database {
     public: {

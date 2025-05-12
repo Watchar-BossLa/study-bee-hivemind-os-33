@@ -63,7 +63,6 @@ export class VotingService {
   }
   
   public getVotesForTopic(councilId: string, topicId: string): CouncilVote[] {
-    // Using a mock implementation since getVotesForTopic doesn't exist
     console.log(`Getting votes for council ${councilId}, topic ${topicId}`);
     return [];
   }
