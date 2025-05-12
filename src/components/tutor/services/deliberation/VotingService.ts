@@ -12,7 +12,7 @@ interface PlanTask {
   assignedAgentId?: string;
 }
 
-interface Plan {
+export interface Plan {
   planId: string;
   type: string;
   summary: string;
@@ -43,7 +43,8 @@ export class VotingService {
     agent: SpecializedAgent, 
     topicId: string, 
     suggestion: string,
-    confidence: number
+    confidence: number,
+    reasoning: string = ''
   ): CouncilVote {
     const weight = this.weightCalculator.calculateWeight(agent.id, topicId);
     
@@ -51,7 +52,7 @@ export class VotingService {
       agentId: agent.id,
       suggestion,
       confidence,
-      reasoning: '', // Required property
+      reasoning,
     };
     
     if (this.integrityService.verifyVote(vote)) {

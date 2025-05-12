@@ -1,117 +1,105 @@
-
+import { VotingService, Plan, VotingOptions } from './VotingService';
+import { CouncilVote } from '../../types/councils';
 import { SpecializedAgent } from '../../types/agents';
-import { CouncilDecision, CouncilVote } from '../../types/councils';
-import { VotingService, VotingOptions } from './VotingService';
-import { ConsensusService, ConsensusOptions } from './ConsensusService';
-import { Plan } from '../frameworks/CrewAIPlanner';
 
-// Define a proper context type instead of using Record<string, any>
-export interface DeliberationContext {
-  [key: string]: string | number | boolean | null | undefined | DeliberationContext;
-}
+// Import the Plan type directly from VotingService instead of CrewAIPlanner
+// This ensures consistent Plan type definitions
 
 export class DeliberationProcessor {
   private votingService: VotingService;
-  private consensusService: ConsensusService;
-
-  constructor(
-    votingService: VotingService,
-    consensusService: ConsensusService
-  ) {
+  private thoughtProcesses: Map<string, string[]>;
+  
+  constructor(votingService: VotingService) {
     this.votingService = votingService;
-    this.consensusService = consensusService;
+    this.thoughtProcesses = new Map<string, string[]>();
   }
 
-  /**
-   * Process standard deliberation
-   */
-  public processDeliberation(
+  public recordThought(topic: string, thought: string): void {
+    if (!this.thoughtProcesses.has(topic)) {
+      this.thoughtProcesses.set(topic, []);
+    }
+    this.thoughtProcesses.get(topic)!.push(thought);
+  }
+  
+  public getThoughts(topic: string): string[] {
+    return this.thoughtProcesses.get(topic) || [];
+  }
+
+  public async deliberateOnTopic(
     council: SpecializedAgent[],
     topic: string,
-    context: DeliberationContext,
-    options?: VotingOptions & ConsensusOptions
-  ): {
-    votes: CouncilVote[],
-    suggestion: string,
-    confidence: number,
-    suspiciousVotes: CouncilVote[]
-  } {
-    // Get votes from agents
+    options?: VotingOptions
+  ): Promise<{ decision: string; confidence: number }> {
+    // Record initial thought
+    this.recordThought(topic, `Council of ${council.length} agents deliberating on: ${topic}`);
+    
+    // Collect votes from council
     const votes = this.votingService.collectVotes(council, topic, options);
-    const suggestionGroups = this.votingService.groupVotesBySuggestion(votes);
     
-    // Check for suspicious votes
-    const suspiciousVotes = this.votingService.detectSuspiciousVotes(votes);
+    // Calculate consensus score
+    const consensusScore = this.votingService.calculateConsensusScore(votes);
+    this.recordThought(topic, `Consensus level: ${(consensusScore * 100).toFixed(2)}%`);
     
-    // Convert deliberation options to consensus options
-    const consensusOptions: ConsensusOptions = {
-      baseThreshold: options?.baseThreshold || 0.7,
-      minRequiredVotes: options?.minRequiredVotes,
-      timeoutMs: options?.timeLimit,
-      topicComplexity: options?.complexityOverride
-    };
+    // Get majority decision
+    const decision = this.votingService.getMajorityDecision(votes) || 'No consensus reached';
     
-    // Calculate consensus
-    const { suggestion, confidence } = this.consensusService.calculateConsensus(
-      votes,
-      suggestionGroups,
-      consensusOptions
-    );
-
     return {
-      votes,
-      suggestion,
-      confidence,
-      suspiciousVotes
+      decision,
+      confidence: consensusScore
     };
   }
-
-  /**
-   * Process deliberation with a plan
-   */
-  public processDeliberationWithPlan(
+  
+  public async deliberateWithPlan(
     council: SpecializedAgent[],
     topic: string,
     plan: Plan,
-    options?: VotingOptions & ConsensusOptions
-  ): {
-    votes: CouncilVote[],
-    suggestion: string,
-    confidence: number,
-    suspiciousVotes: CouncilVote[]
-  } {
-    // Use the plan tasks to guide voting process
-    const votes = this.votingService.collectVotesWithPlan(
-      council, 
-      topic, 
-      plan,
-      options
-    );
+    options?: VotingOptions
+  ): Promise<{ decision: string; confidence: number; updatedPlan: Plan }> {
+    this.recordThought(topic, `Council deliberating on ${topic} with plan ${plan.planId}`);
     
-    const suggestionGroups = this.votingService.groupVotesBySuggestion(votes);
+    // Collect votes considering the plan
+    const votes = this.votingService.collectVotesWithPlan(council, topic, plan, options);
     
-    // Check for suspicious votes
-    const suspiciousVotes = this.votingService.detectSuspiciousVotes(votes);
+    // Calculate consensus
+    const consensusScore = this.votingService.calculateConsensusScore(votes);
+    const decision = this.votingService.getMajorityDecision(votes) || 'No consensus reached';
     
-    // Convert deliberation options to consensus options
-    const consensusOptions: ConsensusOptions = {
-      baseThreshold: options?.baseThreshold || 0.65, // Lower threshold for plan-based decisions
-      minRequiredVotes: options?.minRequiredVotes,
-      timeoutMs: options?.timeLimit,
-      topicComplexity: 'high' // Plans are considered complex
-    };
+    // Update the plan based on deliberation outcome
+    const updatedPlan: Plan = { ...plan };
     
-    const { suggestion, confidence } = this.consensusService.calculateConsensus(
-      votes,
-      suggestionGroups,
-      consensusOptions
-    );
-
     return {
-      votes,
-      suggestion,
-      confidence,
-      suspiciousVotes
+      decision,
+      confidence: consensusScore,
+      updatedPlan
     };
+  }
+  
+  public analyzeVotePatterns(votes: CouncilVote[]): Record<string, number> {
+    const patterns: Record<string, number> = {};
+    
+    votes.forEach(vote => {
+      const patternKey = `${vote.agentId}-${vote.suggestion}`;
+      patterns[patternKey] = (patterns[patternKey] || 0) + 1;
+    });
+    
+    return patterns;
+  }
+  
+  public identifyDisagreements(votes: CouncilVote[]): CouncilVote[] {
+    const groups = this.votingService.groupVotesBySuggestion(votes);
+    let disagreements: CouncilVote[] = [];
+    
+    groups.forEach(voteList => {
+      if (voteList.length > 1) {
+        // Consider it a disagreement if there are multiple votes on the same topic
+        disagreements = disagreements.concat(voteList);
+      }
+    });
+    
+    return disagreements;
+  }
+  
+  public detectAnomalousVotes(votes: CouncilVote[]): CouncilVote[] {
+    return this.votingService.detectSuspiciousVotes(votes);
   }
 }
