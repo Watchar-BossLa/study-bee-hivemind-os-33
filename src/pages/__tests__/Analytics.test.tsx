@@ -16,6 +16,10 @@ jest.mock('@/components/NavbarWithDashboard', () => ({
   default: () => <div data-testid="navbar">Navbar Mocked</div>
 }));
 
+jest.mock('lucide-react', () => ({
+  InfoCircle: () => <div data-testid="info-circle-icon">Info Icon</div>
+}));
+
 describe('Analytics Page', () => {
   const renderAnalyticsPage = () => {
     return render(
@@ -47,5 +51,15 @@ describe('Analytics Page', () => {
   test('renders page description', () => {
     renderAnalyticsPage();
     expect(screen.getByText('Visualize your learning patterns, mastery levels, and optimize your study approach')).toBeInTheDocument();
+  });
+
+  test('renders info alert about analytics integration', () => {
+    renderAnalyticsPage();
+    expect(screen.getByText(/This dashboard integrates with OTEL spans and Grafana Cloud/)).toBeInTheDocument();
+  });
+
+  test('renders data privacy information', () => {
+    renderAnalyticsPage();
+    expect(screen.getByText(/Analytics data is collected and processed according to the Study Bee Technical Specification/)).toBeInTheDocument();
   });
 });

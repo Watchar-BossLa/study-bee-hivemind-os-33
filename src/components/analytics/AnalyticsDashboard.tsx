@@ -29,7 +29,9 @@ const AnalyticsDashboard = () => {
     timeframe,
     setTimeframe,
     isExporting,
-    handleExportData
+    handleExportData,
+    isRefreshing,
+    refreshData
   } = useAnalyticsPageData();
 
   if (isLoading) {
@@ -55,8 +57,14 @@ const AnalyticsDashboard = () => {
               <SelectItem value="quarter">Past Quarter</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="ghost" size="icon">
-            <RefreshCcw className="h-4 w-4" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={refreshData} 
+            disabled={isRefreshing}
+            aria-label="Refresh data"
+          >
+            <RefreshCcw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </Button>
         </div>
         <Button 

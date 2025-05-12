@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ProductivityHeatmapProps {
   data: Array<{
@@ -27,12 +28,31 @@ const ProductivityHeatmap = ({ data }: ProductivityHeatmapProps) => {
     return entry ? entry.intensity : 0;
   };
 
-  // Map intensity to color class
+  // Map intensity to color class with higher contrast for accessibility
   const getColorClass = (intensity: number) => {
     if (intensity === 0) return 'bg-gray-100 dark:bg-gray-800';
     if (intensity < 0.3) return 'bg-green-100 dark:bg-green-900';
     if (intensity < 0.6) return 'bg-green-300 dark:bg-green-700';
     return 'bg-green-500 dark:bg-green-500';
+  };
+
+  // Format the time for better readability
+  const formatHour = (hour: number) => {
+    return `${hour % 12 === 0 ? 12 : hour % 12}${hour < 12 ? 'am' : 'pm'}`;
+  };
+
+  // Get a percentage representation of intensity for screen readers
+  const getIntensityPercentage = (intensity: number) => {
+    return `${Math.round(intensity * 100)}%`;
+  };
+
+  // Generate a human-readable description for the tooltip
+  const getTooltipContent = (day: string, hour: number, intensity: number) => {
+    const intensityLevel = intensity === 0 ? 'No activity' : 
+                          intensity < 0.3 ? 'Low activity' : 
+                          intensity < 0.6 ? 'Medium activity' : 
+                          'High activity';
+    return `${day} at ${formatHour(hour)}: ${intensityLevel} (${getIntensityPercentage(intensity)})`;
   };
 
   return (
@@ -47,7 +67,7 @@ const ProductivityHeatmap = ({ data }: ProductivityHeatmapProps) => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-[auto_1fr] gap-2">
+        <div className="grid grid-cols-[auto_1fr] gap-2" aria-label="Weekly study focus heatmap">
           <div></div>
           <div className="grid grid-cols-7 gap-1">
             {daysOfWeek.map(day => (
@@ -60,16 +80,27 @@ const ProductivityHeatmap = ({ data }: ProductivityHeatmapProps) => {
           {hours.map(hour => (
             <React.Fragment key={hour}>
               <div className="text-xs text-right pr-2">
-                {hour % 12 === 0 ? 12 : hour % 12}{hour < 12 ? 'am' : 'pm'}
+                {formatHour(hour)}
               </div>
               <div className="grid grid-cols-7 gap-1">
-                {daysOfWeek.map((_, dayIndex) => (
-                  <div 
-                    key={dayIndex}
-                    className={`h-4 rounded-sm ${getColorClass(getIntensityForHour(dayIndex, hour))}`} 
-                    title={`${daysOfWeek[dayIndex]} at ${hour}:00 - ${getIntensityForHour(dayIndex, hour) * 100}% intensity`}
-                  />
-                ))}
+                {daysOfWeek.map((day, dayIndex) => {
+                  const intensity = getIntensityForHour(dayIndex, hour);
+                  return (
+                    <TooltipProvider key={dayIndex}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div 
+                            className={`h-4 rounded-sm ${getColorClass(intensity)}`}
+                            aria-label={`${day} at ${formatHour(hour)}: ${getIntensityPercentage(intensity)} focus`}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {getTooltipContent(day, hour, intensity)}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                })}
               </div>
             </React.Fragment>
           ))}
