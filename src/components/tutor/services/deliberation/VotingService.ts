@@ -67,9 +67,14 @@ export class VotingService {
     // Identify suspicious votes using integrity service
     const suspiciousVotes = this.voteIntegrityService.identifySuspiciousVotes(votes, topic);
 
-    // Calculate weights for each vote
+    // Calculate weights for each vote - FIX: don't pass vote as SpecializedAgent
     const weightedVotes = votes.map(vote => {
-      const weight = this.voteWeightCalculator.calculateWeight(vote, council);
+      // Find the corresponding agent for this vote
+      const agent = council.find(a => a.id === vote.agentId);
+      // Calculate weight using the agent or a default weight if agent not found
+      const weight = agent 
+        ? this.voteWeightCalculator.calculateWeight(agent, topic)
+        : 1.0; // Default weight
       return { ...vote, weight };
     });
 

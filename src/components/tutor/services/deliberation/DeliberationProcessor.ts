@@ -2,7 +2,7 @@
 import { VotingService, VotingOptions } from './VotingService';
 import { CouncilVote } from '../../types/councils';
 import { SpecializedAgent } from '../../types/agents';
-import { Plan } from './types/votingTypes';
+import { Plan, VoteCollectionResult } from './types/votingTypes';
 import { ConsensusService } from './ConsensusService';
 
 export class DeliberationProcessor {
@@ -32,7 +32,7 @@ export class DeliberationProcessor {
     topic: string,
     context: Record<string, unknown>,
     options?: VotingOptions
-  ): { votes: CouncilVote[], suggestion: string | null, confidence: number, suspiciousVotes: CouncilVote[] } {
+  ): VoteCollectionResult {
     // Record initial thought
     this.recordThought(topic, `Council of ${council.length} agents deliberating on: ${topic}`);
     
@@ -62,7 +62,7 @@ export class DeliberationProcessor {
     topic: string,
     plan: Plan,
     options?: VotingOptions
-  ): { votes: CouncilVote[], suggestion: string | null, confidence: number, suspiciousVotes: CouncilVote[] } {
+  ): VoteCollectionResult {
     this.recordThought(topic, `Council deliberating on ${topic} with plan ${plan.planId}`);
     
     // Collect votes considering the plan
@@ -147,9 +147,9 @@ export class DeliberationProcessor {
     const groups = this.votingService.groupVotesBySuggestion(votes);
     let disagreements: CouncilVote[] = [];
     
-    groups.forEach(voteList => {
-      if (voteList.length > 1) {
-        // Consider it a disagreement if there are multiple votes on the same topic
+    groups.forEach((voteList, suggestion) => {
+      if (voteList.length === 1) {
+        // Consider it a disagreement if there's only one vote for a suggestion
         disagreements = disagreements.concat(voteList);
       }
     });

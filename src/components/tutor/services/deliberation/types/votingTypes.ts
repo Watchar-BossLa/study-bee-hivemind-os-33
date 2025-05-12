@@ -10,10 +10,10 @@ export interface PlanTask {
 
 export interface Plan {
   planId: string;
-  id: string;       // Changed from optional to required to match CrewAIPlanner's Plan interface
+  id: string;       // Required to match CrewAIPlanner's Plan interface
   type: string;
   summary: string;
-  title: string;    // Added as required to match CrewAIPlanner's Plan interface
+  title: string;    // Required to match CrewAIPlanner's Plan interface
   tasks?: PlanTask[];
 }
 

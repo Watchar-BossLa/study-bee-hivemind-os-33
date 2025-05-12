@@ -1,4 +1,3 @@
-
 import { SpecializedAgent } from '../types/agents';
 import { CouncilDecision } from '../types/councils';
 import { VotingService } from './deliberation/VotingService';
@@ -91,16 +90,17 @@ export class DeliberationService {
     
     const startTime = Date.now();
     
-    // Convert plan to ensure it's compatible with CrewAIPlan
+    // Ensure the plan has the required properties for CrewAIPlan compatibility
     const compatiblePlan: CrewAIPlan = {
-      id: plan.id,
-      title: plan.title,
+      id: plan.id, // This is now required in both interfaces
+      title: plan.title, // This is now required in both interfaces
       type: plan.type,
       summary: plan.summary,
       tasks: plan.tasks ? plan.tasks.map(task => ({
         id: task.taskId,
         description: task.description,
-      })) : []
+      })) : [],
+      members: [] // Default empty array if not provided
     };
     
     // Process the deliberation with plan
