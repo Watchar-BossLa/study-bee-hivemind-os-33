@@ -11,7 +11,7 @@ export async function sendChatMessage(
   content: string
 ): Promise<{ success: boolean; message?: ChatMessage; error?: string }> {
   try {
-    // Use explicit type casting for Supabase tables that are extended
+    // Use explicit typing for our extended tables
     const { data, error } = await supabase
       .from('arena_chat_messages')
       .insert({
@@ -27,8 +27,7 @@ export async function sendChatMessage(
       return { success: false, error: error.message };
     }
 
-    // Explicitly cast the data to ChatMessage type
-    return { success: true, message: data as unknown as ChatMessage };
+    return { success: true, message: data as ChatMessage };
   } catch (e) {
     console.error('Exception sending chat message:', e);
     return { success: false, error: (e as Error).message };
@@ -42,7 +41,7 @@ export async function getChatMessages(
   matchId: string
 ): Promise<{ success: boolean; messages?: ChatMessage[]; error?: string }> {
   try {
-    // Use explicit type casting for Supabase tables that are extended
+    // Use explicit typing for our extended tables
     const { data, error } = await supabase
       .from('arena_chat_messages')
       .select()
@@ -54,8 +53,7 @@ export async function getChatMessages(
       return { success: false, error: error.message };
     }
 
-    // Explicitly cast the data to ChatMessage[] type
-    return { success: true, messages: data as unknown as ChatMessage[] };
+    return { success: true, messages: data as ChatMessage[] };
   } catch (e) {
     console.error('Exception fetching chat messages:', e);
     return { success: false, error: (e as Error).message };
@@ -71,7 +69,7 @@ export async function setTypingStatus(
   isTyping: boolean
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Use explicit type casting for Supabase tables that are extended
+    // Use explicit typing for our extended tables
     const { error } = await supabase
       .from('arena_typing_status')
       .upsert({
@@ -100,7 +98,7 @@ export async function getTypingStatuses(
   matchId: string
 ): Promise<{ success: boolean; statuses?: TypingStatus[]; error?: string }> {
   try {
-    // Use explicit type casting for Supabase tables that are extended
+    // Use explicit typing for our extended tables
     const { data, error } = await supabase
       .from('arena_typing_status')
       .select()
@@ -111,8 +109,7 @@ export async function getTypingStatuses(
       return { success: false, error: error.message };
     }
 
-    // Explicitly cast the data to TypingStatus[] type
-    return { success: true, statuses: data as unknown as TypingStatus[] };
+    return { success: true, statuses: data as TypingStatus[] };
   } catch (e) {
     console.error('Exception fetching typing statuses:', e);
     return { success: false, error: (e as Error).message };
@@ -127,7 +124,7 @@ export async function clearTypingStatus(
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Use explicit type casting for Supabase tables that are extended
+    // Use explicit typing for our extended tables
     const { error } = await supabase
       .from('arena_typing_status')
       .delete()
@@ -165,7 +162,7 @@ export const arenaChatService = {
           filter: `match_id=eq.${matchId}`
         },
         (payload) => {
-          callback(payload.new as unknown as ChatMessage);
+          callback(payload.new as ChatMessage);
         }
       )
       .subscribe();
