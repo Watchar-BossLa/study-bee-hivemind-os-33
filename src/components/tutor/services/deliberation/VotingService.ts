@@ -40,15 +40,15 @@ export class VotingService {
 
   public registerVote(
     councilId: string, 
-    agentId: string, 
+    agent: SpecializedAgent, 
     topicId: string, 
     suggestion: string,
     confidence: number
   ): CouncilVote {
-    const weight = this.weightCalculator.calculateWeight(agentId, topicId);
+    const weight = this.weightCalculator.calculateWeight(agent.id, topicId);
     
     const vote: CouncilVote = {
-      agentId,
+      agentId: agent.id,
       suggestion,
       confidence,
       reasoning: '', // Added required property

@@ -1,3 +1,4 @@
+
 // This file extends the Supabase database types with our custom tables
 
 // Extend the tables interface in the Database type
