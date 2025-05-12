@@ -11,6 +11,8 @@ export interface PlanTask {
 
 export interface Plan {
   planId: string;
+  id?: string;       // Added to match CrewAIPlanner's Plan interface
+  title?: string;    // Added to match CrewAIPlanner's Plan interface
   type: string;
   summary: string;
   tasks?: PlanTask[];
