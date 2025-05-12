@@ -16,6 +16,7 @@ import OverviewTab from './tabs/OverviewTab';
 import ProgressTab from './tabs/ProgressTab';
 import RecommendationsTab from './tabs/RecommendationsTab';
 import ProductivityTab from './tabs/ProductivityTab';
+import SwarmTab from './tabs/SwarmTab';
 
 const AnalyticsDashboard = () => {
   const { 
@@ -25,6 +26,7 @@ const AnalyticsDashboard = () => {
     focusIntervals,
     subjectProgress,
     weakAreaRecommendations,
+    swarmMetrics,
     isLoading,
     timeframe,
     setTimeframe,
@@ -106,6 +108,12 @@ const AnalyticsDashboard = () => {
           <ProductivityTab 
             focusIntervals={focusIntervals}
             studyMetrics={studyMetrics}
+          />
+        </TabsContent>
+        
+        <TabsContent value="swarm" className="space-y-6 mt-6">
+          <SwarmTab 
+            swarmMetrics={swarmMetrics}
           />
         </TabsContent>
       </Tabs>

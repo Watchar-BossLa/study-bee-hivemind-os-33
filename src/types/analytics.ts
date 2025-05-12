@@ -56,3 +56,14 @@ export interface WeakAreaRecommendation {
     url?: string;
   }>;
 }
+
+export interface SwarmMetric {
+  id: string;
+  timestamp: string;
+  fanout_count: number;
+  completion_time_ms: number;
+  success_rate: number;
+  agent_utilization: number;
+  task_type: string;
+  priority_level: 'low' | 'normal' | 'high' | 'critical';
+}

@@ -5,6 +5,7 @@ import { useStudyRecommendations } from './analytics/useStudyRecommendations';
 import { useFocusIntervals } from './analytics/useFocusIntervals';
 import { useSubjectProgress } from './analytics/useSubjectProgress';
 import { useWeakAreaRecommendations } from './analytics/useWeakAreaRecommendations';
+import { useSwarmMetrics } from './analytics/useSwarmMetrics';
 
 export function useAnalytics() {
   const { data: studyMetrics, isLoading: isLoadingMetrics } = useStudyMetrics();
@@ -13,6 +14,7 @@ export function useAnalytics() {
   const { data: focusIntervals, isLoading: isLoadingFocusIntervals } = useFocusIntervals();
   const { data: subjectProgress, isLoading: isLoadingSubjectProgress } = useSubjectProgress();
   const { data: weakAreaRecommendations, isLoading: isLoadingWeakAreas } = useWeakAreaRecommendations();
+  const { data: swarmMetrics, isLoading: isLoadingSwarmMetrics } = useSwarmMetrics();
 
   return {
     studyMetrics,
@@ -21,11 +23,13 @@ export function useAnalytics() {
     focusIntervals,
     subjectProgress,
     weakAreaRecommendations,
+    swarmMetrics,
     isLoading: isLoadingMetrics || 
                isLoadingPerformance || 
                isLoadingRecommendations || 
                isLoadingFocusIntervals || 
                isLoadingSubjectProgress ||
-               isLoadingWeakAreas,
+               isLoadingWeakAreas ||
+               isLoadingSwarmMetrics,
   };
 }
