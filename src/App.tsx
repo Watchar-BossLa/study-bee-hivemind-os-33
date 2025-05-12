@@ -23,6 +23,7 @@ import Qualifications from './pages/Qualifications';
 import NotFound from './pages/NotFound';
 import { ThemeProvider } from './components/theme/ThemeProvider';
 import QuorumDashboard from './pages/QuorumDashboard';
+import Analytics from './pages/Analytics';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/analytics" element={<Analytics />} />
                 <Route path="/courses" element={<Courses />} />
                 <Route path="/course/:courseId" element={<CourseContent />} />
                 <Route path="/learn/:courseId" element={<CourseLearning />} />

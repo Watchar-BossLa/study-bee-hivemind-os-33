@@ -3,8 +3,8 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import LogoBee from './LogoBee';
-import NavLinks from './navbar/NavLinks';
-import NavActions from './navbar/NavActions';
+import { NavLinks } from './navbar/NavLinks';
+import { NavActions } from './navbar/NavActions';
 import { MenuLink } from './navbar/MenuLink';
 import { LayoutDashboard } from 'lucide-react';
 
@@ -22,19 +22,19 @@ const NavbarWithDashboard = () => {
           </span>
         </Link>
         <div className="mr-4">
-          <NavLinks />
+          <NavLinks isActive={isActive} />
         </div>
         <div className="hidden md:flex flex-1 items-center space-x-2">
           <MenuLink 
             to="/dashboard" 
-            className={isActive("/dashboard") ? "text-primary" : "text-foreground"}
-          >
-            <LayoutDashboard className="h-4 w-4 mr-2" />
-            Dashboard
-          </MenuLink>
+            icon={LayoutDashboard}
+            title="Dashboard"
+            description="Your learning overview"
+            isActive={isActive}
+          />
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-          <NavActions />
+          <NavActions setCommandOpen={() => {}} />
         </div>
       </div>
     </header>

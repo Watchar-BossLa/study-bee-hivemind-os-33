@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import NavbarWithDashboard from '@/components/NavbarWithDashboard';
 import HeroSection from '@/components/HeroSection';
@@ -9,6 +9,8 @@ import Footer from '@/components/Footer';
 import CommandPalette from '@/components/CommandPalette';
 
 const Index = () => {
+  const [commandOpen, setCommandOpen] = useState(false);
+
   return (
     <>
       <Helmet>
@@ -25,7 +27,7 @@ const Index = () => {
         <AIFeatures />
       </main>
       <Footer />
-      <CommandPalette />
+      <CommandPalette open={commandOpen} setOpen={setCommandOpen} />
     </>
   );
 };
