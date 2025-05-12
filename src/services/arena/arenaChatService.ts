@@ -11,9 +11,9 @@ export async function sendChatMessage(
   content: string
 ): Promise<{ success: boolean; message?: ChatMessage; error?: string }> {
   try {
-    // Use explicit typing for our extended tables
+    // Use explicit casting for our custom table
     const { data, error } = await supabase
-      .from('arena_chat_messages')
+      .from('arena_chat_messages' as any)
       .insert({
         match_id: matchId,
         user_id: userId,
@@ -41,9 +41,9 @@ export async function getChatMessages(
   matchId: string
 ): Promise<{ success: boolean; messages?: ChatMessage[]; error?: string }> {
   try {
-    // Use explicit typing for our extended tables
+    // Use explicit casting for our custom table
     const { data, error } = await supabase
-      .from('arena_chat_messages')
+      .from('arena_chat_messages' as any)
       .select()
       .eq('match_id', matchId)
       .order('created_at', { ascending: true });
@@ -69,9 +69,9 @@ export async function setTypingStatus(
   isTyping: boolean
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Use explicit typing for our extended tables
+    // Use explicit casting for our custom table
     const { error } = await supabase
-      .from('arena_typing_status')
+      .from('arena_typing_status' as any)
       .upsert({
         match_id: matchId,
         user_id: userId,
@@ -98,9 +98,9 @@ export async function getTypingStatuses(
   matchId: string
 ): Promise<{ success: boolean; statuses?: TypingStatus[]; error?: string }> {
   try {
-    // Use explicit typing for our extended tables
+    // Use explicit casting for our custom table
     const { data, error } = await supabase
-      .from('arena_typing_status')
+      .from('arena_typing_status' as any)
       .select()
       .eq('match_id', matchId);
 
@@ -124,9 +124,9 @@ export async function clearTypingStatus(
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Use explicit typing for our extended tables
+    // Use explicit casting for our custom table
     const { error } = await supabase
-      .from('arena_typing_status')
+      .from('arena_typing_status' as any)
       .delete()
       .eq('match_id', matchId)
       .eq('user_id', userId);

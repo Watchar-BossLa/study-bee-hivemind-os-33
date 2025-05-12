@@ -51,7 +51,7 @@ export class VotingService {
       agentId: agent.id,
       suggestion,
       confidence,
-      reasoning: '', // Added required property
+      reasoning: '', // Required property
     };
     
     if (this.integrityService.verifyVote(vote)) {
@@ -172,7 +172,7 @@ export class VotingService {
   public collectVotesWithPlan(
     council: SpecializedAgent[], 
     topic: string, 
-    plan: any, 
+    plan: Plan, 
     options?: VotingOptions
   ): CouncilVote[] {
     console.log(`Collecting votes from council for topic: ${topic} with plan`);
