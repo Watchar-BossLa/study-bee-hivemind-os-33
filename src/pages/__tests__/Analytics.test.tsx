@@ -17,7 +17,7 @@ jest.mock('@/components/NavbarWithDashboard', () => ({
 }));
 
 jest.mock('lucide-react', () => ({
-  InfoCircle: () => <div data-testid="info-circle-icon">Info Icon</div>
+  Info: () => <div data-testid="info-icon">Info Icon</div>
 }));
 
 describe('Analytics Page', () => {

@@ -7,7 +7,7 @@ import Footer from '@/components/Footer';
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoCircle } from "lucide-react";
+import { Info } from "lucide-react";
 
 /**
  * Analytics page that implements comprehensive metrics visualization as outlined in TSB section 16
@@ -32,7 +32,7 @@ const Analytics = () => {
         />
         
         <Alert variant="default" className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800 mb-6">
-          <InfoCircle className="h-4 w-4 mr-2" />
+          <Info className="h-4 w-4 mr-2" />
           <AlertDescription>
             This dashboard integrates with OTEL spans and Grafana Cloud for observability as specified in TSB section 16.
           </AlertDescription>
