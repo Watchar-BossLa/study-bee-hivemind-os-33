@@ -41,4 +41,17 @@ export class VoteIntegrityService {
       vote.reasoning
     );
   }
+
+  /**
+   * Validate an array of votes
+   */
+  public validateVotes(votes: CouncilVote[]): boolean {
+    // Check if the array is valid
+    if (!Array.isArray(votes) || votes.length === 0) {
+      return false;
+    }
+    
+    // Check each vote for integrity
+    return votes.every(vote => this.validateVoteIntegrity(vote));
+  }
 }
