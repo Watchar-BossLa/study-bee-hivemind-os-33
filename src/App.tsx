@@ -5,6 +5,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from 'sonner';
 
 import Index from './pages/Index';
+import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import CourseContent from './pages/CourseContent';
 import CourseLearning from './pages/CourseLearning';
@@ -32,6 +33,7 @@ function App() {
             <main>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/courses" element={<Courses />} />
                 <Route path="/course/:courseId" element={<CourseContent />} />
                 <Route path="/learn/:courseId" element={<CourseLearning />} />

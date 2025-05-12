@@ -1,71 +1,32 @@
 
 import React from 'react';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import { Helmet } from 'react-helmet-async';
+import NavbarWithDashboard from '@/components/NavbarWithDashboard';
 import HeroSection from '@/components/HeroSection';
 import FeaturesSection from '@/components/FeaturesSection';
 import AIFeatures from '@/components/AIFeatures';
-import { CourseProps } from '@/types/course';
-import QuickActionsSection from '@/components/home/QuickActionsSection';
-import AnalyticsSection from '@/components/home/AnalyticsSection';
-import LearningProgressSection from '@/components/home/LearningProgressSection';
-import StatisticsSection from '@/components/home/StatisticsSection';
-import FeaturedCourses from '@/components/home/FeaturedCourses';
-import CTA from '@/components/home/CTA';
-
-// Featured courses data
-const featuredCourses: CourseProps[] = [
-  {
-    id: "1",
-    title: "Introduction to Biology",
-    category: "Science",
-    level: "Beginner",
-    description: "Learn the fundamentals of biology, from cells to ecosystems, with interactive lessons and AI-powered quizzes.",
-    lessons: 24,
-    students: 3452,
-    duration: "12 hours",
-  },
-  {
-    id: "2",
-    title: "Advanced Mathematics",
-    category: "Mathematics",
-    level: "Advanced",
-    description: "Master complex mathematical concepts including calculus, linear algebra, and differential equations.",
-    lessons: 36,
-    students: 1823,
-    duration: "20 hours",
-  },
-  {
-    id: "3",
-    title: "World History: Ancient Civilizations",
-    category: "History",
-    level: "Intermediate",
-    description: "Explore the rise and fall of ancient civilizations including Egypt, Greece, Rome, and China.",
-    lessons: 18,
-    students: 2741,
-    duration: "15 hours",
-  }
-];
+import Footer from '@/components/Footer';
+import CommandPalette from '@/components/CommandPalette';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
-      <main className="flex-grow">
+    <>
+      <Helmet>
+        <title>Study Bee - Adaptive Learning with AI</title>
+        <meta 
+          name="description" 
+          content="Study Bee is the world's most adaptive, autonomous, and secure learning OS, blending a Python‑first micro‑service architecture, Rust performance kernels, a QuorumForge agent fabric, and cost‑optimised multi‑LLM routing to serve 400+ subjects across school, vocational, professional, and university levels." 
+        />
+      </Helmet>
+      <NavbarWithDashboard />
+      <main>
         <HeroSection />
-        <QuickActionsSection />
-        <AnalyticsSection />
-        <LearningProgressSection />
-        <StatisticsSection />
-        <AIFeatures />
         <FeaturesSection />
-        <FeaturedCourses courses={featuredCourses} />
-        <CTA />
+        <AIFeatures />
       </main>
-      
       <Footer />
-    </div>
+      <CommandPalette />
+    </>
   );
 };
 
