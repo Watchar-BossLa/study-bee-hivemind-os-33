@@ -1,82 +1,159 @@
 
 /**
- * Service responsible for tracking and exposing Swarm task execution metrics
- * Implements the 'feat/swarm-metrics' feature from QuorumForge OS
+ * Service for collecting and analyzing swarm metrics from QuorumForge
+ * Implements requirement from v2.0 TSB section 16 - "Streamlit dashboard (port 8501) 
+ * shows council heat-map, token spend, SBOM diff"
  */
-export class SwarmMetricsService {
-  private metrics: SwarmMetricsRecord[] = [];
-  private maxRecords: number = 100;
 
+interface SwarmMetric {
+  timestamp: number;
+  taskCount: number;
+  agentCount: number;
+  executionTimeMs: number;
+  tokenUsage?: number;
+  councilId?: string;
+  topic?: string;
+}
+
+export class SwarmMetricsService {
+  private static instance: SwarmMetricsService;
+  private metrics: SwarmMetric[] = [];
+  private readonly MAX_STORED_METRICS = 1000;
+  
+  private constructor() {
+    // Private constructor for singleton
+    console.log('SwarmMetricsService initialized');
+  }
+  
+  public static getInstance(): SwarmMetricsService {
+    if (!SwarmMetricsService.instance) {
+      SwarmMetricsService.instance = new SwarmMetricsService();
+    }
+    return SwarmMetricsService.instance;
+  }
+  
   /**
-   * Records a new Swarm execution
+   * Record a new swarm execution metric
    */
-  public recordSwarmExecution(taskCount: number, durationMs: number, successRate: number): void {
-    const newRecord: SwarmMetricsRecord = {
-      timestamp: new Date(),
+  public recordSwarmExecution(
+    taskCount: number, 
+    agentCount: number, 
+    executionTimeMs: number,
+    tokenUsage?: number,
+    councilId?: string,
+    topic?: string
+  ): void {
+    const metric: SwarmMetric = {
+      timestamp: Date.now(),
       taskCount,
-      durationMs,
-      successRate,
-      fanoutRatio: taskCount > 0 ? taskCount / Math.max(1, Math.ceil(taskCount / 5)) : 0
+      agentCount,
+      executionTimeMs,
+      tokenUsage,
+      councilId,
+      topic
     };
     
-    this.metrics.unshift(newRecord);
+    this.metrics.push(metric);
     
-    // Trim to max size
-    if (this.metrics.length > this.maxRecords) {
-      this.metrics = this.metrics.slice(0, this.maxRecords);
+    // Limit the size of metrics array to prevent memory issues
+    if (this.metrics.length > this.MAX_STORED_METRICS) {
+      this.metrics = this.metrics.slice(-this.MAX_STORED_METRICS);
     }
     
-    console.log(`Recorded Swarm metrics: ${taskCount} tasks, ${durationMs}ms duration, ${successRate * 100}% success`);
+    console.log(`Swarm metrics recorded: ${taskCount} tasks, ${executionTimeMs}ms execution time`);
   }
-
+  
   /**
-   * Gets recent Swarm metrics
+   * Get all metrics within a time range
+   * @param startTime Optional start time in milliseconds
+   * @param endTime Optional end time in milliseconds
+   * @returns Array of metrics within the time range
    */
-  public getMetrics(limit: number = 24): SwarmMetricsRecord[] {
-    return this.metrics.slice(0, limit);
+  public getMetrics(startTime?: number, endTime?: number): SwarmMetric[] {
+    if (!startTime && !endTime) {
+      return [...this.metrics];
+    }
+    
+    const now = Date.now();
+    const start = startTime || 0;
+    const end = endTime || now;
+    
+    return this.metrics.filter(metric => 
+      metric.timestamp >= start && metric.timestamp <= end
+    );
   }
-
+  
   /**
-   * Gets aggregated Swarm statistics
+   * Get metrics for visualization in the dashboard
+   * @param limit Maximum number of metrics to return
+   * @param hoursBack Number of hours to look back
+   * @returns Recent metrics formatted for visualization
    */
-  public getAggregateStats(): SwarmAggregateStats {
-    if (this.metrics.length === 0) {
+  public getMetricsForVisualization(limit = 50, hoursBack = 24): {
+    times: string[];
+    taskCounts: number[];
+    executionTimes: number[];
+    agentCounts: number[];
+  } {
+    const cutoffTime = Date.now() - (hoursBack * 60 * 60 * 1000);
+    const recentMetrics = this.metrics
+      .filter(metric => metric.timestamp >= cutoffTime)
+      .slice(-limit);
+    
+    return {
+      times: recentMetrics.map(m => new Date(m.timestamp).toLocaleTimeString()),
+      taskCounts: recentMetrics.map(m => m.taskCount),
+      executionTimes: recentMetrics.map(m => m.executionTimeMs),
+      agentCounts: recentMetrics.map(m => m.agentCount)
+    };
+  }
+  
+  /**
+   * Get performance statistics about swarm executions
+   */
+  public getPerformanceStats(hoursBack = 24): {
+    totalExecutions: number;
+    averageTaskCount: number;
+    averageExecutionTime: number;
+    maxExecutionTime: number;
+    totalTokenUsage: number;
+  } {
+    const cutoffTime = Date.now() - (hoursBack * 60 * 60 * 1000);
+    const recentMetrics = this.metrics.filter(metric => metric.timestamp >= cutoffTime);
+    
+    if (recentMetrics.length === 0) {
       return {
+        totalExecutions: 0,
         averageTaskCount: 0,
-        averageDuration: 0,
-        averageSuccessRate: 0,
-        totalTasksProcessed: 0
+        averageExecutionTime: 0,
+        maxExecutionTime: 0,
+        totalTokenUsage: 0
       };
     }
     
-    const totalTasksProcessed = this.metrics.reduce((sum, record) => sum + record.taskCount, 0);
+    const totalExecutions = recentMetrics.length;
+    const averageTaskCount = recentMetrics.reduce((sum, m) => sum + m.taskCount, 0) / totalExecutions;
+    const averageExecutionTime = recentMetrics.reduce((sum, m) => sum + m.executionTimeMs, 0) / totalExecutions;
+    const maxExecutionTime = Math.max(...recentMetrics.map(m => m.executionTimeMs));
+    const totalTokenUsage = recentMetrics.reduce((sum, m) => sum + (m.tokenUsage || 0), 0);
     
     return {
-      averageTaskCount: totalTasksProcessed / this.metrics.length,
-      averageDuration: this.metrics.reduce((sum, record) => sum + record.durationMs, 0) / this.metrics.length,
-      averageSuccessRate: this.metrics.reduce((sum, record) => sum + record.successRate, 0) / this.metrics.length,
-      totalTasksProcessed
+      totalExecutions,
+      averageTaskCount,
+      averageExecutionTime,
+      maxExecutionTime,
+      totalTokenUsage
     };
+  }
+  
+  /**
+   * Clear all stored metrics
+   */
+  public clearMetrics(): void {
+    this.metrics = [];
+    console.log('Swarm metrics cleared');
   }
 }
 
-/**
- * Represents a single Swarm execution metrics record
- */
-export interface SwarmMetricsRecord {
-  timestamp: Date;
-  taskCount: number;
-  durationMs: number;
-  successRate: number;
-  fanoutRatio: number;
-}
-
-/**
- * Represents aggregated Swarm statistics
- */
-export interface SwarmAggregateStats {
-  averageTaskCount: number;
-  averageDuration: number;
-  averageSuccessRate: number;
-  totalTasksProcessed: number;
-}
+// Export a singleton instance
+export const swarmMetricsService = SwarmMetricsService.getInstance();
