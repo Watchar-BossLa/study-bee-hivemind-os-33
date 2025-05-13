@@ -1,5 +1,5 @@
 
-import { MCPCore, TaskPriority } from '../core/MCPCore';
+import { MCPCore, TaskPriority, AgentTask } from '../core/MCPCore';
 
 /**
  * Manages agent tasks in QuorumForge
