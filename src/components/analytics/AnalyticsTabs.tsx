@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChartBar, BookOpen, Brain, Clock, Database } from 'lucide-react';
+import { ChartBar, BookOpen, Brain, Clock, Grid3X3 } from 'lucide-react';
 
 const AnalyticsTabs: React.FC = () => {
   return (
@@ -23,7 +23,7 @@ const AnalyticsTabs: React.FC = () => {
         <span className="hidden sm:inline">Productivity</span>
       </TabsTrigger>
       <TabsTrigger value="swarm" className="flex items-center gap-2">
-        <Database className="h-4 w-4" />
+        <Grid3X3 className="h-4 w-4" />
         <span className="hidden sm:inline">Swarm</span>
       </TabsTrigger>
     </TabsList>

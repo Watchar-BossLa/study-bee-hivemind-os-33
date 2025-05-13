@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
-import { Bar, BarChart, LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
+import { Bar, BarChart, LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip, CartesianGrid, Area, AreaChart } from "recharts";
 import type { SwarmMetric } from '@/types/analytics';
 
 interface SwarmMetricsDisplayProps {
@@ -32,7 +32,10 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
     success: Math.round(item.success_rate * 100),
     utilization: Math.round(item.agent_utilization * 100),
     taskType: item.task_type,
-    priority: item.priority_level
+    priority: item.priority_level,
+    // Include child task metrics
+    childRatio: item.child_task_ratio ? Math.round(item.child_task_ratio * 100) : null,
+    concurrency: item.task_concurrency || Math.round(item.fanout_count * item.agent_utilization)
   }));
 
   // Calculate averages for key metrics
@@ -40,6 +43,7 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
   const avgCompletionTime = data.reduce((sum, item) => sum + item.completion_time_ms, 0) / data.length;
   const avgSuccessRate = data.reduce((sum, item) => sum + item.success_rate, 0) / data.length;
   const avgUtilization = data.reduce((sum, item) => sum + item.agent_utilization, 0) / data.length;
+  const avgConcurrency = data.reduce((sum, item) => sum + (item.task_concurrency || item.fanout_count * item.agent_utilization), 0) / data.length;
 
   // Group by task type
   const taskTypeCounts = data.reduce((acc, item) => {
@@ -62,6 +66,9 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
     name: level,
     count
   }));
+
+  // Calculate child task ratio average for display
+  const avgChildRatio = data.reduce((sum, item) => sum + (item.child_task_ratio || 0), 0) / data.length;
 
   // Define chart configurations
   const fanoutChartConfig: ChartConfig = {
@@ -94,6 +101,16 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
     }
   };
 
+  const concurrencyChartConfig: ChartConfig = {
+    concurrency: {
+      label: "Task Concurrency",
+      theme: {
+        light: "#8b5cf6",
+        dark: "#8b5cf6"
+      }
+    }
+  };
+
   // Color mappings for priority levels
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -115,7 +132,7 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
           </Badge>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" aria-label="Swarm metrics summary">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6" aria-label="Swarm metrics summary">
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Avg Fan-out</span>
               <span className="text-2xl font-bold">{avgFanout.toFixed(1)}</span>
@@ -131,6 +148,10 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Agent Utilization</span>
               <span className="text-2xl font-bold">{(avgUtilization * 100).toFixed(1)}%</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm text-muted-foreground">Task Concurrency</span>
+              <span className="text-2xl font-bold">{avgConcurrency.toFixed(1)}</span>
             </div>
           </div>
           
@@ -234,6 +255,58 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* New: Child Task Metrics Section */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Task Concurrency</CardTitle>
+            <Badge variant="outline" className="bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200">
+              feat/swarm-metrics
+            </Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px]" aria-label="Task concurrency by date">
+              <ChartContainer config={concurrencyChartConfig}>
+                <AreaChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <ChartTooltip />
+                  <Area type="monotone" dataKey="concurrency" stroke="#8b5cf6" fill="#8b5cf680" name="Task Concurrency" />
+                </AreaChart>
+              </ChartContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Child Task Stats</CardTitle>
+            <Badge variant="outline" className="bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200">
+              feat/swarm-metrics
+            </Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-6">
+              <p className="text-sm text-muted-foreground mb-4">
+                Child task metrics show how effectively the Swarm distributes workloads across agents.
+                Average child task ratio: <span className="font-semibold">{(avgChildRatio * 100).toFixed(1)}%</span>
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4" aria-label="Child task stats summary">
+              <div className="p-4 border rounded-lg">
+                <p className="text-sm text-muted-foreground">AutogenTurnGuard</p>
+                <p className="text-lg font-semibold">max_turns: 6</p>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <p className="text-sm text-muted-foreground">LangChainQuotaGuard</p>
+                <p className="text-lg font-semibold">rate_limit: active</p>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -18,7 +18,9 @@ export const MOCK_SWARM_METRICS: SwarmMetric[] = [
     success_rate: 1.0,
     agent_utilization: 0.85,
     task_type: 'knowledge_graph',
-    priority_level: 'normal'
+    priority_level: 'normal',
+    child_task_ratio: 0.95,
+    task_concurrency: 5.1
   },
   {
     id: '2',
@@ -28,7 +30,9 @@ export const MOCK_SWARM_METRICS: SwarmMetric[] = [
     success_rate: 0.95,
     agent_utilization: 0.75,
     task_type: 'quiz_generation',
-    priority_level: 'normal'
+    priority_level: 'normal',
+    child_task_ratio: 0.90,
+    task_concurrency: 3.0
   },
   {
     id: '3',
@@ -38,7 +42,9 @@ export const MOCK_SWARM_METRICS: SwarmMetric[] = [
     success_rate: 0.92,
     agent_utilization: 0.90,
     task_type: 'knowledge_graph',
-    priority_level: 'high'
+    priority_level: 'high',
+    child_task_ratio: 0.88,
+    task_concurrency: 7.2
   },
   {
     id: '4',
@@ -48,7 +54,9 @@ export const MOCK_SWARM_METRICS: SwarmMetric[] = [
     success_rate: 1.0,
     agent_utilization: 0.60,
     task_type: 'content_summarization',
-    priority_level: 'low'
+    priority_level: 'low',
+    child_task_ratio: 1.0,
+    task_concurrency: 1.8
   },
   {
     id: '5',
@@ -58,7 +66,9 @@ export const MOCK_SWARM_METRICS: SwarmMetric[] = [
     success_rate: 0.88,
     agent_utilization: 0.70,
     task_type: 'content_summarization',
-    priority_level: 'normal'
+    priority_level: 'normal',
+    child_task_ratio: 0.85,
+    task_concurrency: 3.5
   },
   {
     id: '6',
@@ -68,7 +78,9 @@ export const MOCK_SWARM_METRICS: SwarmMetric[] = [
     success_rate: 0.90,
     agent_utilization: 0.95,
     task_type: 'quiz_generation',
-    priority_level: 'critical'
+    priority_level: 'critical',
+    child_task_ratio: 0.92,
+    task_concurrency: 9.5
   },
   {
     id: '7',
@@ -78,6 +90,8 @@ export const MOCK_SWARM_METRICS: SwarmMetric[] = [
     success_rate: 0.94,
     agent_utilization: 0.85,
     task_type: 'knowledge_graph',
-    priority_level: 'high'
+    priority_level: 'high',
+    child_task_ratio: 0.89,
+    task_concurrency: 5.9
   }
 ];

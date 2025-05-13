@@ -16,7 +16,8 @@ const SwarmTab: React.FC<SwarmTabProps> = ({ swarmMetrics }) => {
       <Alert variant="default" className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
         <Info className="h-4 w-4 mr-2" />
         <AlertDescription>
-          QuorumForge Swarm metrics show task distribution and agent coordination activity as specified in TSB section 16.
+          QuorumForge Swarm metrics show task distribution patterns and agent coordination 
+          activity as specified in TSB section 16. Child-task statistics are now available per feat/swarm-metrics.
         </AlertDescription>
       </Alert>
 
@@ -24,14 +25,15 @@ const SwarmTab: React.FC<SwarmTabProps> = ({ swarmMetrics }) => {
         <CardHeader>
           <CardTitle>About Swarm Metrics</CardTitle>
           <CardDescription>
-            Swarm Fan-out statistics demonstrate the parallel execution capabilities of QuorumForge's agent architecture
+            Swarm Fan-out statistics demonstrate the parallel execution capabilities and TurnGuard constraints of QuorumForge's agent architecture
           </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
             The Swarm metrics dashboard visualizes the distributed task execution patterns across QuorumForge councils.
             Fan-out refers to the number of parallel tasks executed per request, while success rate tracks completion quality.
-            As mentioned in TSB section 6, agent utilization reflects the efficiency of resource allocation.
+            As mentioned in TSB section 6, agent utilization reflects the efficiency of resource allocation, and the new child-task 
+            metrics feature enables deeper visibility into Swarm parallel processing capabilities.
           </p>
         </CardContent>
       </Card>

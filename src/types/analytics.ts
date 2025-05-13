@@ -66,4 +66,7 @@ export interface SwarmMetric {
   agent_utilization: number;
   task_type: string;
   priority_level: 'low' | 'normal' | 'high' | 'critical';
+  // Add new child task metrics from feat/swarm-metrics
+  child_task_ratio?: number;
+  task_concurrency?: number;
 }
