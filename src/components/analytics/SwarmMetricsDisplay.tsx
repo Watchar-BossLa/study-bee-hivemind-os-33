@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
-import { Bar, BarChart, LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip } from "recharts";
+import { Bar, BarChart, LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import type { SwarmMetric } from '@/types/analytics';
 
 interface SwarmMetricsDisplayProps {
@@ -52,7 +52,18 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
     count
   }));
 
-  // Define chart configuration
+  // Group by priority level
+  const priorityLevels = data.reduce((acc, item) => {
+    acc[item.priority_level] = (acc[item.priority_level] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const priorityData = Object.entries(priorityLevels).map(([level, count]) => ({
+    name: level,
+    count
+  }));
+
+  // Define chart configurations
   const fanoutChartConfig: ChartConfig = {
     fanout: {
       label: "Fan-out Count",
@@ -73,6 +84,27 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
     }
   };
 
+  const successChartConfig: ChartConfig = {
+    success: {
+      label: "Success Rate (%)",
+      theme: {
+        light: "#f59e0b",
+        dark: "#f59e0b"
+      }
+    }
+  };
+
+  // Color mappings for priority levels
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical': return '#ef4444';
+      case 'high': return '#f59e0b';
+      case 'normal': return '#3b82f6';
+      case 'low': return '#10b981';
+      default: return '#8b5cf6';
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -83,7 +115,7 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
           </Badge>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" aria-label="Swarm metrics summary">
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Avg Fan-out</span>
               <span className="text-2xl font-bold">{avgFanout.toFixed(1)}</span>
@@ -102,9 +134,10 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
             </div>
           </div>
           
-          <div className="h-[300px]">
+          <div className="h-[300px]" aria-label="Fan-out count by date">
             <ChartContainer config={fanoutChartConfig}>
               <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <ChartTooltip />
@@ -121,9 +154,10 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
             <CardTitle>Completion Time (seconds)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[250px]">
+            <div className="h-[250px]" aria-label="Completion time by date">
               <ChartContainer config={timeChartConfig}>
                 <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
                   <ChartTooltip />
@@ -139,13 +173,65 @@ const SwarmMetricsDisplay: React.FC<SwarmMetricsDisplayProps> = ({ data = [] }) 
             <CardTitle>Task Type Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[250px]">
+            <div className="h-[250px]" aria-label="Task type distribution">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={taskTypeData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" />
                   <YAxis type="category" dataKey="name" />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#8884d8" />
+                  <Bar dataKey="count" fill="#8884d8" name="Tasks" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Success Rate Trend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px]" aria-label="Success rate by date">
+              <ChartContainer config={successChartConfig}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis domain={[0, 100]} />
+                  <ChartTooltip />
+                  <Line type="monotone" dataKey="success" stroke="#f59e0b" strokeWidth={2} name="Success Rate (%)" />
+                </LineChart>
+              </ChartContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Priority Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px]" aria-label="Priority level distribution">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={priorityData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" name="Tasks">
+                    {priorityData.map((entry, index) => (
+                      <rect 
+                        key={`rect-${index}`} 
+                        fill={getPriorityColor(entry.name)} 
+                        x={0} 
+                        y={0} 
+                        width={0} 
+                        height={0} 
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
