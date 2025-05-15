@@ -118,8 +118,9 @@ export class MCPCore extends BrowserEventEmitter {
   }
 }
 
-// Re-export required types
-export { TaskPriority, AgentTask, AgentMessage };
+// Re-export required types - Fix for isolatedModules error
+export { TaskPriority };
+export type { AgentTask, AgentMessage };
 
 // Export a singleton instance
 export const mcpCore = new MCPCore();
