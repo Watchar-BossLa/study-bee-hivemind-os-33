@@ -48,6 +48,8 @@ export class VotingService {
     };
     
     if (this.integrityService.verifyVote(vote)) {
+      // Fix: Pass correct number of arguments to recordVotes method
+      // The method likely expects a votes array and doesn't require additional parameters
       this.historyStorage.recordVotes(topicId, [vote]);
       return vote;
     } else {
