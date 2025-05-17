@@ -1,22 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
-
-// Define the ChatMessage and TypingStatus types - coming from Supabase
-export interface ChatMessage {
-  id: string;
-  match_id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-}
-
-export interface TypingStatus {
-  user_id: string;
-  match_id: string;
-  is_typing: boolean;
-  last_updated: string;
-}
+import { ChatMessage, TypingStatus } from '@/types/supabase-extensions';
 
 // Result interfaces for our service methods
 interface ServiceResult<T> {
@@ -36,9 +21,9 @@ class ArenaChatService {
   // Fetch chat messages for a match
   async fetchChatMessages(matchId: string): Promise<MessagesResult> {
     try {
-      // We need to use the extended tables defined in types
+      // Use type assertion to let TypeScript know we're accessing our extended table
       const { data, error } = await supabase
-        .from('arena_chat_messages')
+        .from('arena_chat_messages' as any)
         .select('*')
         .eq('match_id', matchId)
         .order('created_at', { ascending: true });
@@ -108,7 +93,7 @@ class ArenaChatService {
         async () => {
           // When any typing status changes, fetch all current typing statuses
           const { data } = await supabase
-            .from('arena_typing_status')
+            .from('arena_typing_status' as any)
             .select('*')
             .eq('match_id', matchId);
           
@@ -133,7 +118,7 @@ class ArenaChatService {
   async sendMessage(matchId: string, userId: string, content: string): Promise<ServiceResult<any>> {
     try {
       const { error } = await supabase
-        .from('arena_chat_messages')
+        .from('arena_chat_messages' as any)
         .insert({
           match_id: matchId,
           user_id: userId,
@@ -156,7 +141,7 @@ class ArenaChatService {
   async updateTypingStatus(matchId: string, userId: string, isTyping: boolean): Promise<ServiceResult<any>> {
     try {
       const { error } = await supabase
-        .from('arena_typing_status')
+        .from('arena_typing_status' as any)
         .upsert({
           match_id: matchId,
           user_id: userId,

@@ -52,7 +52,7 @@ export class VotingService {
       agentId,
       suggestion,
       confidence,
-      reasoning, // Added required property and passed from parameters
+      reasoning,
     };
     
     if (this.integrityService.verifyVote(vote)) {
