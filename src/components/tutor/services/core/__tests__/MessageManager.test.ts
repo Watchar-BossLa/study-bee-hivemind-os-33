@@ -1,7 +1,7 @@
 
 import { MessageManager } from '../MessageManager';
 import { BrowserEventEmitter } from '../BrowserEventEmitter';
-import { SpecializedAgent } from '../../types/agents';
+import { SpecializedAgent } from '../../../types/agents';
 
 describe('MessageManager', () => {
   let messageManager: MessageManager;

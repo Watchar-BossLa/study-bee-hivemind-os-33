@@ -1,7 +1,7 @@
 
 import { TaskManager } from '../TaskManager';
 import { BrowserEventEmitter } from '../BrowserEventEmitter';
-import { TaskPriority } from '../../types/mcp';
+import { TaskPriority } from '../../../types/mcp';
 
 describe('TaskManager', () => {
   let taskManager: TaskManager;

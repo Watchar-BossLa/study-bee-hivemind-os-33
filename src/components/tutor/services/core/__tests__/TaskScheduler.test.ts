@@ -1,22 +1,21 @@
-
 import { TaskScheduler } from '../TaskScheduler';
 import { BrowserEventEmitter } from '../BrowserEventEmitter';
-import { AgentManager } from '../AgentManager';
 import { TaskManager } from '../TaskManager';
-import { TaskPriority, AgentTask } from '../../types/mcp';
-import { SpecializedAgent } from '../../types/agents';
+import { AgentManager } from '../AgentManager';
+import { AgentTask, TaskPriority } from '../../../types/mcp';
+import { SpecializedAgent } from '../../../types/agents';
 
 describe('TaskScheduler', () => {
   let taskScheduler: TaskScheduler;
   let emitter: BrowserEventEmitter;
-  let agentManager: AgentManager;
   let taskManager: TaskManager;
+  let agentManager: AgentManager;
   
-  // Setup mock agent
+  // Mock agent for testing
   const mockAgent: SpecializedAgent = {
-    id: 'test-agent',
+    id: 'test-agent-1',
     name: 'Test Agent',
-    description: 'A test agent for scheduling',
+    description: 'A test agent',
     capabilities: ['test'],
     performance: {
       accuracy: 0.9,
@@ -25,21 +24,21 @@ describe('TaskScheduler', () => {
     type: 'subject-expert',
     expertise: ['testing']
   };
-
+  
   beforeEach(() => {
-    jest.useFakeTimers();
-    
     emitter = new BrowserEventEmitter();
-    jest.spyOn(emitter, 'on');
-    jest.spyOn(emitter, 'emit');
-    
-    agentManager = new AgentManager(emitter);
     taskManager = new TaskManager(emitter);
+    agentManager = new AgentManager(emitter);
+    taskScheduler = new TaskScheduler(emitter, agentManager, taskManager);
     
     // Register mock agent
     agentManager.registerAgent(mockAgent);
     
-    taskScheduler = new TaskScheduler(emitter, agentManager, taskManager);
+    // Spy on methods
+    jest.spyOn(emitter, 'emit');
+    jest.spyOn(taskManager, 'updateTaskStatus');
+    jest.spyOn(agentManager, 'setAgentStatus');
+    jest.spyOn(agentManager, 'updateAgentQuota');
   });
 
   afterEach(() => {

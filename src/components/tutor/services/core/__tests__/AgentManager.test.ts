@@ -1,7 +1,7 @@
 
 import { AgentManager } from '../AgentManager';
 import { BrowserEventEmitter } from '../BrowserEventEmitter';
-import { SpecializedAgent } from '../../types/agents';
+import { SpecializedAgent } from '../../../types/agents';
 
 describe('AgentManager', () => {
   let agentManager: AgentManager;

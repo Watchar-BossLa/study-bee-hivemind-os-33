@@ -1,16 +1,16 @@
-
 import { MCPCore } from '../MCPCore';
-import { TaskPriority } from '../../types/mcp';
-import { SpecializedAgent } from '../../types/agents';
+import { BrowserEventEmitter } from '../BrowserEventEmitter';
+import { TaskPriority } from '../../../types/mcp';
+import { SpecializedAgent } from '../../../types/agents';
 
 describe('MCPCore', () => {
   let mcpCore: MCPCore;
   
   // Mock agent for testing
   const mockAgent: SpecializedAgent = {
-    id: 'test-agent',
+    id: 'test-agent-1',
     name: 'Test Agent',
-    description: 'A test agent for MCP',
+    description: 'A test agent',
     capabilities: ['test'],
     performance: {
       accuracy: 0.9,
@@ -19,10 +19,11 @@ describe('MCPCore', () => {
     type: 'subject-expert',
     expertise: ['testing']
   };
-
+  
   beforeEach(() => {
-    jest.useFakeTimers();
     mcpCore = new MCPCore();
+    // Spy on event emission
+    jest.spyOn(mcpCore, 'emit');
   });
 
   afterEach(() => {
