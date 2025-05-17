@@ -1,11 +1,10 @@
-
 import { MCPCore } from '../MCPCore';
 import { BrowserEventEmitter } from '../BrowserEventEmitter';
-import { TaskPriority } from '../../../types/mcp';
 import { SpecializedAgent } from '../../../types/agents';
 
 describe('MCPCore', () => {
   let mcpCore: MCPCore;
+  let emitter: BrowserEventEmitter;
   
   // Mock agent for testing
   const mockAgent: SpecializedAgent = {
@@ -26,6 +25,7 @@ describe('MCPCore', () => {
   
   beforeEach(() => {
     mcpCore = new MCPCore();
+    emitter = new BrowserEventEmitter();
     // Spy on event emission
     jest.spyOn(mcpCore, 'emit');
   });

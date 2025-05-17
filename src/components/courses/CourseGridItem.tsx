@@ -3,14 +3,26 @@ import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Book, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, Book, Users, Bookmark, BookmarkCheck } from "lucide-react";
 import { CourseProps } from '@/types/course';
+import { cn } from '@/lib/utils';
+import { useCoursesBookmark } from '@/hooks/useCoursesBookmark';
 
 interface CourseGridItemProps {
   course: CourseProps;
 }
 
 const CourseGridItem = ({ course }: CourseGridItemProps) => {
+  const { isBookmarked, toggleBookmark } = useCoursesBookmark();
+  const bookmarked = isBookmarked(course.id);
+  
+  const handleBookmark = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleBookmark(course.id);
+  };
+
   return (
     <Card className="overflow-hidden transition-all hover:shadow-md">
       <div className="aspect-video w-full bg-bee-light relative overflow-hidden">
@@ -26,6 +38,22 @@ const CourseGridItem = ({ course }: CourseGridItemProps) => {
           </div>
         )}
         <Badge className="absolute top-2 right-2">{course.level}</Badge>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className={cn(
+            "absolute top-2 left-2 h-8 w-8 rounded-full bg-white/60 backdrop-blur-sm hover:bg-white/80",
+            bookmarked ? "text-primary" : "text-muted-foreground"
+          )}
+          onClick={handleBookmark}
+        >
+          {bookmarked ? (
+            <BookmarkCheck className="h-4 w-4 animate-in zoom-in-50 duration-200" />
+          ) : (
+            <Bookmark className="h-4 w-4" />
+          )}
+          <span className="sr-only">{bookmarked ? "Remove from saved courses" : "Save course"}</span>
+        </Button>
       </div>
       
       <CardHeader>

@@ -3,7 +3,9 @@ import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, X } from "lucide-react";
+import { Search, X, Bookmark } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from '@/integrations/supabase/client';
 
 interface CourseFiltersProps {
   searchTerm: string;
@@ -15,6 +17,8 @@ interface CourseFiltersProps {
   onClearFilters: () => void;
   categories: string[];
   levels: string[];
+  showBookmarked: boolean;
+  onToggleBookmarked: (value: boolean) => void;
 }
 
 const CourseFilters: React.FC<CourseFiltersProps> = ({
@@ -26,9 +30,34 @@ const CourseFilters: React.FC<CourseFiltersProps> = ({
   onLevelChange,
   onClearFilters,
   categories,
-  levels
+  levels,
+  showBookmarked,
+  onToggleBookmarked
 }) => {
-  const showClearButton = searchTerm || selectedCategory || selectedLevel;
+  const showClearButton = searchTerm || selectedCategory || selectedLevel || showBookmarked;
+  
+  const handleClearFilters = () => {
+    onClearFilters();
+    onToggleBookmarked(false);
+  };
+
+  const checkAuthentication = async () => {
+    const { data } = await supabase.auth.getSession();
+    return !!data.session;
+  };
+
+  const handleBookmarkToggle = async () => {
+    if (!showBookmarked) {
+      const isAuthenticated = await checkAuthentication();
+      if (!isAuthenticated) {
+        // User is not authenticated, you might want to handle this differently
+        // For now, we'll just log a message and not toggle the filter
+        console.log('User is not authenticated');
+        return;
+      }
+    }
+    onToggleBookmarked(!showBookmarked);
+  };
 
   return (
     <section className="py-6 border-b">
@@ -44,7 +73,7 @@ const CourseFilters: React.FC<CourseFiltersProps> = ({
             />
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             <Select value={selectedCategory || ''} onValueChange={onCategoryChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Category" />
@@ -68,11 +97,21 @@ const CourseFilters: React.FC<CourseFiltersProps> = ({
                 ))}
               </SelectContent>
             </Select>
+
+            <Button
+              variant={showBookmarked ? "default" : "outline"}
+              size="sm"
+              className="flex items-center gap-1.5"
+              onClick={handleBookmarkToggle}
+            >
+              <Bookmark className="h-4 w-4" />
+              <span>Saved</span>
+            </Button>
             
             {showClearButton && (
-              <Button variant="ghost" onClick={onClearFilters} className="flex items-center gap-1">
+              <Button variant="ghost" onClick={handleClearFilters} size="sm" className="flex items-center gap-1">
                 <X className="h-4 w-4" />
-                Clear
+                <span>Clear</span>
               </Button>
             )}
           </div>
