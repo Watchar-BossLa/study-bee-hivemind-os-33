@@ -7,9 +7,10 @@ import { SpecializedAgent } from '../../types/agents';
 import { VoteAnalysisService } from './VoteAnalysisService';
 import { VoteCollectionService } from './VoteCollectionService';
 import { PlanVotingService } from './PlanVotingService';
-import { Plan, VotingOptions } from './types/voting-types';
+import { Plan } from './types/voting-types';
 
-export { VotingOptions } from './types/voting-types';
+// Changed to "export type" to fix TS1205 error
+export type { VotingOptions } from './types/voting-types';
 
 export class VotingService {
   private historyStorage: VoteHistoryStorage;
@@ -30,16 +31,17 @@ export class VotingService {
 
   public registerVote(
     councilId: string, 
-    agentId: string, 
+    agent: SpecializedAgent, // Changed type from string to SpecializedAgent
     topicId: string, 
     suggestion: string,
     confidence: number,
     reasoning: string
   ): CouncilVote {
-    const weight = this.weightCalculator.calculateWeight(agentId, topicId);
+    // Using agent.id instead of directly using agentId parameter
+    const weight = this.weightCalculator.calculateWeight(agent.id, topicId);
     
     const vote: CouncilVote = {
-      agentId,
+      agentId: agent.id,
       suggestion,
       confidence,
       reasoning,
