@@ -11,7 +11,9 @@ describe('MessageManager', () => {
   const mockAgent: SpecializedAgent = {
     id: 'agent-recipient',
     name: 'Recipient Agent',
-    description: 'A recipient test agent',
+    role: 'Assistant',
+    status: 'idle',
+    domain: 'Communication',
     capabilities: ['test'],
     performance: {
       accuracy: 0.9,

@@ -16,7 +16,9 @@ describe('TaskScheduler', () => {
   const mockAgent: SpecializedAgent = {
     id: 'test-agent-1',
     name: 'Test Agent',
-    description: 'A test agent',
+    role: 'Expert',
+    status: 'idle',
+    domain: 'Testing',
     capabilities: ['test'],
     performance: {
       accuracy: 0.9,
