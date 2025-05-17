@@ -1,109 +1,98 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { FocusInterval } from '@/types/analytics';
 
 interface ProductivityHeatmapProps {
-  data: Array<{
-    date: string;
-    hour: number;
-    intensity: number;
-  }>;
+  data: FocusInterval[];
 }
 
-const ProductivityHeatmap = ({ data }: ProductivityHeatmapProps) => {
-  // Generate days of the week
-  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  
-  // Generate hours for the heatmap (6AM to 10PM)
-  const hours = Array.from({ length: 17 }, (_, i) => i + 6);
-  
-  // Generate a matrix for the heatmap
-  const getIntensityForHour = (day: number, hour: number) => {
-    const entry = data.find(d => {
-      const date = new Date(d.date);
-      return date.getDay() === day && d.hour === hour;
-    });
-    return entry ? entry.intensity : 0;
+const ProductivityHeatmap: React.FC<ProductivityHeatmapProps> = ({ data }) => {
+  const hours = Array.from(new Set(data.map(interval => interval.hour))).sort((a, b) => a - b);
+  const dates = Array.from(new Set(data.map(interval => interval.date))).sort();
+
+  const getProductivityScore = (date: string, hour: number): number | null => {
+    const interval = data.find(d => d.date === date && d.hour === hour);
+    return interval ? interval.productivity_score : null;
   };
 
-  // Map intensity to color class with higher contrast for accessibility
-  const getColorClass = (intensity: number) => {
-    if (intensity === 0) return 'bg-gray-100 dark:bg-gray-800';
-    if (intensity < 0.3) return 'bg-green-100 dark:bg-green-900';
-    if (intensity < 0.6) return 'bg-green-300 dark:bg-green-700';
-    return 'bg-green-500 dark:bg-green-500';
+  const getColorForScore = (score: number | null): string => {
+    if (score === null) return 'bg-gray-100';
+    if (score >= 90) return 'bg-green-500';
+    if (score >= 80) return 'bg-green-400';
+    if (score >= 70) return 'bg-yellow-400';
+    if (score >= 60) return 'bg-yellow-300';
+    if (score >= 50) return 'bg-orange-300';
+    return 'bg-red-300';
   };
 
-  // Format the time for better readability
-  const formatHour = (hour: number) => {
-    return `${hour % 12 === 0 ? 12 : hour % 12}${hour < 12 ? 'am' : 'pm'}`;
+  const formatHour = (hour: number): string => {
+    if (hour === 0) return '12am';
+    if (hour === 12) return '12pm';
+    return hour < 12 ? `${hour}am` : `${hour-12}pm`;
   };
 
-  // Get a percentage representation of intensity for screen readers
-  const getIntensityPercentage = (intensity: number) => {
-    return `${Math.round(intensity * 100)}%`;
-  };
-
-  // Generate a human-readable description for the tooltip
-  const getTooltipContent = (day: string, hour: number, intensity: number) => {
-    const intensityLevel = intensity === 0 ? 'No activity' : 
-                          intensity < 0.3 ? 'Low activity' : 
-                          intensity < 0.6 ? 'Medium activity' : 
-                          'High activity';
-    return `${day} at ${formatHour(hour)}: ${intensityLevel} (${getIntensityPercentage(intensity)})`;
+  const formatDate = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Study Focus Distribution</CardTitle>
-        <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="bg-gray-100 dark:bg-gray-800">None</Badge>
-          <Badge variant="outline" className="bg-green-100 dark:bg-green-900">Low</Badge>
-          <Badge variant="outline" className="bg-green-300 dark:bg-green-700">Medium</Badge>
-          <Badge variant="outline" className="bg-green-500 dark:bg-green-500">High</Badge>
-        </div>
+      <CardHeader>
+        <CardTitle>Productivity Heatmap</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-[auto_1fr] gap-2" aria-label="Weekly study focus heatmap">
-          <div></div>
-          <div className="grid grid-cols-7 gap-1">
-            {daysOfWeek.map(day => (
-              <div key={day} className="text-center text-xs font-medium">
-                {day}
-              </div>
-            ))}
+        <div className="overflow-x-auto">
+          <div className="min-w-max">
+            <div className="grid grid-cols-[auto_repeat(auto-fill,minmax(45px,1fr))]">
+              {/* Top row - dates */}
+              <div className="h-10" /> {/* Empty cell for top-left corner */}
+              {dates.map(date => (
+                <div key={date} className="h-10 flex items-center justify-center text-xs">
+                  {formatDate(date)}
+                </div>
+              ))}
+              
+              {/* Hour rows */}
+              {hours.map(hour => (
+                <React.Fragment key={hour}>
+                  <div className="flex items-center justify-end pr-2 h-10 text-xs text-muted-foreground">
+                    {formatHour(hour)}
+                  </div>
+                  {dates.map(date => {
+                    const score = getProductivityScore(date, hour);
+                    return (
+                      <div key={`${date}-${hour}`} className="p-1">
+                        <div
+                          className={`w-full h-8 rounded-sm ${getColorForScore(score)} flex items-center justify-center text-xs font-medium text-white`}
+                          title={score !== null ? `${formatDate(date)} at ${formatHour(hour)}: ${score}% productivity` : 'No data'}
+                        >
+                          {score !== null ? score : ''}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
-          
-          {hours.map(hour => (
-            <React.Fragment key={hour}>
-              <div className="text-xs text-right pr-2">
-                {formatHour(hour)}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {daysOfWeek.map((day, dayIndex) => {
-                  const intensity = getIntensityForHour(dayIndex, hour);
-                  return (
-                    <TooltipProvider key={dayIndex}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div 
-                            className={`h-4 rounded-sm ${getColorClass(intensity)}`}
-                            aria-label={`${day} at ${formatHour(hour)}: ${getIntensityPercentage(intensity)} focus`}
-                          />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {getTooltipContent(day, hour, intensity)}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  );
-                })}
-              </div>
-            </React.Fragment>
-          ))}
+        </div>
+        
+        <div className="flex items-center justify-center mt-4 gap-2 text-xs">
+          <span>Productivity: </span>
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-3 bg-red-300 rounded-sm" /> <span>Low</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-3 bg-yellow-300 rounded-sm" /> <span>Medium</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-3 bg-green-400 rounded-sm" /> <span>High</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-3 bg-green-500 rounded-sm" /> <span>Excellent</span>
+          </div>
         </div>
       </CardContent>
     </Card>

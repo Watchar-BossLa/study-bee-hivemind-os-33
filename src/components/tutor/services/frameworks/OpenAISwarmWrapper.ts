@@ -1,117 +1,87 @@
 
-import { swarmMetricsService } from '../metrics/SwarmMetricsService';
+import type { SpecializedAgent } from '../../types/agents';
+import { SwarmMetricsService } from '../metrics/SwarmMetricsService';
 
-/**
- * Wrapper class for OpenAI Swarm integration 
- * For implementing TSB Section 18 - Swarm parallel execution capabilities
- */
+export interface SwarmAgentResponse {
+  agentId: string;
+  response: string;
+  modelUsed: string;
+  confidenceScore: number;
+  processingTimeMs: number;
+}
+
 export class OpenAISwarmWrapper {
-  private apiKey: string | undefined;
-
-  constructor(apiKey?: string) {
-    this.apiKey = apiKey;
-  }
-
-  /**
-   * Run a set of tasks in parallel using OpenAI Swarm
-   * @param tasks Array of tasks to be executed in parallel
-   * @param concurrency Optional concurrency limit
-   * @param councilId Optional council ID for metrics collection
-   * @param topic Optional topic for metrics collection
-   * @returns Array of results corresponding to each task
-   */
-  async runSwarm(
-    tasks: any[],
-    concurrency: number = 5,
-    councilId?: string,
-    topic?: string
-  ): Promise<string[]> {
-    const startTime = Date.now();
-    const agentCount = Math.min(tasks.length, concurrency);
-    
-    console.log(`OpenAISwarmWrapper.runSwarm: ${tasks.length} tasks with concurrency ${concurrency}`);
-    
-    try {
-      // Simulating swarm processing - this would be replaced with actual OpenAI API call
-      // This is a placeholder for the actual implementation
-      await new Promise(resolve => setTimeout(resolve, 300 * tasks.length / concurrency));
-      
-      // Generate simulated results
-      const results = tasks.map((task, index) => {
-        return `Result for task ${index}: ${JSON.stringify(task).substring(0, 50)}...`;
-      });
-      
-      const endTime = Date.now();
-      const executionTime = endTime - startTime;
-      const estimatedTokenUsage = tasks.length * 150; // Rough estimation
-      
-      // Record metrics about this swarm execution
-      swarmMetricsService.recordSwarmExecution(
-        tasks.length,
-        agentCount,
-        executionTime,
-        estimatedTokenUsage,
-        councilId,
-        topic
-      );
-      
-      console.log(`OpenAISwarmWrapper execution completed in ${executionTime}ms`);
-      
-      return results;
-    } catch (error) {
-      const endTime = Date.now();
-      const executionTime = endTime - startTime;
-      
-      // Record metrics even for failed executions
-      swarmMetricsService.recordSwarmExecution(
-        tasks.length,
-        agentCount,
-        executionTime,
-        0, // No tokens used for failed execution
-        councilId,
-        topic
-      );
-      
-      console.error('Error in OpenAISwarmWrapper.runSwarm:', error);
-      throw new Error(`OpenAI Swarm execution failed: ${(error as Error).message}`);
-    }
-  }
+  private metricsService?: SwarmMetricsService;
   
-  /**
-   * Process a list of agents in parallel with a message
-   * @param agents Array of agents to process in parallel
-   * @param message The message to process
-   * @param context Additional context for processing
-   * @returns Array of responses from the agents
-   */
-  async processParallel(
-    agents: any[],
+  constructor(metricsService?: SwarmMetricsService) {
+    this.metricsService = metricsService;
+    console.log('OpenAI Swarm Wrapper initialized for parallel task execution');
+  }
+
+  public async processParallel(
+    agents: SpecializedAgent[],
     message: string,
     context: Record<string, unknown>
-  ): Promise<any[]> {
-    const tasks = agents.map(agent => ({
-      agent,
-      message,
-      context
-    }));
+  ): Promise<SwarmAgentResponse[]> {
+    console.log(`Processing ${agents.length} agents in parallel with OpenAI Swarm`);
     
     const startTime = Date.now();
-    const results = await this.runSwarm(tasks, 5, "parallel-processing", "agent-responses");
+    
+    // Create a promise for each agent to simulate parallel execution
+    const processingPromises = agents.map(async (agent) => {
+      // Simulate different processing times for parallel execution
+      const processingTime = 300 + Math.random() * 700;
+      await new Promise(resolve => setTimeout(resolve, processingTime));
+      
+      return {
+        agentId: agent.id,
+        response: `${agent.name} parallel response for: ${message}`,
+        modelUsed: 'o3-code-mini',
+        confidenceScore: 0.7 + Math.random() * 0.25,
+        processingTimeMs: processingTime
+      };
+    });
+    
+    const results = await Promise.all(processingPromises);
     const endTime = Date.now();
+    const duration = endTime - startTime;
     
-    console.log(`Parallel processing completed in ${endTime - startTime}ms`);
+    // Record metrics if service is available
+    if (this.metricsService) {
+      this.metricsService.recordSwarmExecution(
+        agents.length, 
+        duration,
+        results.length / agents.length // Success rate
+      );
+    }
     
-    return results.map((result, index) => ({
-      agentId: agents[index].id || `agent-${index}`,
-      response: result,
-      timestamp: new Date()
-    }));
+    return results;
   }
-  
-  /**
-   * Clear accumulated metrics
-   */
-  clearMetrics(): void {
-    swarmMetricsService.clearMetrics();
+
+  public async runSwarm(tasks: string[]): Promise<string[]> {
+    console.log(`Running swarm with ${tasks.length} tasks`);
+    
+    const startTime = Date.now();
+    
+    // Simulate parallel task execution
+    const results = await Promise.all(tasks.map(async (task) => {
+      const processingTime = 200 + Math.random() * 500;
+      await new Promise(resolve => setTimeout(resolve, processingTime));
+      return `Result for task: ${task}`;
+    }));
+    
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    
+    // Record metrics if service is available
+    if (this.metricsService) {
+      this.metricsService.recordSwarmExecution(
+        tasks.length,
+        duration,
+        results.length / tasks.length // Success rate
+      );
+    }
+    
+    return results;
   }
 }

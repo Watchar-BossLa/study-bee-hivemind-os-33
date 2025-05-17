@@ -1,3 +1,4 @@
+
 import { SpecializedAgent } from '../../types/agents';
 import { CouncilVote } from '../../types/councils';
 
@@ -117,6 +118,8 @@ export class VoteWeightCalculator {
    * Determine if two terms are semantically related
    */
   private areRelated(term1: string, term2: string): boolean {
+    // Simple implementation - check for common substrings
+    // In a real implementation, this could use embeddings or a knowledge graph
     const minLength = Math.min(term1.length, term2.length);
     const commonLength = 3; // Minimum common substring length to consider related
     

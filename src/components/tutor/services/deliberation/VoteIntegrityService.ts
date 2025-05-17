@@ -1,57 +1,115 @@
 
 import { CouncilVote } from '../../types/councils';
 
+interface VoteSecurityContext {
+  voteHash: string;
+  timestamp: number;
+  agentId: string;
+}
+
+/**
+ * Ensures vote integrity and detects potentially malicious voting behavior
+ */
 export class VoteIntegrityService {
+  private voteSecurityContext: Map<string, VoteSecurityContext> = new Map();
+  
   /**
-   * Identify suspicious votes based on patterns and content
+   * Generate a secure hash for a vote to prevent tampering
    */
-  public identifySuspiciousVotes(votes: CouncilVote[], topic: string): CouncilVote[] {
-    // Implementation to detect suspicious votes
-    return votes.filter(vote => {
-      // Check for extremely high or low confidence (potential manipulation)
-      if (vote.confidence > 0.99 || vote.confidence < 0.01) {
-        return true;
-      }
-
-      // Check for lack of reasoning
-      if (!vote.reasoning || vote.reasoning.trim().length < 5) {
-        return true;
-      }
-
-      // Check for suspicious keyword patterns
-      const suspiciousPatterns = ['hack', 'override', 'bypass', 'exploit', 'trick'];
-      if (suspiciousPatterns.some(pattern => vote.suggestion.toLowerCase().includes(pattern) || 
-          vote.reasoning.toLowerCase().includes(pattern))) {
-        return true;
-      }
-
-      return false;
+  public secureVote(vote: CouncilVote): string {
+    // Create a simple hash of the vote details
+    // In production, this would use a proper cryptographic hash
+    const voteString = `${vote.agentId}:${vote.suggestion}:${vote.confidence}`;
+    const hash = this.simpleHash(voteString);
+    
+    // Store the security context
+    this.voteSecurityContext.set(vote.agentId, {
+      voteHash: hash,
+      timestamp: Date.now(),
+      agentId: vote.agentId
     });
+    
+    return hash;
   }
-
+  
   /**
-   * Validate vote structure integrity
+   * Verify that a vote hasn't been tampered with
    */
-  public validateVoteIntegrity(vote: CouncilVote): boolean {
-    // Simple validation to ensure vote has all required fields
-    return Boolean(
-      vote.agentId && 
-      typeof vote.confidence === 'number' && 
-      vote.suggestion && 
-      vote.reasoning
-    );
+  public verifyVote(vote: CouncilVote): boolean {
+    const context = this.voteSecurityContext.get(vote.agentId);
+    
+    if (!context) {
+      return false; // No security context found
+    }
+    
+    // Re-generate hash and compare
+    const voteString = `${vote.agentId}:${vote.suggestion}:${vote.confidence}`;
+    const hash = this.simpleHash(voteString);
+    
+    return hash === context.voteHash;
   }
-
+  
   /**
-   * Validate an array of votes
+   * Validate a collection of votes for integrity
    */
   public validateVotes(votes: CouncilVote[]): boolean {
-    // Check if the array is valid
+    // Check if votes array is valid
     if (!Array.isArray(votes) || votes.length === 0) {
       return false;
     }
     
-    // Check each vote for integrity
-    return votes.every(vote => this.validateVoteIntegrity(vote));
+    // Validate each vote has required fields
+    for (const vote of votes) {
+      if (!vote.agentId || typeof vote.confidence !== 'number' || !vote.suggestion) {
+        return false;
+      }
+      
+      // Check confidence is within valid range
+      if (vote.confidence < 0 || vote.confidence > 1) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  /**
+   * Detect outlier votes that might be attempts at vote manipulation
+   */
+  public detectOutliers(votes: CouncilVote[]): CouncilVote[] {
+    if (votes.length < 3) {
+      return []; // Not enough votes to detect outliers
+    }
+    
+    // Calculate average confidence
+    const avgConfidence = votes.reduce(
+      (sum, vote) => sum + vote.confidence, 0
+    ) / votes.length;
+    
+    // Calculate standard deviation
+    const squaredDiffs = votes.map(vote => 
+      Math.pow(vote.confidence - avgConfidence, 2)
+    );
+    const avgSquaredDiff = squaredDiffs.reduce((sum, diff) => sum + diff, 0) / votes.length;
+    const stdDev = Math.sqrt(avgSquaredDiff);
+    
+    // Mark votes with confidence more than 2 standard deviations from mean as outliers
+    return votes.filter(vote => 
+      Math.abs(vote.confidence - avgConfidence) > stdDev * 2
+    );
+  }
+  
+  /**
+   * Get a simple hash for a string (for demonstration purposes)
+   * In production, use a proper cryptographic hash function
+   */
+  private simpleHash(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash.toString(36); // Convert to base-36 string
   }
 }

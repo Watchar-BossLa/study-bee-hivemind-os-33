@@ -1,13 +1,13 @@
+
 import { SpecializedAgent } from '../types/agents';
 import { CouncilDecision } from '../types/councils';
 import { VotingService } from './deliberation/VotingService';
 import { ConsensusService } from './deliberation/ConsensusService';
+import { Plan } from './frameworks/CrewAIPlanner';
 import { VoteHistoryStorage } from './deliberation/VoteHistoryStorage';
 import { VoteIntegrityService } from './deliberation/VoteIntegrityService';
 import { DeliberationProcessor } from './deliberation/DeliberationProcessor';
 import { DecisionBuilder } from './deliberation/DecisionBuilder';
-import { Plan as VotingPlan } from './deliberation/types/votingTypes';
-import { Plan as CrewAIPlan } from './frameworks/CrewAIPlanner';
 
 export interface DeliberationOptions {
   timeLimit?: number; // ms
@@ -38,7 +38,7 @@ export class DeliberationService {
   public async deliberate(
     council: SpecializedAgent[],
     topic: string,
-    context: Record<string, unknown>,
+    context: Record<string, any>,
     options?: DeliberationOptions
   ): Promise<CouncilDecision> {
     console.log(`Starting deliberation on topic: ${topic}`);
@@ -62,7 +62,7 @@ export class DeliberationService {
     const decision = this.decisionBuilder.createDecision(
       topic,
       votes,
-      suggestion || 'No consensus reached',
+      suggestion,
       confidence,
       suspiciousVotes
     );
@@ -82,26 +82,13 @@ export class DeliberationService {
   public async deliberateWithPlan(
     council: SpecializedAgent[],
     topic: string,
-    context: Record<string, unknown>,
-    plan: VotingPlan,
+    context: Record<string, any>,
+    plan: Plan,
     options?: DeliberationOptions
   ): Promise<CouncilDecision> {
-    console.log(`Deliberating with plan: ${plan.summary}`);
+    console.log(`Deliberating with CrewAI plan: ${plan.title}`);
     
     const startTime = Date.now();
-    
-    // Ensure the plan has the required properties for CrewAIPlan compatibility
-    const compatiblePlan: CrewAIPlan = {
-      id: plan.id, // This is now required in both interfaces
-      title: plan.title, // This is now required in both interfaces
-      type: plan.type,
-      summary: plan.summary,
-      tasks: plan.tasks ? plan.tasks.map(task => ({
-        id: task.taskId,
-        description: task.description,
-      })) : [],
-      members: [] // Default empty array if not provided
-    };
     
     // Process the deliberation with plan
     const { votes, suggestion, confidence, suspiciousVotes } = 
@@ -111,13 +98,13 @@ export class DeliberationService {
     let decision = this.decisionBuilder.createDecision(
       topic,
       votes,
-      suggestion || 'No consensus reached',
+      suggestion,
       confidence,
       suspiciousVotes
     );
     
     // Add plan metadata to the decision
-    decision = this.decisionBuilder.addPlanMetadata(decision, compatiblePlan);
+    decision = this.decisionBuilder.addPlanMetadata(decision, plan);
 
     // Add to history
     this.decisions.push(decision);

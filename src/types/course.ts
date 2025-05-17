@@ -22,6 +22,4 @@ export interface CourseFilterProps {
   onClearFilters: () => void;
   categories: string[];
   levels: string[];
-  showBookmarked: boolean;
-  onToggleBookmarked: (value: boolean) => void;
 }

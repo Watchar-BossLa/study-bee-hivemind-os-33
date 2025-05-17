@@ -1,180 +1,215 @@
 
-import React, { useState, useEffect } from 'react';
-import { Helmet } from 'react-helmet-async';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { SwarmVisualization } from '../components/tutor/components/dashboard/SwarmVisualization';
-import { SwarmMetricsChart } from '../components/tutor/components/dashboard/SwarmMetricsChart';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Activity, BarChart3, Brain, Gauge, MonitorPlay, Network } from 'lucide-react';
-import { swarmMetricsService, SwarmMetricsRecord } from '../components/tutor/services/metrics/SwarmMetricsService';
+import React, { useEffect, useState } from 'react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SwarmVisualization } from '@/components/tutor/components/dashboard/SwarmVisualization';
+import { quorumForge } from '@/components/tutor/services/QuorumForge';
+import { Toaster } from '@/components/ui/toaster';
+import { SwarmMetricsRecord } from '@/components/tutor/services/metrics/SwarmMetricsService';
 
-const QuorumDashboard: React.FC = () => {
-  const { toast } = useToast();
-  const [metricsData, setMetricsData] = useState<SwarmMetricsRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+const QuorumDashboard = () => {
+  const [swarmMetrics, setSwarmMetrics] = useState<SwarmMetricsRecord[]>([]);
+  const [langchainQuotaStats, setLangchainQuotaStats] = useState<Record<string, any>>({});
+  const [activeAutogenSessions, setActiveAutogenSessions] = useState<string[]>([]);
   
   useEffect(() => {
-    // Generate some mock data for demonstration purposes
-    generateMockMetricsData();
-    setIsLoading(false);
-  }, []);
-
-  const generateMockMetricsData = () => {
-    // Add a few sample metrics if none exist
-    if (swarmMetricsService.getMetricsRecords().length === 0) {
-      const now = Date.now();
-      for (let i = 0; i < 5; i++) {
-        const taskCount = Math.floor(Math.random() * 20) + 5;
-        const agentCount = Math.floor(Math.random() * 5) + 1;
-        swarmMetricsService.recordSwarmExecution(
-          taskCount,
-          agentCount,
-          Math.floor(Math.random() * 2000) + 500, // execution time between 500-2500ms
-          taskCount * 150, // estimated token usage
-          `council-${i % 3 + 1}`,
-          `topic-${i % 4 + 1}`
-        );
-      }
-    }
-    setMetricsData(swarmMetricsService.getMetricsRecords());
-  };
-  
-  const handleRefresh = () => {
-    setIsLoading(true);
-    generateMockMetricsData();
-    setIsLoading(false);
+    // This would normally fetch real data from the services
+    // For now, we'll generate mock data
     
-    toast({
-      title: "Dashboard Refreshed",
-      description: "The QuorumForge dashboard data has been refreshed.",
+    const mockSwarmMetrics: SwarmMetricsRecord[] = Array.from({ length: 8 }, (_, i) => ({
+      timestamp: new Date(Date.now() - (i * 3600000)),
+      taskCount: Math.floor(Math.random() * 12) + 4,
+      durationMs: Math.floor(Math.random() * 800) + 200,
+      successRate: 0.7 + (Math.random() * 0.3),
+      fanoutRatio: Math.random() * 3 + 1
+    }));
+    
+    setSwarmMetrics(mockSwarmMetrics);
+    
+    setLangchainQuotaStats({
+      'tutor-chain': { current: 42, limit: 150, percentage: 0.28 },
+      'assessment-chain': { current: 18, limit: 75, percentage: 0.24 },
+      'cot-reasoning': { current: 36, limit: 50, percentage: 0.72 }
     });
-  };
+    
+    setActiveAutogenSessions(['session-123', 'session-456']);
+    
+  }, []);
   
   return (
-    <div className="container mx-auto py-6 space-y-8">
-      <Helmet>
-        <title>QuorumForge Dashboard | Study Bee</title>
-        <meta name="description" content="Monitor and control the QuorumForge agent orchestration system" />
-      </Helmet>
-      
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">QuorumForge Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Monitor and manage the autonomous agent system</p>
+    <div className="min-h-screen flex flex-col bg-background">
+      <Navbar />
+      <main className="flex-grow container max-w-7xl mx-auto px-4 py-8 mb-8">
+        <div className="mb-8 space-y-4">
+          <h1 className="text-3xl font-bold">QuorumForge OS Dashboard</h1>
+          <p className="text-muted-foreground">Monitor and manage agent frameworks, services, and performance metrics.</p>
         </div>
-        <Button onClick={handleRefresh}>Refresh Data</Button>
-      </div>
-      
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-2">
-          <TabsTrigger value="overview" className="flex items-center gap-1">
-            <Gauge className="w-4 h-4" />
-            <span className="hidden md:inline">Overview</span>
-          </TabsTrigger>
-          <TabsTrigger value="agents" className="flex items-center gap-1">
-            <Brain className="w-4 h-4" />
-            <span className="hidden md:inline">Agents</span>
-          </TabsTrigger>
-          <TabsTrigger value="swarms" className="flex items-center gap-1">
-            <Network className="w-4 h-4" />
-            <span className="hidden md:inline">Swarms</span>
-          </TabsTrigger>
-          <TabsTrigger value="metrics" className="flex items-center gap-1">
-            <BarChart3 className="w-4 h-4" />
-            <span className="hidden md:inline">Metrics</span>
-          </TabsTrigger>
-          <TabsTrigger value="activities" className="flex items-center gap-1">
-            <Activity className="w-4 h-4" />
-            <span className="hidden md:inline">Activities</span>
-          </TabsTrigger>
-          <TabsTrigger value="logs" className="flex items-center gap-1">
-            <MonitorPlay className="w-4 h-4" />
-            <span className="hidden md:inline">Logs</span>
-          </TabsTrigger>
-        </TabsList>
         
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>System Status</CardTitle>
-                <CardDescription>Current state of QuorumForge</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span>Active Councils:</span>
-                    <span className="font-semibold">4</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Active Agents:</span>
-                    <span className="font-semibold">16</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Pending Tasks:</span>
-                    <span className="font-semibold">7</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>System Load:</span>
-                    <span className="font-semibold text-green-600">Low</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <SwarmVisualization metrics={metricsData} isLoading={isLoading} />
-          </div>
+        <Tabs defaultValue="overview">
+          <TabsList className="grid grid-cols-4 mb-8">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="swarm">Swarm Metrics</TabsTrigger>
+            <TabsTrigger value="quotas">Framework Quotas</TabsTrigger>
+            <TabsTrigger value="config">Configuration</TabsTrigger>
+          </TabsList>
           
-          <SwarmMetricsChart hoursBack={12} />
-        </TabsContent>
-        
-        <TabsContent value="swarms" className="space-y-6">
-          <SwarmVisualization metrics={metricsData} isLoading={isLoading} className="h-[400px]" />
-          <SwarmMetricsChart />
-        </TabsContent>
-        
-        <TabsContent value="metrics" className="space-y-6">
-          <SwarmMetricsChart hoursBack={24} limit={100} />
-        </TabsContent>
-        
-        <TabsContent value="agents">
-          <Card>
-            <CardHeader>
-              <CardTitle>Agent Status</CardTitle>
-              <CardDescription>Performance and status of specialized agents</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Agent information will be displayed here</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="activities">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activities</CardTitle>
-              <CardDescription>Latest agent and council activities</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Activity information will be displayed here</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="logs">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Logs</CardTitle>
-              <CardDescription>QuorumForge execution logs</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>System logs will be displayed here</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="overview">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Active Frameworks</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    <li className="flex items-center justify-between">
+                      <span>OpenAI Swarm</span>
+                      <span className="text-green-500 font-medium">Active</span>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span>LangChain Integration</span>
+                      <span className="text-green-500 font-medium">Active</span>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span>Autogen</span>
+                      <span className="text-green-500 font-medium">Active</span>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span>CrewAI Planner</span>
+                      <span className="text-green-500 font-medium">Active</span>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span>A2A Hub</span>
+                      <span className="text-green-500 font-medium">Active</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Active Autogen Sessions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {activeAutogenSessions.length > 0 ? (
+                    <ul className="space-y-2">
+                      {activeAutogenSessions.map(sessionId => (
+                        <li key={sessionId} className="flex items-center justify-between">
+                          <span>{sessionId}</span>
+                          <span className="text-blue-500 font-medium">Running</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-muted-foreground">No active sessions</p>
+                  )}
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>System Status</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="font-medium">OAuth Status</p>
+                      <p className="text-green-500">Connected</p>
+                    </div>
+                    <div>
+                      <p className="font-medium">Schema Validator</p>
+                      <p className="text-green-500">Online</p>
+                    </div>
+                    <div>
+                      <p className="font-medium">Storage</p>
+                      <p className="text-green-500">Operational</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="swarm">
+            <div className="space-y-6">
+              <SwarmVisualization metrics={swarmMetrics} />
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Swarm Task Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-60 flex items-center justify-center">
+                    <p className="text-muted-foreground">Task distribution chart would appear here</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="quotas">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>LangChain Quota Usage</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {Object.entries(langchainQuotaStats).map(([chainId, stats]) => (
+                      <div key={chainId}>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-medium">{chainId}</p>
+                          <p className="text-sm">{stats.current}/{stats.limit} ({Math.round(stats.percentage * 100)}%)</p>
+                        </div>
+                        <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full ${stats.percentage > 0.8 ? 'bg-red-500' : 'bg-blue-500'}`} 
+                            style={{ width: `${stats.percentage * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="config">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Framework Configuration</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">Configure framework integrations and thresholds</p>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="font-medium mb-2">A2A OAuth Configuration</p>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div><span className="text-muted-foreground">Domain:</span> studybee-dev.us.auth0.com</div>
+                        <div><span className="text-muted-foreground">Audience:</span> a2a-api</div>
+                        <div><span className="text-muted-foreground">Client ID:</span> agent-to-agent-client</div>
+                        <div><span className="text-muted-foreground">Grant Type:</span> client_credentials</div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <p className="font-medium mb-2">Autogen Turn Guard</p>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div><span className="text-muted-foreground">Default Max Turns:</span> 6</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </main>
+      <Footer />
+      <Toaster />
     </div>
   );
 };

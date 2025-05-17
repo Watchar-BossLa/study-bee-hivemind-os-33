@@ -9,7 +9,7 @@ import { LLMRouter } from '../LLMRouter';
 import { LangChainQuotaGuard } from '../frameworks/LangChainQuotaGuard';
 import { AutogenTurnGuard } from '../frameworks/AutogenTurnGuard';
 import { A2AOAuthHandler } from '../frameworks/A2AOAuthHandler';
-import { swarmMetricsService } from '../metrics/SwarmMetricsService';
+import { SwarmMetricsService } from '../metrics/SwarmMetricsService';
 import { A2AHub, createA2AHub } from '../frameworks/A2AHub';
 import { MCPCore } from './MCPCore';
 
@@ -25,12 +25,14 @@ export class FrameworkManager {
   private langChainQuotaGuard: LangChainQuotaGuard;
   private autogenTurnGuard: AutogenTurnGuard;
   private a2aOAuthHandler: A2AOAuthHandler;
+  private swarmMetricsService: SwarmMetricsService;
   private mcpCore?: MCPCore;
   
   constructor(councilService: CouncilService, router: LLMRouter, mcpCore?: MCPCore) {
     this.mcpCore = mcpCore;
     
     // Initialize metrics and monitoring services
+    this.swarmMetricsService = new SwarmMetricsService();
     this.langChainQuotaGuard = new LangChainQuotaGuard();
     this.autogenTurnGuard = new AutogenTurnGuard();
     this.a2aOAuthHandler = new A2AOAuthHandler();
@@ -92,8 +94,8 @@ export class FrameworkManager {
     return this.autogenTurnGuard;
   }
   
-  public getSwarmMetricsService() {
-    return swarmMetricsService;
+  public getSwarmMetricsService(): SwarmMetricsService {
+    return this.swarmMetricsService;
   }
   
   public getMCPCore(): MCPCore | undefined {
