@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,15 +9,21 @@ import { useToast } from '@/hooks/use-toast';
 
 interface CourseGridProps {
   courses: CourseProps[];
+  isBookmarkedMap?: Record<string, boolean>;
+  onToggleBookmark?: (course: CourseProps) => Promise<boolean>;
 }
 
-const CourseGrid: React.FC<CourseGridProps> = ({ courses: initialCourses }) => {
+const CourseGrid: React.FC<CourseGridProps> = ({ 
+  courses: initialCourses,
+  isBookmarkedMap = {},
+  onToggleBookmark 
+}) => {
   const [sortOption, setSortOption] = useState<string>('popular');
   const [courses, setCourses] = useState<CourseProps[]>(initialCourses);
   const { toast } = useToast();
 
   // Sort courses when sort option changes
-  React.useEffect(() => {
+  useEffect(() => {
     const sortedCourses = [...initialCourses];
     
     switch (sortOption) {
@@ -73,7 +79,12 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses: initialCourses }) => {
         {courses.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((course) => (
-              <CourseCard key={course.id} course={course} />
+              <CourseCard 
+                key={course.id} 
+                course={course}
+                isBookmarked={isBookmarkedMap[course.id]}
+                onToggleBookmark={onToggleBookmark}
+              />
             ))}
           </div>
         ) : (

@@ -6,6 +6,7 @@ export const useCoursesFilter = (coursesData: CourseProps[]) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+  const [showBookmarked, setShowBookmarked] = useState(false);
 
   const filteredCourses = coursesData.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -20,6 +21,7 @@ export const useCoursesFilter = (coursesData: CourseProps[]) => {
     setSearchTerm('');
     setSelectedCategory(null);
     setSelectedLevel(null);
+    setShowBookmarked(false);
   }, []);
 
   return {
@@ -29,6 +31,8 @@ export const useCoursesFilter = (coursesData: CourseProps[]) => {
     setSelectedCategory,
     selectedLevel,
     setSelectedLevel,
+    showBookmarked,
+    setShowBookmarked,
     filteredCourses,
     clearFilters
   };

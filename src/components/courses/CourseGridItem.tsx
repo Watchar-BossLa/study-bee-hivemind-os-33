@@ -3,14 +3,30 @@ import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Book, Users } from "lucide-react";
+import { Clock, Book, Users, Bookmark } from "lucide-react";
 import { CourseProps } from '@/types/course';
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface CourseGridItemProps {
   course: CourseProps;
+  isBookmarked?: boolean;
+  onToggleBookmark?: (course: CourseProps) => Promise<boolean>;
 }
 
-const CourseGridItem = ({ course }: CourseGridItemProps) => {
+const CourseGridItem = ({ 
+  course, 
+  isBookmarked = false,
+  onToggleBookmark
+}: CourseGridItemProps) => {
+  const handleBookmarkClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onToggleBookmark) {
+      await onToggleBookmark(course);
+    }
+  };
+
   return (
     <Card className="overflow-hidden transition-all hover:shadow-md">
       <div className="aspect-video w-full bg-bee-light relative overflow-hidden">
@@ -26,6 +42,22 @@ const CourseGridItem = ({ course }: CourseGridItemProps) => {
           </div>
         )}
         <Badge className="absolute top-2 right-2">{course.level}</Badge>
+        
+        {onToggleBookmark && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "absolute top-2 left-2 h-8 w-8 rounded-full bg-white/80 hover:bg-white",
+              "transition-all duration-200",
+              isBookmarked && "text-primary hover:text-primary-foreground"
+            )}
+            onClick={handleBookmarkClick}
+            title={isBookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
+          >
+            <Bookmark className={cn("h-4 w-4", isBookmarked && "fill-current")} />
+          </Button>
+        )}
       </div>
       
       <CardHeader>

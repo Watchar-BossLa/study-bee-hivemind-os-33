@@ -3,7 +3,9 @@ import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, X } from "lucide-react";
+import { Search, X, Bookmark } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface CourseFiltersProps {
   searchTerm: string;
@@ -12,9 +14,12 @@ interface CourseFiltersProps {
   onCategoryChange: (value: string) => void;
   selectedLevel: string | null;
   onLevelChange: (value: string) => void;
+  showBookmarked: boolean;
+  onToggleBookmarked: () => void;
   onClearFilters: () => void;
   categories: string[];
   levels: string[];
+  bookmarkCount?: number;
 }
 
 const CourseFilters: React.FC<CourseFiltersProps> = ({
@@ -24,11 +29,14 @@ const CourseFilters: React.FC<CourseFiltersProps> = ({
   onCategoryChange,
   selectedLevel,
   onLevelChange,
+  showBookmarked,
+  onToggleBookmarked,
   onClearFilters,
   categories,
-  levels
+  levels,
+  bookmarkCount = 0
 }) => {
-  const showClearButton = searchTerm || selectedCategory || selectedLevel;
+  const showClearButton = searchTerm || selectedCategory || selectedLevel || showBookmarked;
 
   return (
     <section className="py-6 border-b">
@@ -44,9 +52,9 @@ const CourseFilters: React.FC<CourseFiltersProps> = ({
             />
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             <Select value={selectedCategory || ''} onValueChange={onCategoryChange}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -58,7 +66,7 @@ const CourseFilters: React.FC<CourseFiltersProps> = ({
             </Select>
             
             <Select value={selectedLevel || ''} onValueChange={onLevelChange}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Level" />
               </SelectTrigger>
               <SelectContent>
@@ -68,6 +76,18 @@ const CourseFilters: React.FC<CourseFiltersProps> = ({
                 ))}
               </SelectContent>
             </Select>
+            
+            <Button 
+              variant={showBookmarked ? "default" : "outline"} 
+              className="flex items-center gap-2 transition-all"
+              onClick={onToggleBookmarked}
+            >
+              <Bookmark className={`h-4 w-4 ${showBookmarked ? 'fill-white' : ''}`} />
+              Saved
+              {bookmarkCount > 0 && showBookmarked && (
+                <Badge variant="secondary" className="ml-1 bg-white text-primary">{bookmarkCount}</Badge>
+              )}
+            </Button>
             
             {showClearButton && (
               <Button variant="ghost" onClick={onClearFilters} className="flex items-center gap-1">

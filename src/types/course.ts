@@ -10,6 +10,7 @@ export interface CourseProps {
   students?: number;
   duration?: string;
   image?: string;
+  isBookmarked?: boolean;
 }
 
 export interface CourseFilterProps {
@@ -19,7 +20,10 @@ export interface CourseFilterProps {
   onCategoryChange: (value: string | null) => void;
   selectedLevel: string | null;
   onLevelChange: (value: string | null) => void;
+  showBookmarked: boolean;
+  onToggleBookmarked: () => void;
   onClearFilters: () => void;
   categories: string[];
   levels: string[];
+  bookmarkCount?: number;
 }

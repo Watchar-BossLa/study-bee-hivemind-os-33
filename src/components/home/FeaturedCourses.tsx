@@ -5,12 +5,25 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CourseCard from '@/components/CourseCard';
 import { CourseProps } from '@/types/course';
+import { useCoursesBookmark } from '@/hooks/useCoursesBookmark';
+import { Toaster } from '@/components/ui/toaster';
 
 interface FeaturedCoursesProps {
   courses: CourseProps[];
 }
 
 const FeaturedCourses: React.FC<FeaturedCoursesProps> = ({ courses }) => {
+  const { toggleBookmark, bookmarkedCourses } = useCoursesBookmark();
+  
+  // Create a map of bookmarked courses for faster lookup
+  const bookmarkedMap = React.useMemo(() => {
+    const map: Record<string, boolean> = {};
+    bookmarkedCourses.forEach(id => {
+      map[id] = true;
+    });
+    return map;
+  }, [bookmarkedCourses]);
+  
   return (
     <section className="py-16 bg-white">
       <div className="container">
@@ -29,10 +42,16 @@ const FeaturedCourses: React.FC<FeaturedCoursesProps> = ({ courses }) => {
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course) => (
-            <CourseCard key={course.id} course={course} />
+            <CourseCard 
+              key={course.id} 
+              course={course} 
+              isBookmarked={bookmarkedMap[course.id]}
+              onToggleBookmark={toggleBookmark}
+            />
           ))}
         </div>
       </div>
+      <Toaster />
     </section>
   );
 };
