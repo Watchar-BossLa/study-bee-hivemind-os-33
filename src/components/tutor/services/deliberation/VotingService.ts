@@ -9,6 +9,8 @@ import { VoteCollectionService } from './VoteCollectionService';
 import { PlanVotingService } from './PlanVotingService';
 import { Plan, VotingOptions } from './types/voting-types';
 
+export { VotingOptions } from './types/voting-types';
+
 export class VotingService {
   private historyStorage: VoteHistoryStorage;
   private weightCalculator: VoteWeightCalculator;

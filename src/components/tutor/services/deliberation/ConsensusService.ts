@@ -1,11 +1,11 @@
 
 import { CouncilVote, CouncilDecision } from '../../types/councils';
-import { ConsensusCalculator, ConsensusOptions } from './ConsensusCalculator';
+import { ConsensusCalculator, ConsensusHistoryService, ConsensusOptions } from './consensus';
 import { VoteIntegrityService } from './VoteIntegrityService';
 import { VoteHistoryStorage } from './VoteHistoryStorage';
 import { VoteWeightCalculator } from './VoteWeightCalculator';
 
-export type { ConsensusOptions } from './ConsensusCalculator';
+export type { ConsensusOptions } from './consensus';
 
 interface ProcessVoteResult {
   consensus: string;
@@ -20,7 +20,7 @@ interface ProcessVoteResult {
 export class ConsensusService {
   private calculator: ConsensusCalculator;
   private integrityService: VoteIntegrityService;
-  private historyStorage: VoteHistoryStorage;
+  private historyService: ConsensusHistoryService;
   private weightCalculator: VoteWeightCalculator;
 
   constructor(
@@ -31,7 +31,7 @@ export class ConsensusService {
   ) {
     this.calculator = calculator || new ConsensusCalculator();
     this.integrityService = integrityService || new VoteIntegrityService();
-    this.historyStorage = historyStorage || new VoteHistoryStorage();
+    this.historyService = new ConsensusHistoryService(historyStorage);
     this.weightCalculator = weightCalculator || new VoteWeightCalculator();
   }
 
@@ -90,7 +90,7 @@ export class ConsensusService {
     );
     
     // Record votes in history
-    this.historyStorage.recordVotes(topicId, votes, suggestion, confidence);
+    this.historyService.recordConsensusResult(topicId, votes, suggestion, confidence);
     
     return {
       consensus: suggestion,
@@ -103,6 +103,6 @@ export class ConsensusService {
    * Retrieve historical consensus data for a topic
    */
   public async getHistoricalConsensus(topicId: string): Promise<CouncilDecision[]> {
-    return this.historyStorage.getVoteHistory(topicId);
+    return this.historyService.getHistoricalConsensus(topicId);
   }
 }

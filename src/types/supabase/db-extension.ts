@@ -1,10 +1,9 @@
 
 // This file extends the Database interface with our custom tables
-import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
+import { Database as SupabaseDatabase } from '@/integrations/supabase/types';
 import { ArenaChatMessagesTable } from './arena-chat';
 import { ArenaTypingStatusTable } from './arena-typing';
 
-// Extend the Database interface without conflict
 declare module '@/integrations/supabase/types' {
   interface Database {
     public: {

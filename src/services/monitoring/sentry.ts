@@ -1,70 +1,79 @@
 
 import * as Sentry from '@sentry/react';
-import { CaptureContext } from '@sentry/types';
-import { logger } from '../logger/logger';
 
-// Function to initialize Sentry
-export const initSentry = (): void => {
-  if (process.env.NODE_ENV === 'production' && import.meta.env.VITE_SENTRY_DSN) {
-    try {
-      Sentry.init({
-        dsn: import.meta.env.VITE_SENTRY_DSN,
-        environment: import.meta.env.MODE,
-        tracesSampleRate: 1.0,
-        integrations: [
-          new Sentry.BrowserTracing(),
-          new Sentry.Replay({
-            maskAllText: true,
-            blockAllMedia: true,
-          }),
-        ],
-        beforeSend(event) {
-          // Don't send PII data
-          if (event.user) {
-            delete event.user.ip_address;
-            delete event.user.email;
-          }
-          return event;
-        },
+// Initial setup
+export const initSentry = () => {
+  // Only initialize in production
+  if (process.env.NODE_ENV === 'production') {
+    Sentry.init({
+      dsn: import.meta.env.VITE_SENTRY_DSN,
+      integrations: [
+        new Sentry.BrowserTracing(),
+        new Sentry.Replay({
+          maskAllText: true,
+          blockAllMedia: true,
+        }),
+      ],
+      tracesSampleRate: 0.2,
+      replaysSessionSampleRate: 0.1,
+      replaysOnErrorSampleRate: 0.7,
+      environment: import.meta.env.MODE,
+    });
+
+    console.log('[Sentry] Initialized in', import.meta.env.MODE);
+  } else {
+    console.log('[Sentry] Not initialized in development mode');
+  }
+};
+
+// Set user information once authenticated
+export const setSentryUser = (user: { id: string; email?: string }) => {
+  Sentry.setUser({
+    id: user.id,
+    email: user.email,
+  });
+
+  console.log('[Sentry] User context set');
+};
+
+// Clear user information on logout
+export const clearSentryUser = () => {
+  Sentry.setUser(null);
+  console.log('[Sentry] User context cleared');
+};
+
+// Report an exception with optional context
+export const captureException = (error: Error, context?: Record<string, any>) => {
+  if (process.env.NODE_ENV === 'production') {
+    if (context) {
+      const scope = new Sentry.Scope();
+      Object.entries(context).forEach(([key, value]) => {
+        scope.setExtra(key, value);
       });
-      logger.info('Sentry initialized successfully');
-    } catch (error) {
-      logger.error('Failed to initialize Sentry', { error });
+      Sentry.captureException(error, scope);
+    } else {
+      Sentry.captureException(error);
     }
   } else {
-    logger.info('Sentry not initialized: Not in production or DSN missing');
+    console.error('[Error]', error, context);
   }
 };
 
-// Function to capture exceptions
-export const captureException = (
-  error: Error, 
-  context?: CaptureContext
-): string => {
-  logger.error(error);
+// Report a message with optional context and severity
+export const captureMessage = (message: string, severity: Sentry.SeverityLevel = 'info', context?: Record<string, any>) => {
   if (process.env.NODE_ENV === 'production') {
-    // TypeScript fix: Pass context directly without type mismatch
-    return Sentry.captureException(error, context);
-  }
-  return '';
-};
-
-// Function to capture messages
-export const captureMessage = (
-  message: string, 
-  level?: Sentry.SeverityLevel,
-  context?: CaptureContext
-): string => {
-  logger.info(message);
-  if (process.env.NODE_ENV === 'production') {
-    // TypeScript fix: Use overload with correct parameter order
     if (context) {
-      return Sentry.captureMessage(message, context);
+      const scope = new Sentry.Scope();
+      scope.setLevel(severity);
+      Object.entries(context).forEach(([key, value]) => {
+        scope.setExtra(key, value);
+      });
+      Sentry.captureMessage(message, scope);
+    } else {
+      Sentry.captureMessage(message, severity);
     }
-    return Sentry.captureMessage(message, level);
+  } else {
+    const logMethod = severity === 'error' ? console.error : console.log;
+    logMethod(`[${severity}]`, message, context);
   }
-  return '';
 };
-
-// Create a React Error Boundary wrapper
-export const SentryErrorBoundary = Sentry.ErrorBoundary;

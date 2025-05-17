@@ -1,13 +1,13 @@
 
 import { ConsensusService } from '../ConsensusService';
-import { ConsensusCalculator } from '../ConsensusCalculator';
+import { ConsensusCalculator } from '../consensus';
 import { VoteIntegrityService } from '../VoteIntegrityService';
 import { VoteHistoryStorage } from '../VoteHistoryStorage';
 import { VoteWeightCalculator } from '../VoteWeightCalculator';
 import { CouncilVote } from '../../../types/councils';
 
 // Mock dependencies
-jest.mock('../ConsensusCalculator');
+jest.mock('../consensus/ConsensusCalculator');
 jest.mock('../VoteIntegrityService');
 jest.mock('../VoteHistoryStorage');
 jest.mock('../VoteWeightCalculator');
