@@ -4,7 +4,7 @@ import type { Database as SupabaseDatabase } from '@/integrations/supabase/types
 import type { ArenaChatMessagesTable } from './arena-chat';
 import type { ArenaTypingStatusTable } from './arena-typing';
 
-// Use module augmentation instead of redeclaring the Database interface
+// Use module augmentation to extend the Database interface
 declare module '@/integrations/supabase/types' {
   interface Database {
     public: {

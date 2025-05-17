@@ -7,7 +7,7 @@ import { SpecializedAgent } from '../../types/agents';
 import { VoteAnalysisService } from './VoteAnalysisService';
 import { VoteCollectionService } from './VoteCollectionService';
 import { PlanVotingService } from './PlanVotingService';
-import { Plan } from './types/voting-types';
+import { Plan, VotingOptions } from './types/voting-types';
 
 // Changed to "export type" to fix TS1205 error
 export type { VotingOptions } from './types/voting-types';
@@ -31,14 +31,14 @@ export class VotingService {
 
   public registerVote(
     councilId: string, 
-    agent: SpecializedAgent, // Changed type from string to SpecializedAgent
+    agent: SpecializedAgent,
     topicId: string, 
     suggestion: string,
     confidence: number,
     reasoning: string
   ): CouncilVote {
-    // Using agent.id instead of directly using agentId parameter
-    const weight = this.weightCalculator.calculateWeight(agent.id, topicId);
+    // Pass the agent object directly to calculateWeight which now accepts SpecializedAgent
+    const weight = this.weightCalculator.calculateWeight(agent, topicId);
     
     const vote: CouncilVote = {
       agentId: agent.id,
@@ -89,7 +89,7 @@ export class VotingService {
   public collectVotes(
     council: SpecializedAgent[], 
     topic: string, 
-    options?: import('./types/voting-types').VotingOptions // Fixed by using import type directly
+    options?: VotingOptions
   ): CouncilVote[] {
     return this.collectionService.collectVotes(council, topic, options);
   }
@@ -98,7 +98,7 @@ export class VotingService {
     council: SpecializedAgent[], 
     topic: string, 
     plan: any, 
-    options?: import('./types/voting-types').VotingOptions // Fixed by using import type directly
+    options?: VotingOptions
   ): CouncilVote[] {
     return this.collectionService.collectVotesWithPlan(council, topic, plan, options);
   }

@@ -10,7 +10,7 @@ export class VoteWeightCalculator {
    * Calculate the voting weight of an agent for a specific topic
    */
   public calculateWeight(
-    agent: SpecializedAgent,
+    agent: string | SpecializedAgent,
     topic: string,
     performanceHistory?: {
       topicAccuracy?: number;
@@ -18,8 +18,13 @@ export class VoteWeightCalculator {
       userFeedback?: number;
     }
   ): number {
+    // Handle both string agentId and SpecializedAgent object
+    const agentId = typeof agent === 'string' ? agent : agent.id;
+    const domain = typeof agent === 'string' ? '' : agent.domain;
+    const expertise = typeof agent === 'string' ? [] : agent.expertise;
+    
     // Base weight calculation from domain/topic match
-    const expertiseMatch = this.calculateExpertiseMatch(agent.domain, agent.expertise, topic);
+    const expertiseMatch = this.calculateExpertiseMatch(domain, expertise, topic);
     
     // Start with a base weight
     let weight = 0.6 + (expertiseMatch * 0.4);
@@ -43,12 +48,12 @@ export class VoteWeightCalculator {
     }
     
     // Consider agent's adaptability if available
-    if (agent.adaptability !== undefined) {
+    if (typeof agent !== 'string' && agent.adaptability !== undefined) {
       weight += agent.adaptability * 0.05;
     }
     
     // Consider collaboration score for complex topics
-    if (agent.collaborationScore !== undefined && this.isComplexTopic(topic)) {
+    if (typeof agent !== 'string' && agent.collaborationScore !== undefined && this.isComplexTopic(topic)) {
       weight += agent.collaborationScore * 0.05;
     }
     
