@@ -89,7 +89,7 @@ export class VotingService {
   public collectVotes(
     council: SpecializedAgent[], 
     topic: string, 
-    options?: VotingOptions
+    options?: import('./types/voting-types').VotingOptions // Fixed by using import type directly
   ): CouncilVote[] {
     return this.collectionService.collectVotes(council, topic, options);
   }
@@ -98,7 +98,7 @@ export class VotingService {
     council: SpecializedAgent[], 
     topic: string, 
     plan: any, 
-    options?: VotingOptions
+    options?: import('./types/voting-types').VotingOptions // Fixed by using import type directly
   ): CouncilVote[] {
     return this.collectionService.collectVotesWithPlan(council, topic, plan, options);
   }
