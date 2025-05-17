@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
-// Import the extensions to properly augment the types
+// Import the extensions to make TypeScript aware of the extended schema
 import '@/types/supabase-extensions';
 
 const SUPABASE_URL = "https://zhvhqpdcxgmcdoowahql.supabase.co";

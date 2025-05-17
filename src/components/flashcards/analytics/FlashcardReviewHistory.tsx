@@ -62,7 +62,7 @@ const FlashcardReviewHistory = () => {
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center">
                 {review.was_correct ? (
-                  <Badge variant="success" className="mr-2 flex items-center">
+                  <Badge variant="secondary" className="mr-2 flex items-center bg-green-500 text-white hover:bg-green-600">
                     <Check className="h-3 w-3 mr-1" /> Correct
                   </Badge>
                 ) : (
@@ -76,8 +76,8 @@ const FlashcardReviewHistory = () => {
               </div>
             </div>
             <div className="text-sm">
-              <div className="font-medium">Q: {review.flashcards.question}</div>
-              <div className="text-muted-foreground">A: {review.flashcards.answer}</div>
+              <div className="font-medium">Q: {review.question}</div>
+              <div className="text-muted-foreground">A: {review.answer}</div>
             </div>
           </div>
         ))}

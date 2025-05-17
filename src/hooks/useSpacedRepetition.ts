@@ -12,6 +12,14 @@ export const useSpacedRepetition = (flashcardId: string) => {
     try {
       setIsSubmitting(true);
 
+      // Get current user session
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) {
+        throw new Error("User not authenticated");
+      }
+      
+      const userId = session.session.user.id;
+
       // Get current flashcard data
       const { data: flashcard, error: fetchError } = await supabase
         .from('flashcards')
@@ -45,6 +53,7 @@ export const useSpacedRepetition = (flashcardId: string) => {
       const { error: reviewError } = await supabase
         .from('flashcard_reviews')
         .insert({
+          user_id: userId,
           flashcard_id: flashcardId,
           was_correct: wasCorrect,
           review_time: new Date().toISOString()
@@ -61,6 +70,7 @@ export const useSpacedRepetition = (flashcardId: string) => {
         variant: "destructive",
         description: "Failed to update flashcard review status.",
       });
+      console.error("Error updating flashcard review:", error);
     } finally {
       setIsSubmitting(false);
     }

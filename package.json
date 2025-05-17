@@ -44,6 +44,7 @@
     "@sentry/types": "^9.19.0",
     "@supabase/supabase-js": "^2.49.4",
     "@tanstack/react-query": "^5.56.2",
+    "@tanstack/react-query-devtools": "^5.76.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^14.2.2",
     "@types/testing-library__jest-dom": "^5.14.9",

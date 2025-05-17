@@ -34,17 +34,36 @@ export const useRecentFlashcardReviews = (limit = 10) => {
           was_correct, 
           review_time, 
           confidence_level,
-          flashcards (
-            id, 
-            question, 
-            answer
-          )
+          flashcard_id
         `)
         .order('review_time', { ascending: false })
         .limit(limit);
       
       if (error) throw error;
-      return data;
+      
+      // Fetch the flashcard details for each review
+      if (data && data.length > 0) {
+        const flashcardIds = data.map(review => review.flashcard_id);
+        
+        const { data: flashcards, error: flashcardError } = await supabase
+          .from('flashcards')
+          .select('id, question, answer')
+          .in('id', flashcardIds);
+        
+        if (flashcardError) throw flashcardError;
+        
+        // Combine review data with flashcard data
+        return data.map(review => {
+          const flashcard = flashcards?.find(fc => fc.id === review.flashcard_id);
+          return {
+            ...review,
+            question: flashcard?.question || 'Question not available',
+            answer: flashcard?.answer || 'Answer not available'
+          };
+        });
+      }
+      
+      return data || [];
     }
   });
 };
