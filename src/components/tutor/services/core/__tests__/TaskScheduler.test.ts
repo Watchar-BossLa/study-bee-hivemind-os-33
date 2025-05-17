@@ -1,3 +1,4 @@
+
 import { TaskScheduler } from '../TaskScheduler';
 import { BrowserEventEmitter } from '../BrowserEventEmitter';
 import { TaskManager } from '../TaskManager';
@@ -19,7 +20,8 @@ describe('TaskScheduler', () => {
     capabilities: ['test'],
     performance: {
       accuracy: 0.9,
-      speed: 0.8
+      responseTime: 0.8,
+      userFeedback: 0.85
     },
     type: 'subject-expert',
     expertise: ['testing']
