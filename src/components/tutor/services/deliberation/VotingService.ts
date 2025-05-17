@@ -4,38 +4,26 @@ import { VoteHistoryStorage } from './VoteHistoryStorage';
 import { VoteWeightCalculator } from './VoteWeightCalculator';
 import { VoteIntegrityService } from './VoteIntegrityService';
 import { SpecializedAgent } from '../../types/agents';
-
-interface PlanTask {
-  taskId: string;
-  description: string;
-  status: string;
-  assignedAgentId?: string;
-}
-
-interface Plan {
-  planId: string;
-  type: string;
-  summary: string;
-  tasks?: PlanTask[];
-}
-
-// Define the VotingOptions interface that's used in DeliberationProcessor
-export interface VotingOptions {
-  baseThreshold?: number;
-  minRequiredVotes?: number;
-  timeLimit?: number;
-  complexityOverride?: 'low' | 'medium' | 'high';
-}
+import { VoteAnalysisService } from './VoteAnalysisService';
+import { VoteCollectionService } from './VoteCollectionService';
+import { PlanVotingService } from './PlanVotingService';
+import { Plan, VotingOptions } from './types/voting-types';
 
 export class VotingService {
   private historyStorage: VoteHistoryStorage;
   private weightCalculator: VoteWeightCalculator;
   private integrityService: VoteIntegrityService;
+  private analysisService: VoteAnalysisService;
+  private collectionService: VoteCollectionService;
+  private planVotingService: PlanVotingService;
 
   constructor() {
     this.historyStorage = new VoteHistoryStorage();
     this.weightCalculator = new VoteWeightCalculator();
     this.integrityService = new VoteIntegrityService();
+    this.analysisService = new VoteAnalysisService();
+    this.collectionService = new VoteCollectionService();
+    this.planVotingService = new PlanVotingService();
   }
 
   public registerVote(
@@ -68,75 +56,18 @@ export class VotingService {
     return [];
   }
   
+  // Delegated to VoteAnalysisService
   public calculateConsensusScore(votes: CouncilVote[]): number {
-    if (votes.length === 0) return 0;
-    
-    const suggestions = new Map<string, { count: number; weightedScore: number }>();
-    let totalWeight = 0;
-    
-    votes.forEach(vote => {
-      if (!suggestions.has(vote.suggestion)) {
-        suggestions.set(vote.suggestion, { count: 0, weightedScore: 0 });
-      }
-      
-      const current = suggestions.get(vote.suggestion)!;
-      current.count += 1;
-      // Since weight doesn't exist on CouncilVote, we'll use a default weight of 1
-      const weight = 1;
-      current.weightedScore += weight * vote.confidence;
-      totalWeight += weight;
-    });
-    
-    // Find the suggestion with the highest weighted score
-    let highestScore = 0;
-    
-    suggestions.forEach(value => {
-      if (value.weightedScore > highestScore) {
-        highestScore = value.weightedScore;
-      }
-    });
-    
-    return totalWeight > 0 ? highestScore / totalWeight : 0;
+    return this.analysisService.calculateConsensusScore(votes);
   }
   
   public getMajorityDecision(votes: CouncilVote[]): string | null {
-    if (votes.length === 0) return null;
-    
-    const suggestions = new Map<string, number>();
-    
-    votes.forEach(vote => {
-      const currentCount = suggestions.get(vote.suggestion) || 0;
-      // Since weight doesn't exist on CouncilVote, we'll use a default weight of 1
-      const weight = 1;
-      suggestions.set(vote.suggestion, currentCount + (weight * vote.confidence));
-    });
-    
-    let highestCount = 0;
-    let majorityDecision = null;
-    
-    suggestions.forEach((count, suggestion) => {
-      if (count > highestCount) {
-        highestCount = count;
-        majorityDecision = suggestion;
-      }
-    });
-    
-    return majorityDecision;
+    return this.analysisService.getMajorityDecision(votes);
   }
   
+  // Delegated to PlanVotingService
   public voteOnPlan(plan: Plan, agentId: string, approve: boolean, reason: string): void {
-    console.log(`Agent ${agentId} voted ${approve ? 'to approve' : 'to reject'} plan ${plan.planId}`);
-    console.log(`Reason: ${reason}`);
-    
-    // If approved and there are tasks, assign them
-    if (approve && plan.tasks && plan.tasks.length > 0) {
-      plan.tasks.forEach(task => {
-        if (!task.assignedAgentId) {
-          task.assignedAgentId = agentId;
-          console.log(`Task ${task.taskId} assigned to agent ${agentId}`);
-        }
-      });
-    }
+    this.planVotingService.voteOnPlan(plan, agentId, approve, reason);
   }
   
   public getLatestVoteTrends(): Map<string, { up: number; down: number }> {
@@ -150,24 +81,13 @@ export class VotingService {
     return trends;
   }
 
-  // Implementing the missing methods required by DeliberationProcessor
+  // Delegated to VoteCollectionService
   public collectVotes(
     council: SpecializedAgent[], 
     topic: string, 
     options?: VotingOptions
   ): CouncilVote[] {
-    console.log(`Collecting votes from council for topic: ${topic}`);
-    // Implementation would gather votes from council members
-    const votes: CouncilVote[] = [];
-    council.forEach(agent => {
-      votes.push({
-        agentId: agent.id,
-        suggestion: `Suggestion from ${agent.name}`,
-        confidence: 0.8,
-        reasoning: `Reasoning from ${agent.name}`
-      });
-    });
-    return votes;
+    return this.collectionService.collectVotes(council, topic, options);
   }
 
   public collectVotesWithPlan(
@@ -176,35 +96,15 @@ export class VotingService {
     plan: any, 
     options?: VotingOptions
   ): CouncilVote[] {
-    console.log(`Collecting votes from council for topic: ${topic} with plan`);
-    // Implementation would gather votes with plan consideration
-    const votes: CouncilVote[] = [];
-    council.forEach(agent => {
-      votes.push({
-        agentId: agent.id,
-        suggestion: `Plan-based suggestion from ${agent.name}`,
-        confidence: 0.85,
-        reasoning: `Plan-based reasoning from ${agent.name}`
-      });
-    });
-    return votes;
+    return this.collectionService.collectVotesWithPlan(council, topic, plan, options);
   }
 
+  // Delegated to VoteAnalysisService
   public groupVotesBySuggestion(votes: CouncilVote[]): Map<string, CouncilVote[]> {
-    const groups = new Map<string, CouncilVote[]>();
-    
-    votes.forEach(vote => {
-      if (!groups.has(vote.suggestion)) {
-        groups.set(vote.suggestion, []);
-      }
-      groups.get(vote.suggestion)!.push(vote);
-    });
-    
-    return groups;
+    return this.analysisService.groupVotesBySuggestion(votes);
   }
 
   public detectSuspiciousVotes(votes: CouncilVote[]): CouncilVote[] {
-    // Simple implementation to detect suspicious votes
-    return votes.filter(vote => vote.confidence > 0.95 || vote.confidence < 0.05);
+    return this.analysisService.detectSuspiciousVotes(votes);
   }
 }

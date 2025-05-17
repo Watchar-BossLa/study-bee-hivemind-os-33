@@ -1,7 +1,8 @@
-
 import React from 'react';
-import { ChatMessage } from '@/services/arena/arenaChatService';
+import { ChatMessage } from '@/types/supabase-extensions';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChatMessageItemProps {
   message: ChatMessage;
@@ -12,7 +13,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message, playe
   // Check if the message is from the current user
   const [isCurrentUser, setIsCurrentUser] = React.useState(false);
   
-  React.useEffect(() => {
+  useEffect(() => {
     const checkCurrentUser = async (): Promise<void> => {
       const { data } = await supabase.auth.getUser();
       if (data?.user) {
