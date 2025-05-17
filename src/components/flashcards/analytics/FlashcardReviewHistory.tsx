@@ -7,6 +7,17 @@ import { format } from 'date-fns';
 import { Check, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Define an extended type that includes the properties we're expecting
+interface FlashcardReviewWithContent {
+  id: string;
+  was_correct: boolean;
+  review_time: string;
+  confidence_level?: number | null;
+  flashcard_id: string;
+  question: string;
+  answer: string;
+}
+
 const FlashcardReviewHistory = () => {
   const { data: reviews, isLoading } = useRecentFlashcardReviews(20);
 
@@ -57,12 +68,12 @@ const FlashcardReviewHistory = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {reviews.map((review) => (
+        {(reviews as FlashcardReviewWithContent[]).map((review) => (
           <div key={review.id} className="border-b pb-3 last:border-0">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center">
                 {review.was_correct ? (
-                  <Badge variant="secondary" className="mr-2 flex items-center bg-green-500 text-white hover:bg-green-600">
+                  <Badge variant="success" className="mr-2 flex items-center">
                     <Check className="h-3 w-3 mr-1" /> Correct
                   </Badge>
                 ) : (

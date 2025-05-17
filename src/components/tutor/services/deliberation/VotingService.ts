@@ -1,3 +1,4 @@
+
 import { CouncilVote } from '../../types/councils';
 import { VoteHistoryStorage } from './VoteHistoryStorage';
 import { VoteWeightCalculator } from './VoteWeightCalculator';
@@ -33,8 +34,8 @@ export class VotingService {
     agent: SpecializedAgent,
     topicId: string, 
     suggestion: string,
-    confidence: number,
-    reasoning: string
+    confidence: number = 0,
+    reasoning: string = ""
   ): CouncilVote {
     // Pass the agent object directly to calculateWeight which now accepts SpecializedAgent
     const weight = this.weightCalculator.calculateWeight(agent, topicId);
