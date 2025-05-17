@@ -1,67 +1,62 @@
-
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
-import Courses from './pages/Courses';
-import CourseContent from './pages/CourseContent';
-import CourseLearning from './pages/CourseLearning';
-import Arena from './pages/Arena';
-import ArenaAdmin from './pages/ArenaAdmin';
-import FlashcardReview from './pages/FlashcardReview';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
 import OCRFlashcards from './pages/OCRFlashcards';
-import GraphTutor from './pages/GraphTutor';
-import LiveStudySessions from './pages/LiveStudySessions';
-import PeerLearning from './pages/PeerLearning';
-import NotImplemented from './pages/NotFound';
-import NotFound from './pages/NotFound';
-import Qualifications from './pages/Qualifications';
-import StudyGroups from './pages/StudyGroups';
-import CollaborativeNotes from './pages/CollaborativeNotes';
-import QuorumDashboard from './pages/QuorumDashboard';
-import ThemeSettings from './pages/ThemeSettings';
-import { ThemePresetLoader } from './components/theme/ThemePresetLoader';
+import FlashcardReview from './pages/FlashcardReview';
+import FlashcardAnalytics from './pages/FlashcardAnalytics';
+import ArenaLobby from './pages/ArenaLobby';
+import ArenaMatch from './pages/ArenaMatch';
+import { supabase } from './integrations/supabase/client';
+import { Session } from '@supabase/supabase-js';
 import { Toaster } from './components/ui/toaster';
-import { ErrorBoundary } from './components/error/ErrorBoundary';
-import { initSentry } from './services/monitoring/sentry';
-import { logger } from './services/logger/logger';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-const App = () => {
-  // Initialize Sentry on component mount
+const queryClient = new QueryClient();
+
+function App() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    initSentry();
-    logger.info('Application initialized');
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   return (
-    <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
       <Router>
-        <ThemePresetLoader />
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/courses" element={<Courses />} />
-          <Route path="/courses/:courseId" element={<CourseContent />} />
-          <Route path="/learning/:courseId" element={<CourseLearning />} />
-          <Route path="/arena" element={<Arena />} />
-          <Route path="/arena/admin" element={<ArenaAdmin />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/ocr" element={<OCRFlashcards />} />
           <Route path="/flashcards/review" element={<FlashcardReview />} />
-          <Route path="/flashcards/ocr" element={<OCRFlashcards />} />
-          <Route path="/tutor" element={<GraphTutor />} />
-          <Route path="/live-sessions" element={<LiveStudySessions />} />
-          <Route path="/peer-learning" element={<PeerLearning />} />
-          <Route path="/qualifications" element={<Qualifications />} />
-          <Route path="/study-groups" element={<StudyGroups />} />
-          <Route path="/notes" element={<CollaborativeNotes />} />
-          <Route path="/dashboard/quorum" element={<QuorumDashboard />} />
-          <Route path="/settings/theme" element={<ThemeSettings />} />
-          <Route path="/wip" element={<NotImplemented />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="/flashcards/analytics" element={<FlashcardAnalytics />} />
+          <Route path="/arena" element={<ArenaLobby />} />
+          <Route path="/arena/:matchId" element={<ArenaMatch />} />
         </Routes>
         <Toaster />
-        {/* Screen reader announcement for theme changes */}
-        <div id="theme-change-announcer" className="sr-only" aria-live="polite"></div>
       </Router>
-    </ErrorBoundary>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
-};
+}
 
 export default App;

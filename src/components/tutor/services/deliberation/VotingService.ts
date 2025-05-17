@@ -1,4 +1,3 @@
-
 import { CouncilVote } from '../../types/councils';
 import { VoteHistoryStorage } from './VoteHistoryStorage';
 import { VoteWeightCalculator } from './VoteWeightCalculator';

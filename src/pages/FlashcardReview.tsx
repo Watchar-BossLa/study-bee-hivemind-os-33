@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -5,7 +6,7 @@ import ReviewSession from '@/components/flashcards/ReviewSession';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Book } from 'lucide-react';
+import { ArrowLeft, Book, BarChart2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const FlashcardReviewPage = () => {
@@ -28,11 +29,19 @@ const FlashcardReviewPage = () => {
               Boost your memorization with spaced repetition
             </p>
           </div>
-          <Link to="/ocr">
-            <Button variant="outline">
-              Create Flashcards
-            </Button>
-          </Link>
+          <div className="flex space-x-2">
+            <Link to="/ocr">
+              <Button variant="outline">
+                Create Flashcards
+              </Button>
+            </Link>
+            <Link to="/flashcards/analytics">
+              <Button variant="outline" className="flex items-center gap-2">
+                <BarChart2 className="h-4 w-4" />
+                <span>Analytics</span>
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
@@ -105,6 +114,14 @@ const FlashcardReviewPage = () => {
                     <div className="text-2xl font-bold">0</div>
                     <div className="text-xs text-muted-foreground">Total Cards</div>
                   </div>
+                </div>
+                <div className="mt-4">
+                  <Link to="/flashcards/analytics">
+                    <Button variant="secondary" className="w-full flex items-center justify-center gap-2">
+                      <BarChart2 className="h-4 w-4" />
+                      <span>View Detailed Analytics</span>
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>

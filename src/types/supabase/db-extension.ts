@@ -3,6 +3,7 @@
 import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
 import type { ArenaChatMessagesTable } from './arena-chat';
 import type { ArenaTypingStatusTable } from './arena-typing';
+import type { FlashcardReviewsTable, FlashcardStatisticsTable } from './flashcard-analytics';
 
 // Use module augmentation to extend the Database interface
 declare module '@/integrations/supabase/types' {
@@ -23,6 +24,10 @@ declare module '@/integrations/supabase/types' {
         // Add our custom tables
         arena_chat_messages: ArenaChatMessagesTable;
         arena_typing_status: ArenaTypingStatusTable;
+        
+        // Add new flashcard analytics tables
+        flashcard_reviews: FlashcardReviewsTable;
+        flashcard_statistics: FlashcardStatisticsTable;
       };
       Views: SupabaseDatabase['public']['Views'];
       Functions: SupabaseDatabase['public']['Functions'];

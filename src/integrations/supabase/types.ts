@@ -96,6 +96,102 @@ export type Database = {
         }
         Relationships: []
       }
+      flashcard_reviews: {
+        Row: {
+          confidence_level: number | null
+          flashcard_id: string
+          id: string
+          response_time_ms: number | null
+          review_time: string
+          user_id: string
+          was_correct: boolean
+        }
+        Insert: {
+          confidence_level?: number | null
+          flashcard_id: string
+          id?: string
+          response_time_ms?: number | null
+          review_time?: string
+          user_id: string
+          was_correct: boolean
+        }
+        Update: {
+          confidence_level?: number | null
+          flashcard_id?: string
+          id?: string
+          response_time_ms?: number | null
+          review_time?: string
+          user_id?: string
+          was_correct?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_flashcard_reviews_flashcards"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_reviews_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcard_statistics: {
+        Row: {
+          average_interval: number
+          cards_due: number
+          cards_learned: number
+          cards_mastered: number
+          correct_reviews: number
+          created_at: string
+          id: string
+          last_study_date: string | null
+          retention_rate: number
+          streak_days: number
+          total_cards: number
+          total_reviews: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_interval?: number
+          cards_due?: number
+          cards_learned?: number
+          cards_mastered?: number
+          correct_reviews?: number
+          created_at?: string
+          id?: string
+          last_study_date?: string | null
+          retention_rate?: number
+          streak_days?: number
+          total_cards?: number
+          total_reviews?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_interval?: number
+          cards_due?: number
+          cards_learned?: number
+          cards_mastered?: number
+          correct_reviews?: number
+          created_at?: string
+          id?: string
+          last_study_date?: string | null
+          retention_rate?: number
+          streak_days?: number
+          total_cards?: number
+          total_reviews?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       flashcards: {
         Row: {
           answer: string
@@ -315,6 +411,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      update_daily_flashcard_stats: {
+        Args: { user_id_param: string }
+        Returns: undefined
+      }
       update_player_progress: {
         Args: {
           match_id_param: string

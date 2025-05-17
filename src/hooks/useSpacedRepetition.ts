@@ -41,6 +41,17 @@ export const useSpacedRepetition = (flashcardId: string) => {
 
       if (updateError) throw updateError;
 
+      // Record the review in flashcard_reviews table
+      const { error: reviewError } = await supabase
+        .from('flashcard_reviews')
+        .insert({
+          flashcard_id: flashcardId,
+          was_correct: wasCorrect,
+          review_time: new Date().toISOString()
+        });
+
+      if (reviewError) throw reviewError;
+
       toast({
         description: wasCorrect ? "Great job! Card scheduled for review." : "Keep practicing! Card will be reviewed soon.",
       });
