@@ -43,7 +43,8 @@ export class VotingService {
     agentId: string, 
     topicId: string, 
     suggestion: string,
-    confidence: number
+    confidence: number,
+    reasoning: string
   ): CouncilVote {
     const weight = this.weightCalculator.calculateWeight(agentId, topicId);
     
@@ -51,7 +52,7 @@ export class VotingService {
       agentId,
       suggestion,
       confidence,
-      reasoning: '', // Added required property
+      reasoning, // Added required property and passed from parameters
     };
     
     if (this.integrityService.verifyVote(vote)) {

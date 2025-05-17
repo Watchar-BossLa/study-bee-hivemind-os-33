@@ -78,10 +78,14 @@ export const useCoursesBookmark = () => {
         description: `${course.title} has been removed from your bookmarks`,
       });
     } else {
-      // Add bookmark
+      // Add bookmark - fixed by including the user_id field
+      const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase
         .from('course_bookmarks')
-        .insert({ course_id: course.id });
+        .insert({ 
+          course_id: course.id,
+          user_id: userData.user!.id
+        });
         
       if (error) {
         console.error('Error adding bookmark:', error);

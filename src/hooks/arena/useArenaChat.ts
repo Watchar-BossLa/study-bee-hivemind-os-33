@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { arenaChatService, ChatMessage, TypingStatus } from '@/services/arena/arenaChatService';
+import { arenaChatService, ChatMessage } from '@/services/arena/arenaChatService';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 

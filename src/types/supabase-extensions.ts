@@ -1,6 +1,8 @@
-// This file extends the Supabase database types with our custom tables
 
-// Extend the tables interface in the Database type
+// This file extends the Supabase database types with our custom tables
+import type { Database } from '@/integrations/supabase/types';
+
+// Define the additional tables not included in the auto-generated types
 export interface ExtendedTables {
   arena_chat_messages: {
     Row: {
@@ -69,286 +71,30 @@ export interface ExtendedTables {
 export type ChatMessage = ExtendedTables['arena_chat_messages']['Row'];
 export type TypingStatus = ExtendedTables['arena_typing_status']['Row'];
 
-// Properly augment the Database type to prevent duplicate identifier error
+// Extend the Database interface without conflict
 declare module '@/integrations/supabase/types' {
-  // Extend the existing Database interface without redeclaring it
   interface Database {
     public: {
       Tables: {
         // Include all existing tables
-        arena_matches: {
-          Row: { 
-            created_at: string | null;
-            end_time: string | null;
-            id: string;
-            start_time: string | null;
-            status: string;
-            updated_at: string | null;
-          };
-          Insert: { 
-            created_at?: string | null;
-            end_time?: string | null;
-            id?: string;
-            start_time?: string | null;
-            status?: string;
-            updated_at?: string | null;
-          };
-          Update: { 
-            created_at?: string | null;
-            end_time?: string | null;
-            id?: string;
-            start_time?: string | null;
-            status?: string;
-            updated_at?: string | null;
-          };
-          Relationships: [];
-        };
-        arena_stats: {
-          Row: { 
-            correct_answers: number;
-            created_at: string | null;
-            highest_score: number;
-            last_match_date: string | null;
-            matches_played: number;
-            matches_won: number;
-            questions_answered: number;
-            total_score: number;
-            updated_at: string | null;
-            user_id: string;
-          };
-          Insert: { 
-            correct_answers?: number;
-            created_at?: string | null;
-            highest_score?: number;
-            last_match_date?: string | null;
-            matches_played?: number;
-            matches_won?: number;
-            questions_answered?: number;
-            total_score?: number;
-            updated_at?: string | null;
-            user_id: string;
-          };
-          Update: { 
-            correct_answers?: number;
-            created_at?: string | null;
-            highest_score?: number;
-            last_match_date?: string | null;
-            matches_played?: number;
-            matches_won?: number;
-            questions_answered?: number;
-            total_score?: number;
-            updated_at?: string | null;
-            user_id?: string;
-          };
-          Relationships: [];
-        };
-        flashcards: {
-          Row: { 
-            answer: string;
-            consecutive_correct_answers: number | null;
-            created_at: string;
-            easiness_factor: number | null;
-            id: string;
-            last_reviewed_at: string | null;
-            next_review_at: string | null;
-            question: string;
-            updated_at: string;
-            upload_id: string | null;
-            user_id: string;
-          };
-          Insert: { 
-            answer: string;
-            consecutive_correct_answers?: number | null;
-            created_at?: string;
-            easiness_factor?: number | null;
-            id?: string;
-            last_reviewed_at?: string | null;
-            next_review_at?: string | null;
-            question: string;
-            updated_at?: string;
-            upload_id?: string | null;
-            user_id: string;
-          };
-          Update: { 
-            answer?: string;
-            consecutive_correct_answers?: number | null;
-            created_at?: string;
-            easiness_factor?: number | null;
-            id?: string;
-            last_reviewed_at?: string | null;
-            next_review_at?: string | null;
-            question?: string;
-            updated_at?: string;
-            upload_id?: string | null;
-            user_id?: string;
-          };
-          Relationships: [];
-        };
-        match_players: {
-          Row: { 
-            correct_answers: number;
-            created_at: string | null;
-            id: string;
-            match_id: string;
-            questions_answered: number;
-            score: number;
-            updated_at: string | null;
-            user_id: string;
-          };
-          Insert: { 
-            correct_answers?: number;
-            created_at?: string | null;
-            id?: string;
-            match_id: string;
-            questions_answered?: number;
-            score?: number;
-            updated_at?: string | null;
-            user_id: string;
-          };
-          Update: { 
-            correct_answers?: number;
-            created_at?: string | null;
-            id?: string;
-            match_id?: string;
-            questions_answered?: number;
-            score?: number;
-            updated_at?: string | null;
-            user_id?: string;
-          };
-          Relationships: [];
-        };
-        ocr_uploads: {
-          Row: { 
-            created_at: string;
-            error_message: string | null;
-            id: string;
-            image_url: string;
-            status: string;
-            updated_at: string;
-            user_id: string;
-          };
-          Insert: { 
-            created_at?: string;
-            error_message?: string | null;
-            id?: string;
-            image_url: string;
-            status?: string;
-            updated_at?: string;
-            user_id: string;
-          };
-          Update: { 
-            created_at?: string;
-            error_message?: string | null;
-            id?: string;
-            image_url?: string;
-            status?: string;
-            updated_at?: string;
-            user_id?: string;
-          };
-          Relationships: [];
-        };
-        profiles: {
-          Row: { 
-            avatar_url: string | null;
-            bio: string | null;
-            created_at: string | null;
-            full_name: string | null;
-            id: string;
-            learning_preferences: any | null;
-            updated_at: string | null;
-          };
-          Insert: { 
-            avatar_url?: string | null;
-            bio?: string | null;
-            created_at?: string | null;
-            full_name?: string | null;
-            id: string;
-            learning_preferences?: any | null;
-            updated_at?: string | null;
-          };
-          Update: { 
-            avatar_url?: string | null;
-            bio?: string | null;
-            created_at?: string | null;
-            full_name?: string | null;
-            id?: string;
-            learning_preferences?: any | null;
-            updated_at?: string | null;
-          };
-          Relationships: [];
-        };
-        quiz_questions: {
-          Row: { 
-            category: string;
-            correct_answer: string;
-            created_at: string | null;
-            difficulty: string;
-            id: string;
-            option_a: string;
-            option_b: string;
-            option_c: string;
-            option_d: string;
-            question: string;
-            updated_at: string | null;
-          };
-          Insert: { 
-            category: string;
-            correct_answer: string;
-            created_at?: string | null;
-            difficulty: string;
-            id?: string;
-            option_a: string;
-            option_b: string;
-            option_c: string;
-            option_d: string;
-            question: string;
-            updated_at?: string | null;
-          };
-          Update: { 
-            category?: string;
-            correct_answer?: string;
-            created_at?: string | null;
-            difficulty?: string;
-            id?: string;
-            option_a?: string;
-            option_b?: string;
-            option_c?: string;
-            option_d?: string;
-            question?: string;
-            updated_at?: string | null;
-          };
-          Relationships: [];
-        };
-        user_achievements: {
-          Row: { 
-            achievement_id: string;
-            earned_at: string | null;
-            id: string;
-            user_id: string;
-          };
-          Insert: { 
-            achievement_id: string;
-            earned_at?: string | null;
-            id?: string;
-            user_id: string;
-          };
-          Update: { 
-            achievement_id?: string;
-            earned_at?: string | null;
-            id?: string;
-            user_id?: string;
-          };
-          Relationships: [];
-        };
+        arena_matches: Database['public']['Tables']['arena_matches'];
+        arena_stats: Database['public']['Tables']['arena_stats'];
+        course_bookmarks: Database['public']['Tables']['course_bookmarks'];
+        flashcards: Database['public']['Tables']['flashcards'];
+        match_players: Database['public']['Tables']['match_players'];
+        ocr_uploads: Database['public']['Tables']['ocr_uploads'];
+        profiles: Database['public']['Tables']['profiles'];
+        quiz_questions: Database['public']['Tables']['quiz_questions'];
+        user_achievements: Database['public']['Tables']['user_achievements'];
         
         // Add our custom tables
         arena_chat_messages: ExtendedTables['arena_chat_messages'];
         arena_typing_status: ExtendedTables['arena_typing_status'];
       };
-      Views: { /* ... keep existing code */ };
-      Functions: { /* ... keep existing code */ };
-      Enums: { /* ... keep existing code */ };
-      CompositeTypes: { /* ... keep existing code */ };
+      Views: Database['public']['Views'];
+      Functions: Database['public']['Functions'];
+      Enums: Database['public']['Enums'];
+      CompositeTypes: Database['public']['CompositeTypes'];
     }
   }
 }

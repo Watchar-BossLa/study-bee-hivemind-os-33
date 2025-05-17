@@ -1,158 +1,70 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { ChatMessage, TypingStatus } from '@/types/supabase-extensions';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
-/**
- * Send a new chat message for a match
- */
-export async function sendChatMessage(
-  matchId: string,
-  userId: string,
-  content: string
-): Promise<{ success: boolean; message?: ChatMessage; error?: string }> {
-  try {
-    // Use explicit typing for our extended tables
-    const { data, error } = await supabase
-      .from('arena_chat_messages')
-      .insert({
-        match_id: matchId,
-        user_id: userId,
-        content
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error sending chat message:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, message: data as ChatMessage };
-  } catch (e) {
-    console.error('Exception sending chat message:', e);
-    return { success: false, error: (e as Error).message };
-  }
+// Define the ChatMessage and TypingStatus types - coming from Supabase
+export interface ChatMessage {
+  id: string;
+  match_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
 }
 
-/**
- * Fetch chat messages for a match
- */
-export async function getChatMessages(
-  matchId: string
-): Promise<{ success: boolean; messages?: ChatMessage[]; error?: string }> {
-  try {
-    // Use explicit typing for our extended tables
-    const { data, error } = await supabase
-      .from('arena_chat_messages')
-      .select()
-      .eq('match_id', matchId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching chat messages:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, messages: data as ChatMessage[] };
-  } catch (e) {
-    console.error('Exception fetching chat messages:', e);
-    return { success: false, error: (e as Error).message };
-  }
+export interface TypingStatus {
+  user_id: string;
+  match_id: string;
+  is_typing: boolean;
+  last_updated: string;
 }
 
-/**
- * Set typing status for a user in a match
- */
-export async function setTypingStatus(
-  matchId: string,
-  userId: string,
-  isTyping: boolean
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Use explicit typing for our extended tables
-    const { error } = await supabase
-      .from('arena_typing_status')
-      .upsert({
-        match_id: matchId,
-        user_id: userId,
-        is_typing: isTyping,
-        last_updated: new Date().toISOString()
-      });
-
-    if (error) {
-      console.error('Error updating typing status:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (e) {
-    console.error('Exception updating typing status:', e);
-    return { success: false, error: (e as Error).message };
-  }
+// Result interfaces for our service methods
+interface ServiceResult<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
 }
 
-/**
- * Get typing status for all users in a match
- */
-export async function getTypingStatuses(
-  matchId: string
-): Promise<{ success: boolean; statuses?: TypingStatus[]; error?: string }> {
-  try {
-    // Use explicit typing for our extended tables
-    const { data, error } = await supabase
-      .from('arena_typing_status')
-      .select()
-      .eq('match_id', matchId);
-
-    if (error) {
-      console.error('Error fetching typing statuses:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, statuses: data as TypingStatus[] };
-  } catch (e) {
-    console.error('Exception fetching typing statuses:', e);
-    return { success: false, error: (e as Error).message };
-  }
+interface MessagesResult extends ServiceResult<any> {
+  messages?: ChatMessage[];
 }
 
-/**
- * Clean up typing status when a user leaves
- */
-export async function clearTypingStatus(
-  matchId: string,
-  userId: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Use explicit typing for our extended tables
-    const { error } = await supabase
-      .from('arena_typing_status')
-      .delete()
-      .eq('match_id', matchId)
-      .eq('user_id', userId);
+// Main service class
+class ArenaChatService {
+  private channels: Map<string, RealtimeChannel> = new Map();
 
-    if (error) {
-      console.error('Error clearing typing status:', error);
-      return { success: false, error: error.message };
+  // Fetch chat messages for a match
+  async fetchChatMessages(matchId: string): Promise<MessagesResult> {
+    try {
+      // We need to use the extended tables defined in types
+      const { data, error } = await supabase
+        .from('arena_chat_messages')
+        .select('*')
+        .eq('match_id', matchId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching chat messages:', error);
+        return { success: false, message: error.message };
+      }
+
+      return {
+        success: true,
+        messages: data as unknown as ChatMessage[]
+      };
+    } catch (error) {
+      console.error('Exception fetching chat messages:', error);
+      return { success: false, message: 'An unexpected error occurred' };
     }
-
-    return { success: true };
-  } catch (e) {
-    console.error('Exception clearing typing status:', e);
-    return { success: false, error: (e as Error).message };
   }
-}
 
-// Create a service object for easier importing and use in other files
-export const arenaChatService = {
-  sendMessage: sendChatMessage,
-  fetchChatMessages: getChatMessages,
-  updateTypingStatus: setTypingStatus,
-  getTypingStatuses,
-  clearTypingStatus,
-  subscribeToChatMessages: (matchId: string, callback: (message: ChatMessage) => void) => {
+  // Subscribe to new chat messages
+  subscribeToChatMessages(
+    matchId: string,
+    onMessage: (message: ChatMessage) => void
+  ): () => void {
     const channel = supabase
-      .channel('arena-chat-updates')
+      .channel(`arena_chat:${matchId}`)
       .on(
         'postgres_changes',
         {
@@ -162,41 +74,113 @@ export const arenaChatService = {
           filter: `match_id=eq.${matchId}`
         },
         (payload) => {
-          callback(payload.new as ChatMessage);
+          onMessage(payload.new as unknown as ChatMessage);
         }
       )
       .subscribe();
-    
+
+    // Save the channel for cleanup
+    this.channels.set(`chat:${matchId}`, channel);
+
+    // Return unsubscribe function
     return () => {
-      supabase.removeChannel(channel);
+      channel.unsubscribe();
+      this.channels.delete(`chat:${matchId}`);
     };
-  },
-  subscribeToTypingIndicators: (matchId: string, callback: (statuses: TypingStatus[]) => void) => {
+  }
+
+  // Subscribe to typing indicators
+  subscribeToTypingIndicators(
+    matchId: string,
+    onTypingChange: (typingStatuses: TypingStatus[]) => void
+  ): () => void {
+    // Create a channel for typing status updates
     const channel = supabase
-      .channel('arena-typing-updates')
+      .channel(`arena_typing:${matchId}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'arena_typing_status',
           filter: `match_id=eq.${matchId}`
         },
         async () => {
-          // When typing status changes, fetch all typing statuses
-          const { success, statuses } = await getTypingStatuses(matchId);
-          if (success && statuses) {
-            callback(statuses);
+          // When any typing status changes, fetch all current typing statuses
+          const { data } = await supabase
+            .from('arena_typing_status')
+            .select('*')
+            .eq('match_id', matchId);
+          
+          if (data) {
+            onTypingChange(data as unknown as TypingStatus[]);
           }
         }
       )
       .subscribe();
-    
+
+    // Save the channel for cleanup
+    this.channels.set(`typing:${matchId}`, channel);
+
+    // Return unsubscribe function
     return () => {
-      supabase.removeChannel(channel);
+      channel.unsubscribe();
+      this.channels.delete(`typing:${matchId}`);
     };
   }
-};
 
-// Export types from this file for convenience
-export type { ChatMessage, TypingStatus };
+  // Send a new message
+  async sendMessage(matchId: string, userId: string, content: string): Promise<ServiceResult<any>> {
+    try {
+      const { error } = await supabase
+        .from('arena_chat_messages')
+        .insert({
+          match_id: matchId,
+          user_id: userId,
+          content: content
+        });
+
+      if (error) {
+        console.error('Error sending message:', error);
+        return { success: false, message: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Exception sending message:', error);
+      return { success: false, message: 'An unexpected error occurred' };
+    }
+  }
+
+  // Update typing status
+  async updateTypingStatus(matchId: string, userId: string, isTyping: boolean): Promise<ServiceResult<any>> {
+    try {
+      const { error } = await supabase
+        .from('arena_typing_status')
+        .upsert({
+          match_id: matchId,
+          user_id: userId,
+          is_typing: isTyping,
+          last_updated: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error updating typing status:', error);
+        return { success: false, message: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Exception updating typing status:', error);
+      return { success: false, message: 'An unexpected error occurred' };
+    }
+  }
+
+  // Clear typing status
+  async clearTypingStatus(matchId: string, userId: string): Promise<ServiceResult<any>> {
+    return this.updateTypingStatus(matchId, userId, false);
+  }
+}
+
+// Export a singleton instance
+export const arenaChatService = new ArenaChatService();
