@@ -364,6 +364,38 @@ export type Database = {
         }
         Relationships: []
       }
+      poll_responses: {
+        Row: {
+          created_at: string | null
+          id: string
+          poll_id: string
+          selected_options: number[]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          poll_id: string
+          selected_options: number[]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          poll_id?: string
+          selected_options?: number[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_responses_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "session_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -546,6 +578,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_polls: {
+        Row: {
+          allow_multiple_choices: boolean | null
+          created_at: string | null
+          creator_id: string
+          ended_at: string | null
+          id: string
+          is_active: boolean | null
+          options: Json
+          question: string
+          session_id: string
+        }
+        Insert: {
+          allow_multiple_choices?: boolean | null
+          created_at?: string | null
+          creator_id: string
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          options: Json
+          question: string
+          session_id: string
+        }
+        Update: {
+          allow_multiple_choices?: boolean | null
+          created_at?: string | null
+          creator_id?: string
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          options?: Json
+          question?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_polls_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "live_sessions"

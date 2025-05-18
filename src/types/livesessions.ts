@@ -8,6 +8,7 @@ export interface LiveSession {
     id: string;
     name: string;
     avatar?: string;
+    isCurrentUser?: boolean;
   };
   participants: {
     id: string;
@@ -26,6 +27,7 @@ export interface LiveSession {
     chat: boolean;
     whiteboard: boolean;
     screenSharing: boolean;
+    polls?: boolean;
   };
   createdAt: string;
   updatedAt: string;
@@ -57,4 +59,35 @@ export interface SessionNote {
   content: string;
   timestamp: string;
   isShared: boolean;
+}
+
+export interface SessionPoll {
+  id: string;
+  sessionId: string;
+  creatorId: string;
+  question: string;
+  options: { text: string }[];
+  isActive: boolean;
+  allowMultipleChoices: boolean;
+  createdAt: string;
+  endedAt?: string;
+}
+
+export interface PollResponse {
+  id: string;
+  pollId: string;
+  userId: string;
+  selectedOptions: number[];
+  createdAt: string;
+}
+
+export interface PollResults {
+  totalResponses: number;
+  optionCounts: number[];
+  respondents: {
+    id: string;
+    name: string;
+    avatar?: string;
+    selectedOptions: number[];
+  }[];
 }

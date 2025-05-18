@@ -7,6 +7,7 @@ import SessionWhiteboard from './SessionWhiteboard';
 import SessionNotes from './SessionNotes';
 import SessionParticipants from './SessionParticipants';
 import SessionAnalytics from './SessionAnalytics';
+import SessionPoll from './SessionPoll';
 
 interface SessionTabsContentProps {
   session: LiveSession;
@@ -36,6 +37,13 @@ const SessionTabsContent: React.FC<SessionTabsContentProps> = ({ session }) => {
           sessionId={session.id} 
           participants={session.participants} 
           host={session.host} 
+        />
+      </TabsContent>
+      
+      <TabsContent value="polls" className="border-none p-0">
+        <SessionPoll 
+          sessionId={session.id} 
+          isHost={session.host.isCurrentUser === true} 
         />
       </TabsContent>
       

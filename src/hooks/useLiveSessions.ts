@@ -382,7 +382,8 @@ export function useLiveSessions() {
         audio: sessionData.features.audio,
         chat: sessionData.features.chat,
         whiteboard: sessionData.features.whiteboard,
-        screenSharing: sessionData.features.screenSharing
+        screenSharing: sessionData.features.screenSharing,
+        polls: true // Enable polls by default
       };
       
       // Insert session into database
