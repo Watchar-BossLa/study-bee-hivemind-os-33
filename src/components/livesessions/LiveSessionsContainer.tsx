@@ -1,17 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SessionsList from './SessionsList';
-import CreateSessionForm from './CreateSessionForm';
-import JoinSessionForm from './JoinSessionForm';
 import ActiveSessionView from './ActiveSessionView';
+import JoinSessionTab from './tabs/JoinSessionTab';
+import BrowseSessionsTab from './tabs/BrowseSessionsTab';
+import CreateSessionTab from './tabs/CreateSessionTab';
+import AuthenticationAlert from './AuthenticationAlert';
 import { LiveSession } from '@/types/livesessions';
 import { useToast } from "@/components/ui/use-toast";
 import { useLiveSessions } from '@/hooks/useLiveSessions';
 import { supabase } from '@/integrations/supabase/client';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 const LiveSessionsContainer = () => {
   const [activeSession, setActiveSession] = useState<LiveSession | null>(null);
@@ -85,7 +83,7 @@ const LiveSessionsContainer = () => {
         .from('live_sessions')
         .select('id, is_private, access_code')
         .eq('id', sessionId)
-        .single();
+        .maybeSingle();
       
       if (sessionError || !sessionData) {
         toast({
@@ -172,16 +170,7 @@ const LiveSessionsContainer = () => {
     <div className="container py-10">
       <h1 className="text-3xl font-bold mb-8">Live Study Sessions</h1>
       
-      {!isAuthenticated && (
-        <Alert className="mb-6" variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Authentication required</AlertTitle>
-          <AlertDescription className="flex items-center justify-between">
-            <span>You need to be logged in to create or join sessions.</span>
-            <Button variant="outline" onClick={handleSignIn}>Sign In</Button>
-          </AlertDescription>
-        </Alert>
-      )}
+      {!isAuthenticated && <AuthenticationAlert onSignIn={handleSignIn} />}
       
       <Tabs defaultValue="browse" className="w-full">
         <TabsList className="grid w-full md:w-auto grid-cols-3">
@@ -190,12 +179,12 @@ const LiveSessionsContainer = () => {
           <TabsTrigger value="create">Create Session</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="join" className="mt-6">
-          <JoinSessionForm onJoin={handleJoinById} disabled={!isAuthenticated} />
+        <TabsContent value="join">
+          <JoinSessionTab onJoin={handleJoinById} disabled={!isAuthenticated} />
         </TabsContent>
         
-        <TabsContent value="browse" className="mt-6">
-          <SessionsList 
+        <TabsContent value="browse">
+          <BrowseSessionsTab 
             sessions={sessions}
             isLoading={isLoading} 
             error={error}
@@ -204,8 +193,8 @@ const LiveSessionsContainer = () => {
           />
         </TabsContent>
         
-        <TabsContent value="create" className="mt-6">
-          <CreateSessionForm onSessionCreated={handleCreateSession} disabled={!isAuthenticated} />
+        <TabsContent value="create">
+          <CreateSessionTab onSessionCreated={handleCreateSession} disabled={!isAuthenticated} />
         </TabsContent>
       </Tabs>
     </div>
