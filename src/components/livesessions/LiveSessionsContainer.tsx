@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SessionsList from './SessionsList';
 import CreateSessionForm from './CreateSessionForm';
@@ -7,33 +7,161 @@ import JoinSessionForm from './JoinSessionForm';
 import ActiveSessionView from './ActiveSessionView';
 import { LiveSession } from '@/types/livesessions';
 import { useToast } from "@/components/ui/use-toast";
+import { useLiveSessions } from '@/hooks/useLiveSessions';
+import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const LiveSessionsContainer = () => {
   const [activeSession, setActiveSession] = useState<LiveSession | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const { toast } = useToast();
   
-  const handleJoinSession = (session: LiveSession) => {
-    setActiveSession(session);
-    toast({
-      title: "Session joined",
-      description: `You've joined ${session.title}`,
-    });
+  const {
+    sessions,
+    isLoading,
+    error,
+    joinSession,
+    createSession,
+    leaveSession
+  } = useLiveSessions();
+  
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data.session);
+      
+      // Set up auth state change listener
+      const { data: authListener } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          setIsAuthenticated(!!session);
+        }
+      );
+      
+      return () => {
+        authListener.subscription.unsubscribe();
+      };
+    };
+    
+    checkAuth();
+  }, []);
+  
+  const handleJoinSession = async (sessionToJoin: LiveSession) => {
+    if (!isAuthenticated) {
+      toast({
+        variant: "destructive",
+        title: "Authentication required",
+        description: "You must be logged in to join a session"
+      });
+      return;
+    }
+    
+    const joinedSession = await joinSession(sessionToJoin.id);
+    
+    if (joinedSession) {
+      setActiveSession(joinedSession);
+      toast({
+        title: "Session joined",
+        description: `You've joined ${joinedSession.title}`,
+      });
+    }
   };
   
-  const handleCreateSession = (session: LiveSession) => {
-    setActiveSession(session);
-    toast({
-      title: "Session created",
-      description: "Your study session has been created successfully",
-    });
+  const handleJoinById = async (sessionId: string, accessCode?: string) => {
+    if (!isAuthenticated) {
+      toast({
+        variant: "destructive",
+        title: "Authentication required",
+        description: "You must be logged in to join a session"
+      });
+      return;
+    }
+    
+    // Check if the session exists and access code is valid (if private)
+    try {
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('live_sessions')
+        .select('id, is_private, access_code')
+        .eq('id', sessionId)
+        .single();
+      
+      if (sessionError || !sessionData) {
+        toast({
+          variant: "destructive",
+          title: "Session not found",
+          description: "Please check the session ID and try again"
+        });
+        return;
+      }
+      
+      if (sessionData.is_private && sessionData.access_code !== accessCode) {
+        toast({
+          variant: "destructive",
+          title: "Invalid access code",
+          description: "Please check the access code and try again"
+        });
+        return;
+      }
+      
+      const joinedSession = await joinSession(sessionId);
+      
+      if (joinedSession) {
+        setActiveSession(joinedSession);
+        toast({
+          title: "Session joined",
+          description: `You've joined ${joinedSession.title}`,
+        });
+      }
+    } catch (err) {
+      console.error("Error checking session:", err);
+      toast({
+        variant: "destructive",
+        title: "Error joining session",
+        description: "Please try again later"
+      });
+    }
   };
   
-  const handleLeaveSession = () => {
-    setActiveSession(null);
-    toast({
-      title: "Session left",
-      description: "You've left the study session",
-    });
+  const handleCreateSession = async (sessionData: Omit<LiveSession, 'id' | 'createdAt' | 'updatedAt' | 'host' | 'participants'>) => {
+    if (!isAuthenticated) {
+      toast({
+        variant: "destructive",
+        title: "Authentication required",
+        description: "You must be logged in to create a session"
+      });
+      return;
+    }
+    
+    const newSession = await createSession(sessionData);
+    
+    if (newSession) {
+      setActiveSession(newSession);
+      toast({
+        title: "Session created",
+        description: "Your study session has been created successfully",
+      });
+    }
+  };
+  
+  const handleLeaveSession = async () => {
+    if (!activeSession) return;
+    
+    const success = await leaveSession(activeSession.id);
+    
+    if (success) {
+      setActiveSession(null);
+      toast({
+        title: "Session left",
+        description: "You've left the study session",
+      });
+    }
+  };
+  
+  const handleSignIn = async () => {
+    // Redirect to login page or show modal
+    window.location.href = "/login"; // Adjust as needed for your auth flow
   };
 
   if (activeSession) {
@@ -44,7 +172,18 @@ const LiveSessionsContainer = () => {
     <div className="container py-10">
       <h1 className="text-3xl font-bold mb-8">Live Study Sessions</h1>
       
-      <Tabs defaultValue="join" className="w-full">
+      {!isAuthenticated && (
+        <Alert className="mb-6" variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Authentication required</AlertTitle>
+          <AlertDescription className="flex items-center justify-between">
+            <span>You need to be logged in to create or join sessions.</span>
+            <Button variant="outline" onClick={handleSignIn}>Sign In</Button>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      <Tabs defaultValue="browse" className="w-full">
         <TabsList className="grid w-full md:w-auto grid-cols-3">
           <TabsTrigger value="join">Join Session</TabsTrigger>
           <TabsTrigger value="browse">Browse Sessions</TabsTrigger>
@@ -52,15 +191,21 @@ const LiveSessionsContainer = () => {
         </TabsList>
         
         <TabsContent value="join" className="mt-6">
-          <JoinSessionForm onJoin={handleJoinSession} />
+          <JoinSessionForm onJoin={handleJoinById} disabled={!isAuthenticated} />
         </TabsContent>
         
         <TabsContent value="browse" className="mt-6">
-          <SessionsList onJoinSession={handleJoinSession} />
+          <SessionsList 
+            sessions={sessions}
+            isLoading={isLoading} 
+            error={error}
+            onJoinSession={handleJoinSession} 
+            disabled={!isAuthenticated}
+          />
         </TabsContent>
         
         <TabsContent value="create" className="mt-6">
-          <CreateSessionForm onSessionCreated={handleCreateSession} />
+          <CreateSessionForm onSessionCreated={handleCreateSession} disabled={!isAuthenticated} />
         </TabsContent>
       </Tabs>
     </div>

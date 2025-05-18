@@ -2,7 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Eraser, Undo, Download, Square, Circle, Pencil, Type } from 'lucide-react';
+import { Eraser, Undo, Download, Square, Circle, Pencil, Type, Trash2 } from 'lucide-react';
+import { useSessionWhiteboard } from '@/hooks/useSessionWhiteboard';
 
 interface SessionWhiteboardProps {
   sessionId: string;
@@ -14,10 +15,11 @@ const SessionWhiteboard: React.FC<SessionWhiteboardProps> = ({ sessionId }) => {
   const [tool, setTool] = useState<'pencil' | 'eraser' | 'text' | 'rectangle' | 'circle'>('pencil');
   const [color, setColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(2);
-  const [paths, setPaths] = useState<any[]>([]);
   const [currentPath, setCurrentPath] = useState<any[]>([]);
   
-  // Set up canvas context
+  const { paths, addPath, clearWhiteboard } = useSessionWhiteboard(sessionId);
+  
+  // Set up canvas context and draw all paths
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas) {
@@ -30,51 +32,71 @@ const SessionWhiteboard: React.FC<SessionWhiteboardProps> = ({ sessionId }) => {
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Draw all saved paths
-        drawPaths(ctx);
+        // Draw all paths
+        paths.forEach(path => {
+          ctx.beginPath();
+          ctx.strokeStyle = path.color;
+          ctx.lineWidth = path.brushSize;
+          ctx.lineJoin = 'round';
+          ctx.lineCap = 'round';
+          
+          if (path.tool === 'eraser') {
+            ctx.globalCompositeOperation = 'destination-out';
+          } else {
+            ctx.globalCompositeOperation = 'source-over';
+          }
+          
+          if (path.tool === 'rectangle') {
+            ctx.strokeRect(path.points[0].x, path.points[0].y, 
+                          path.points[1].x - path.points[0].x, 
+                          path.points[1].y - path.points[0].y);
+          } else if (path.tool === 'circle') {
+            const radius = Math.sqrt(
+              Math.pow(path.points[1].x - path.points[0].x, 2) + 
+              Math.pow(path.points[1].y - path.points[0].y, 2)
+            );
+            ctx.beginPath();
+            ctx.arc(path.points[0].x, path.points[0].y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+          } else {
+            // For pencil and eraser
+            path.points.forEach((point: any, index: number) => {
+              if (index === 0) {
+                ctx.moveTo(point.x, point.y);
+              } else {
+                ctx.lineTo(point.x, point.y);
+              }
+            });
+            ctx.stroke();
+          }
+        });
       }
     }
   }, [paths]);
   
-  const drawPaths = (ctx: CanvasRenderingContext2D) => {
-    paths.forEach(path => {
-      ctx.beginPath();
-      ctx.strokeStyle = path.color;
-      ctx.lineWidth = path.brushSize;
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      
-      if (path.tool === 'eraser') {
-        ctx.globalCompositeOperation = 'destination-out';
-      } else {
-        ctx.globalCompositeOperation = 'source-over';
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Remember current drawing
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          
+          // Resize canvas
+          canvas.width = canvas.offsetWidth;
+          canvas.height = canvas.offsetHeight;
+          
+          // Restore drawing
+          ctx.putImageData(imageData, 0, 0);
+        }
       }
-      
-      if (path.tool === 'rectangle') {
-        ctx.strokeRect(path.points[0].x, path.points[0].y, 
-                      path.points[1].x - path.points[0].x, 
-                      path.points[1].y - path.points[0].y);
-      } else if (path.tool === 'circle') {
-        const radius = Math.sqrt(
-          Math.pow(path.points[1].x - path.points[0].x, 2) + 
-          Math.pow(path.points[1].y - path.points[0].y, 2)
-        );
-        ctx.beginPath();
-        ctx.arc(path.points[0].x, path.points[0].y, radius, 0, 2 * Math.PI);
-        ctx.stroke();
-      } else {
-        // For pencil and eraser
-        path.points.forEach((point: any, index: number) => {
-          if (index === 0) {
-            ctx.moveTo(point.x, point.y);
-          } else {
-            ctx.lineTo(point.x, point.y);
-          }
-        });
-        ctx.stroke();
-      }
-    });
-  };
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -121,28 +143,28 @@ const SessionWhiteboard: React.FC<SessionWhiteboardProps> = ({ sessionId }) => {
     }
   };
   
-  const stopDrawing = () => {
-    if (!isDrawing) return;
+  const stopDrawing = async () => {
+    if (!isDrawing || currentPath.length < 2) {
+      setIsDrawing(false);
+      setCurrentPath([]);
+      return;
+    }
+    
     setIsDrawing(false);
     
-    const newPath = {
+    // Save path to database
+    await addPath({
       tool,
       color,
       brushSize,
-      points: currentPath,
-    };
+      points: currentPath
+    });
     
-    setPaths([...paths, newPath]);
     setCurrentPath([]);
   };
   
-  const handleUndo = () => {
-    if (paths.length === 0) return;
-    setPaths(paths.slice(0, -1));
-  };
-  
-  const handleClear = () => {
-    setPaths([]);
+  const handleClear = async () => {
+    await clearWhiteboard();
   };
   
   const handleDownload = () => {
@@ -201,11 +223,8 @@ const SessionWhiteboard: React.FC<SessionWhiteboardProps> = ({ sessionId }) => {
         
         {/* Actions */}
         <div className="flex gap-1">
-          <Button variant="outline" size="sm" onClick={handleUndo}>
-            <Undo className="h-4 w-4 mr-1" />
-            Undo
-          </Button>
           <Button variant="outline" size="sm" onClick={handleClear}>
+            <Trash2 className="h-4 w-4 mr-1" />
             Clear
           </Button>
           <Button variant="outline" size="sm" onClick={handleDownload}>

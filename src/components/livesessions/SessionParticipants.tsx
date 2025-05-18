@@ -1,7 +1,9 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { supabase } from '@/integrations/supabase/client';
+import { Mic, MicOff, User } from 'lucide-react';
 
 interface Participant {
   id: string;
@@ -14,7 +16,104 @@ interface SessionParticipantsProps {
   hostId: string;
 }
 
-const SessionParticipants: React.FC<SessionParticipantsProps> = ({ participants, hostId }) => {
+const SessionParticipants: React.FC<SessionParticipantsProps> = ({ participants: initialParticipants, hostId }) => {
+  const [participants, setParticipants] = useState<Participant[]>(initialParticipants);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [audioEnabled, setAudioEnabled] = useState<Record<string, boolean>>({});
+  
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        setCurrentUserId(data.user.id);
+      }
+    };
+    
+    fetchCurrentUser();
+    
+    // Initialize audio states
+    const initialAudioStates: Record<string, boolean> = {};
+    initialParticipants.forEach(p => {
+      initialAudioStates[p.id] = true;
+    });
+    setAudioEnabled(initialAudioStates);
+  }, [initialParticipants]);
+
+  // Subscribe to participants changes
+  useEffect(() => {
+    // Function to fetch all active participants
+    const fetchParticipants = async (sessionId: string) => {
+      if (!sessionId) return;
+      
+      try {
+        const { data } = await supabase
+          .from('session_participants')
+          .select(`
+            user_id,
+            role,
+            is_active,
+            profiles:user_id (id, full_name, avatar_url)
+          `)
+          .eq('session_id', sessionId)
+          .eq('is_active', true);
+        
+        if (data) {
+          const mappedParticipants = data.map(p => ({
+            id: p.profiles.id,
+            name: p.profiles.full_name || 'Unknown User',
+            avatar: p.profiles.avatar_url || undefined,
+            role: p.role
+          }));
+          
+          setParticipants(mappedParticipants);
+          
+          // Update audio states for new participants
+          mappedParticipants.forEach(p => {
+            if (audioEnabled[p.id] === undefined) {
+              setAudioEnabled(prev => ({ ...prev, [p.id]: true }));
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching participants:", error);
+      }
+    };
+    
+    // Extract session ID from the first participant
+    if (initialParticipants.length > 0) {
+      const sessionId = initialParticipants[0]?.id.split('_')[0];
+      
+      if (sessionId) {
+        // Set up subscription
+        const channel = supabase
+          .channel(`participants-changes`)
+          .on('postgres_changes', 
+            { 
+              event: '*', 
+              schema: 'public', 
+              table: 'session_participants',
+              filter: `session_id=eq.${sessionId}`
+            }, 
+            () => {
+              fetchParticipants(sessionId);
+            }
+          )
+          .subscribe();
+          
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      }
+    }
+  }, [initialParticipants]);
+  
+  const toggleAudio = (participantId: string) => {
+    setAudioEnabled(prev => ({
+      ...prev,
+      [participantId]: !prev[participantId]
+    }));
+  };
+
   return (
     <div className="p-4">
       <ul className="space-y-4">
@@ -23,7 +122,9 @@ const SessionParticipants: React.FC<SessionParticipantsProps> = ({ participants,
             <div className="flex items-center gap-3">
               <Avatar>
                 <AvatarImage src={participant.avatar} alt={participant.name} />
-                <AvatarFallback>{participant.name.charAt(0)}</AvatarFallback>
+                <AvatarFallback>
+                  <User className="h-4 w-4" />
+                </AvatarFallback>
               </Avatar>
               <div>
                 <p className="font-medium">{participant.name}</p>
@@ -33,24 +134,19 @@ const SessionParticipants: React.FC<SessionParticipantsProps> = ({ participants,
               </div>
             </div>
             
-            {participant.id !== 'current-user-id' && (
-              <div className="flex gap-2">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 2H2v20"></path>
-                    <path d="M22 16H16v6"></path>
-                    <path d="M8 9l4-4 4 4"></path>
-                    <path d="M12 5v10"></path>
-                  </svg>
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3Z"></path>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                    <line x1="12" x2="12" y1="19" y2="22"></line>
-                  </svg>
-                </Button>
-              </div>
+            {participant.id !== currentUserId && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => toggleAudio(participant.id)}
+              >
+                {audioEnabled[participant.id] ? (
+                  <Mic className="h-4 w-4" />
+                ) : (
+                  <MicOff className="h-4 w-4" />
+                )}
+              </Button>
             )}
           </li>
         ))}

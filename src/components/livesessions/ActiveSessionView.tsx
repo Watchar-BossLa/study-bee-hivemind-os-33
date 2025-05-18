@@ -1,13 +1,16 @@
 
-import React, { useState } from 'react';
-import { LiveSession, SessionMessage } from '@/types/livesessions';
+import React, { useState, useEffect } from 'react';
+import { LiveSession } from '@/types/livesessions';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SessionChat from './SessionChat';
 import SessionWhiteboard from './SessionWhiteboard';
 import SessionParticipants from './SessionParticipants';
 import SessionNotes from './SessionNotes';
-import { Video, Users, MessageSquare, PenTool, FileText, ScreenShare } from 'lucide-react';
+import { Video, Users, MessageSquare, PenTool, FileText, ScreenShare, AlertCircle } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from '@/integrations/supabase/client';
+import { Badge } from "@/components/ui/badge";
 
 interface ActiveSessionViewProps {
   session: LiveSession;
@@ -17,6 +20,64 @@ interface ActiveSessionViewProps {
 const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ session, onLeave }) => {
   const [showVideo, setShowVideo] = useState(true);
   const [showScreenShare, setShowScreenShare] = useState(false);
+  const [isHost, setIsHost] = useState(false);
+  const [participantCount, setParticipantCount] = useState(session.participants.length);
+  const { toast } = useToast();
+
+  // Check if current user is the host
+  useEffect(() => {
+    const checkHostStatus = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        setIsHost(data.user.id === session.host.id);
+      }
+    };
+    
+    checkHostStatus();
+  }, [session.host.id]);
+  
+  // Subscribe to participant changes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`participants-${session.id}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'session_participants',
+          filter: `session_id=eq.${session.id}`
+        }, 
+        (payload) => {
+          // Refresh participant count
+          const getParticipantCount = async () => {
+            const { data } = await supabase
+              .from('session_participants')
+              .select('id')
+              .eq('session_id', session.id)
+              .eq('is_active', true);
+            
+            if (data) {
+              setParticipantCount(data.length);
+            }
+          };
+          
+          getParticipantCount();
+          
+          // Show notification for new participants
+          if (payload.eventType === 'INSERT') {
+            toast({
+              title: "New participant",
+              description: "Someone has joined the session"
+            });
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session.id, toast]);
 
   const toggleScreenShare = () => {
     setShowScreenShare(!showScreenShare);
@@ -31,16 +92,58 @@ const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ session, onLeave 
       setShowScreenShare(false);
     }
   };
+  
+  const handleEndSession = async () => {
+    if (!isHost) return;
+    
+    try {
+      // Update session status to ended
+      const { error } = await supabase
+        .from('live_sessions')
+        .update({
+          status: 'ended',
+          end_time: new Date().toISOString()
+        })
+        .eq('id', session.id);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Session ended",
+        description: "You've ended the study session"
+      });
+      
+      onLeave();
+    } catch (err) {
+      console.error("Error ending session:", err);
+      toast({
+        variant: "destructive",
+        title: "Error ending session",
+        description: "Failed to end session"
+      });
+    }
+  };
 
   return (
     <div className="container py-6 h-full">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">{session.title}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold">{session.title}</h1>
+            {isHost && <Badge variant="outline">Host</Badge>}
+          </div>
           <p className="text-muted-foreground">{session.subject}</p>
         </div>
         
-        <Button variant="destructive" onClick={onLeave}>Leave Session</Button>
+        <div className="flex gap-2">
+          {isHost && (
+            <Button variant="destructive" onClick={handleEndSession}>
+              <AlertCircle className="mr-2 h-4 w-4" />
+              End Session
+            </Button>
+          )}
+          <Button variant={isHost ? "outline" : "destructive"} onClick={onLeave}>Leave Session</Button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-200px)]">
@@ -51,13 +154,13 @@ const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ session, onLeave 
                style={{ height: 'calc(100% - 12rem)' }}>
             {showVideo && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-2 h-full">
-                {[...Array(Math.min(session.participants.length, 6))].map((_, idx) => (
+                {[...Array(Math.min(participantCount, 6))].map((_, idx) => (
                   <div key={idx} className="bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center">
                     <div className="text-center">
                       <div className="w-16 h-16 md:w-20 md:h-20 mx-auto bg-primary/10 rounded-full flex items-center justify-center text-2xl">
-                        {session.participants[idx]?.name.charAt(0)}
+                        {session.participants[idx]?.name?.charAt(0) || '?'}
                       </div>
-                      <p className="text-sm mt-2">{session.participants[idx]?.name}</p>
+                      <p className="text-sm mt-2">{session.participants[idx]?.name || 'Loading...'}</p>
                     </div>
                   </div>
                 ))}
@@ -145,7 +248,7 @@ const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ session, onLeave 
           <div className="bg-gray-50 dark:bg-gray-900 rounded-lg h-full overflow-hidden">
             <div className="p-4 border-b flex items-center">
               <Users className="h-4 w-4 mr-2" />
-              <h3 className="font-medium">Participants ({session.participants.length}/{session.maxParticipants})</h3>
+              <h3 className="font-medium">Participants ({participantCount}/{session.maxParticipants})</h3>
             </div>
             <SessionParticipants participants={session.participants} hostId={session.host.id} />
           </div>

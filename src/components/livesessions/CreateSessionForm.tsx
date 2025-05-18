@@ -1,321 +1,218 @@
 
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { LiveSession } from '@/types/livesessions';
-import { v4 as uuidv4 } from '@/lib/uuid';
-
-const formSchema = z.object({
-  title: z.string().min(3, { message: "Title must be at least 3 characters" }),
-  description: z.string().optional(),
-  subject: z.string().min(1, { message: "Please select a subject" }),
-  maxParticipants: z.number().min(2).max(20),
-  startTime: z.string().min(1, { message: "Please set a start time" }),
-  isPrivate: z.boolean().default(false),
-  accessCode: z.string().optional(),
-  video: z.boolean().default(true),
-  audio: z.boolean().default(true),
-  chat: z.boolean().default(true),
-  whiteboard: z.boolean().default(true),
-  screenSharing: z.boolean().default(true),
-});
 
 interface CreateSessionFormProps {
-  onSessionCreated: (session: LiveSession) => void;
+  onSessionCreated: (sessionData: Omit<LiveSession, 'id' | 'createdAt' | 'updatedAt' | 'host' | 'participants'>) => void;
+  disabled?: boolean;
 }
 
-const CreateSessionForm: React.FC<CreateSessionFormProps> = ({ onSessionCreated }) => {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      subject: "",
-      maxParticipants: 5,
-      startTime: new Date().toISOString().slice(0, 16),
-      isPrivate: false,
-      accessCode: "",
-      video: true,
-      audio: true,
-      chat: true,
-      whiteboard: true,
-      screenSharing: true,
-    },
+const SUBJECTS = [
+  'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science',
+  'Literature', 'History', 'Geography', 'Economics', 'Psychology',
+  'Business', 'Law', 'Medicine', 'Engineering', 'Arts', 'Music',
+  'Languages', 'Philosophy', 'Political Science', 'Sociology'
+];
+
+const CreateSessionForm: React.FC<CreateSessionFormProps> = ({ onSessionCreated, disabled = false }) => {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [subject, setSubject] = useState('');
+  const [maxParticipants, setMaxParticipants] = useState(10);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [accessCode, setAccessCode] = useState('');
+  const [features, setFeatures] = useState({
+    video: true,
+    audio: true,
+    chat: true,
+    whiteboard: true,
+    screenSharing: true
   });
-  
-  const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
-    // In a real app, we would make an API call to create the session
-    const newSession: LiveSession = {
-      id: uuidv4(),
-      title: values.title,
-      description: values.description,
-      subject: values.subject,
-      host: {
-        id: "current-user-id",
-        name: "Current User",
-      },
-      participants: [
-        {
-          id: "current-user-id",
-          name: "Current User",
-        }
-      ],
-      maxParticipants: values.maxParticipants,
-      startTime: values.startTime,
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const sessionData: Omit<LiveSession, 'id' | 'createdAt' | 'updatedAt' | 'host' | 'participants'> = {
+      title,
+      description: description || undefined,
+      subject,
+      maxParticipants,
+      startTime: new Date().toISOString(),
       status: 'active',
-      isPrivate: values.isPrivate,
-      accessCode: values.isPrivate ? values.accessCode : undefined,
-      features: {
-        video: values.video,
-        audio: values.audio,
-        chat: values.chat,
-        whiteboard: values.whiteboard,
-        screenSharing: values.screenSharing,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      isPrivate,
+      accessCode: isPrivate ? accessCode : undefined,
+      features
     };
     
-    onSessionCreated(newSession);
+    onSessionCreated(sessionData);
   };
-  
+
+  const toggleFeature = (feature: keyof typeof features) => {
+    setFeatures(prev => ({
+      ...prev,
+      [feature]: !prev[feature]
+    }));
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create Study Session</CardTitle>
+        <CardTitle>Create a Study Session</CardTitle>
         <CardDescription>
-          Set up a new live study session and invite your peers to join.
+          Set up a new collaborative study session
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Session Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Biology Final Exam Review" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Session Title</Label>
+            <Input
+              id="title"
+              placeholder="e.g., Biology Final Exam Review"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              disabled={disabled}
             />
-            
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description (optional)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Details about what will be covered" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (Optional)</Label>
+            <Textarea
+              id="description"
+              placeholder="Brief description of what will be covered"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={disabled}
+              rows={3}
             />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="subject"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Subject</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a subject" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="biology">Biology</SelectItem>
-                        <SelectItem value="mathematics">Mathematics</SelectItem>
-                        <SelectItem value="physics">Physics</SelectItem>
-                        <SelectItem value="chemistry">Chemistry</SelectItem>
-                        <SelectItem value="history">History</SelectItem>
-                        <SelectItem value="literature">Literature</SelectItem>
-                        <SelectItem value="computer-science">Computer Science</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="maxParticipants"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Max Participants</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        min={2} 
-                        max={20} 
-                        {...field} 
-                        onChange={(e) => field.onChange(parseInt(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="subject">Subject</Label>
+            <select
+              id="subject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
+              required
+              disabled={disabled}
+            >
+              <option value="">Select a subject</option>
+              {SUBJECTS.map((subj) => (
+                <option key={subj} value={subj.toLowerCase()}>{subj}</option>
+              ))}
+              <option value="other">Other</option>
+            </select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="max-participants">Maximum Participants</Label>
+            <Input
+              id="max-participants"
+              type="number"
+              min="2"
+              max="20"
+              value={maxParticipants}
+              onChange={(e) => setMaxParticipants(parseInt(e.target.value))}
+              required
+              disabled={disabled}
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <Label htmlFor="private-session">Private Session</Label>
+            <Switch
+              id="private-session"
+              checked={isPrivate}
+              onCheckedChange={setIsPrivate}
+              disabled={disabled}
+            />
+          </div>
+          
+          {isPrivate && (
+            <div className="space-y-2">
+              <Label htmlFor="access-code">Access Code</Label>
+              <Input
+                id="access-code"
+                placeholder="Enter a code to share with participants"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
+                required={isPrivate}
+                disabled={disabled}
               />
             </div>
-            
-            <FormField
-              control={form.control}
-              name="startTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Start Time</FormLabel>
-                  <FormControl>
-                    <Input type="datetime-local" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <div className="grid gap-4">
-              <FormField
-                control={form.control}
-                name="isPrivate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox 
-                        checked={field.value} 
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Make private</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        Only people with an access code can join
-                      </p>
-                    </div>
-                  </FormItem>
-                )}
-              />
+          )}
+          
+          <div className="space-y-2">
+            <Label>Features</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="feature-video">Video</Label>
+                <Switch
+                  id="feature-video"
+                  checked={features.video}
+                  onCheckedChange={() => toggleFeature('video')}
+                  disabled={disabled}
+                />
+              </div>
               
-              {form.watch("isPrivate") && (
-                <FormField
-                  control={form.control}
-                  name="accessCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Access Code</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter access code" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              <div className="flex items-center justify-between">
+                <Label htmlFor="feature-audio">Audio</Label>
+                <Switch
+                  id="feature-audio"
+                  checked={features.audio}
+                  onCheckedChange={() => toggleFeature('audio')}
+                  disabled={disabled}
                 />
-              )}
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium mb-3">Session Features</h3>
-              <div className="grid gap-2">
-                <FormField
-                  control={form.control}
-                  name="video"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox 
-                          checked={field.value} 
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel>Video</FormLabel>
-                    </FormItem>
-                  )}
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="feature-chat">Chat</Label>
+                <Switch
+                  id="feature-chat"
+                  checked={features.chat}
+                  onCheckedChange={() => toggleFeature('chat')}
+                  disabled={disabled}
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="audio"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox 
-                          checked={field.value} 
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel>Audio</FormLabel>
-                    </FormItem>
-                  )}
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="feature-whiteboard">Whiteboard</Label>
+                <Switch
+                  id="feature-whiteboard"
+                  checked={features.whiteboard}
+                  onCheckedChange={() => toggleFeature('whiteboard')}
+                  disabled={disabled}
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="chat"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox 
-                          checked={field.value} 
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel>Chat</FormLabel>
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="whiteboard"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox 
-                          checked={field.value} 
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel>Whiteboard</FormLabel>
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="screenSharing"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox 
-                          checked={field.value} 
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel>Screen Sharing</FormLabel>
-                    </FormItem>
-                  )}
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="feature-screen">Screen Sharing</Label>
+                <Switch
+                  id="feature-screen"
+                  checked={features.screenSharing}
+                  onCheckedChange={() => toggleFeature('screenSharing')}
+                  disabled={disabled}
                 />
               </div>
             </div>
-            
-            <Button type="submit" className="w-full">Create Session</Button>
-          </form>
-        </Form>
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={!title || !subject || disabled}
+          >
+            Create Session
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );

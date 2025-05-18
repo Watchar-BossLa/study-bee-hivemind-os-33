@@ -242,6 +242,57 @@ export type Database = {
           },
         ]
       }
+      live_sessions: {
+        Row: {
+          access_code: string | null
+          created_at: string
+          description: string | null
+          end_time: string | null
+          features: Json
+          host_id: string
+          id: string
+          is_private: boolean
+          max_participants: number
+          start_time: string
+          status: string
+          subject: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          access_code?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          features?: Json
+          host_id: string
+          id?: string
+          is_private?: boolean
+          max_participants?: number
+          start_time?: string
+          status?: string
+          subject: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          access_code?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          features?: Json
+          host_id?: string
+          id?: string
+          is_private?: boolean
+          max_participants?: number
+          start_time?: string
+          status?: string
+          subject?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       match_players: {
         Row: {
           correct_answers: number
@@ -384,6 +435,167 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      session_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          session_id: string
+          type: string
+          user_avatar: string | null
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          session_id: string
+          type?: string
+          user_avatar?: string | null
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          session_id?: string
+          type?: string
+          user_avatar?: string | null
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_shared: boolean
+          session_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_shared?: boolean
+          session_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_shared?: boolean
+          session_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_participants: {
+        Row: {
+          id: string
+          is_active: boolean
+          joined_at: string
+          left_at: string | null
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          left_at?: string | null
+          role?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          left_at?: string | null
+          role?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_whiteboard_paths: {
+        Row: {
+          brush_size: number
+          color: string
+          created_at: string
+          id: string
+          path_data: Json
+          session_id: string
+          tool: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          brush_size: number
+          color: string
+          created_at?: string
+          id?: string
+          path_data: Json
+          session_id: string
+          tool: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          brush_size?: number
+          color?: string
+          created_at?: string
+          id?: string
+          path_data?: Json
+          session_id?: string
+          tool?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_whiteboard_paths_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_achievements: {
         Row: {

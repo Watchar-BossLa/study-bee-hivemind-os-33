@@ -1,127 +1,79 @@
 
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { LiveSession } from '@/types/livesessions';
-import { useLiveSessions } from '@/hooks/useLiveSessions';
-
-const formSchema = z.object({
-  sessionCode: z.string().min(5, { message: "Session code must be at least 5 characters" }),
-  accessCode: z.string().optional(),
-});
+import { Label } from "@/components/ui/label";
 
 interface JoinSessionFormProps {
-  onJoin: (session: LiveSession) => void;
+  onJoin: (sessionId: string, accessCode?: string) => void;
+  disabled?: boolean;
 }
 
-const JoinSessionForm: React.FC<JoinSessionFormProps> = ({ onJoin }) => {
-  const { getSessionById } = useLiveSessions();
-  const [error, setError] = React.useState<string | null>(null);
-  const [isPrivate, setIsPrivate] = React.useState(false);
-  
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      sessionCode: "",
-      accessCode: "",
-    },
-  });
-  
-  const handleCheckSession = (sessionCode: string) => {
-    if (sessionCode.length >= 5) {
-      const session = getSessionById(sessionCode);
-      if (session) {
-        setIsPrivate(session.isPrivate);
-        setError(null);
-      } else {
-        setIsPrivate(false);
-        setError("Session not found");
-      }
-    }
+const JoinSessionForm: React.FC<JoinSessionFormProps> = ({ onJoin, disabled = false }) => {
+  const [sessionId, setSessionId] = useState('');
+  const [accessCode, setAccessCode] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sessionId) return;
+    
+    onJoin(sessionId, isPrivate ? accessCode : undefined);
   };
-  
-  const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
-    const session = getSessionById(values.sessionCode);
-    if (!session) {
-      setError("Session not found");
-      return;
-    }
-    
-    if (session.isPrivate && session.accessCode !== values.accessCode) {
-      setError("Invalid access code");
-      return;
-    }
-    
-    // Check if session is full
-    if (session.participants.length >= session.maxParticipants) {
-      setError("Session is full");
-      return;
-    }
-    
-    onJoin(session);
-  };
-  
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Join Session</CardTitle>
+        <CardTitle>Join a Study Session</CardTitle>
         <CardDescription>
-          Enter a session code to join an existing study session
+          Enter a session ID to join an existing study session
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="sessionCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Session Code</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Enter session code" 
-                      {...field}
-                      onChange={(e) => {
-                        field.onChange(e);
-                        handleCheckSession(e.target.value);
-                      }}
-                    />
-                  </FormControl>
-                  {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
-                  <FormMessage />
-                </FormItem>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="session-id">Session ID</Label>
+            <Input
+              id="session-id"
+              placeholder="Enter session ID"
+              value={sessionId}
+              onChange={(e) => setSessionId(e.target.value)}
+              disabled={disabled}
+              required
             />
-            
-            {isPrivate && (
-              <FormField
-                control={form.control}
-                name="accessCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Access Code</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="password"
-                        placeholder="Enter the access code" 
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="private-session"
+              checked={isPrivate}
+              onChange={() => setIsPrivate(!isPrivate)}
+              className="rounded"
+              disabled={disabled}
+            />
+            <Label htmlFor="private-session">This is a private session</Label>
+          </div>
+          
+          {isPrivate && (
+            <div className="space-y-2">
+              <Label htmlFor="access-code">Access Code</Label>
+              <Input
+                id="access-code"
+                placeholder="Enter access code"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
+                disabled={disabled}
+                required={isPrivate}
               />
-            )}
-            
-            <Button type="submit" className="w-full">Join Session</Button>
-          </form>
-        </Form>
+            </div>
+          )}
+          
+          <Button type="submit" className="w-full" disabled={!sessionId || (isPrivate && !accessCode) || disabled}>
+            Join Session
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );

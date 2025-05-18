@@ -2,63 +2,40 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SessionMessage } from '@/types/livesessions';
 import { Send } from 'lucide-react';
+import { useSessionChat } from '@/hooks/useSessionChat';
+import { useToast } from "@/components/ui/use-toast";
 
 interface SessionChatProps {
   sessionId: string;
 }
 
 const SessionChat: React.FC<SessionChatProps> = ({ sessionId }) => {
-  const [messages, setMessages] = useState<SessionMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // Simulate initial messages
-  useEffect(() => {
-    setMessages([
-      {
-        id: '1',
-        sessionId,
-        userId: 'system',
-        userName: 'System',
-        content: 'Welcome to the study session! Please be respectful to all participants.',
-        type: 'system',
-        timestamp: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        sessionId,
-        userId: 'user-2',
-        userName: 'Sarah',
-        content: 'Hi everyone! Ready to study?',
-        type: 'text',
-        timestamp: new Date(Date.now() - 60000).toISOString(),
-      },
-    ]);
-  }, [sessionId]);
+  const { messages, typingUsers, sendMessage, setTyping } = useSessionChat(sessionId);
+  const { toast } = useToast();
   
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
   
-  const handleSendMessage = (e: React.FormEvent) => {
+  // Handle typing indicator
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    setTyping(e.target.value.length > 0);
+  };
+  
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
     
-    const message: SessionMessage = {
-      id: Date.now().toString(),
-      sessionId,
-      userId: 'current-user-id',
-      userName: 'You',
-      content: newMessage,
-      type: 'text',
-      timestamp: new Date().toISOString(),
-    };
-    
-    setMessages([...messages, message]);
-    setNewMessage('');
+    const success = await sendMessage(newMessage);
+    if (success) {
+      setNewMessage('');
+      setTyping(false);
+    }
   };
   
   return (
@@ -92,6 +69,13 @@ const SessionChat: React.FC<SessionChatProps> = ({ sessionId }) => {
               </div>
             </div>
           ))}
+          
+          {typingUsers.length > 0 && (
+            <div className="text-sm text-muted-foreground italic">
+              {typingUsers.map(user => user.name).join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+            </div>
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -99,11 +83,11 @@ const SessionChat: React.FC<SessionChatProps> = ({ sessionId }) => {
       <form onSubmit={handleSendMessage} className="p-2 border-t flex gap-2">
         <Input
           value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+          onChange={handleInputChange}
           placeholder="Type your message..."
           className="flex-1"
         />
-        <Button type="submit" size="icon">
+        <Button type="submit" size="icon" disabled={!newMessage.trim()}>
           <Send className="h-4 w-4" />
         </Button>
       </form>
