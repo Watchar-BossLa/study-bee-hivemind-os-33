@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { LiveSession } from '@/types/livesessions';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,13 +49,17 @@ export function useLiveSessions() {
             .single();
           
           // Fetch participants
-          const { data: participantsData } = await supabase
+          const { data: participantsData, error: participantsError } = await supabase
             .from('session_participants')
             .select(`
               user_id,
-              profiles:user_id (id, full_name, avatar_url)
+              profiles (id, full_name, avatar_url)
             `)
             .eq('session_id', session.id);
+          
+          if (participantsError) {
+            console.error("Error fetching participants:", participantsError);
+          }
           
           const host = hostData ? {
             id: hostData.id,
@@ -66,15 +71,52 @@ export function useLiveSessions() {
             avatar: undefined
           };
           
-          const participants = participantsData ? participantsData.map(p => ({
-            id: p.profiles.id,
-            name: p.profiles.full_name || 'Unknown User',
-            avatar: p.profiles.avatar_url || undefined
-          })) : [];
+          const participants = participantsData ? participantsData.map(p => {
+            // Safely access profile data with null checks
+            const profile = p.profiles as Record<string, any> | null;
+            return {
+              id: profile?.id || p.user_id,
+              name: profile?.full_name || 'Unknown User',
+              avatar: profile?.avatar_url || undefined
+            };
+          }) : [];
           
           // Add host to participants if not already included
           if (!participants.some(p => p.id === host.id)) {
             participants.push(host);
+          }
+          
+          // Parse features from JSON to ensure proper typing
+          let typedFeatures = {
+            video: true,
+            audio: true,
+            chat: true,
+            whiteboard: true,
+            screenSharing: true
+          };
+          
+          try {
+            // Handle both string and object JSON formats
+            if (typeof session.features === 'string') {
+              const parsedFeatures = JSON.parse(session.features);
+              typedFeatures = {
+                video: Boolean(parsedFeatures.video),
+                audio: Boolean(parsedFeatures.audio),
+                chat: Boolean(parsedFeatures.chat),
+                whiteboard: Boolean(parsedFeatures.whiteboard),
+                screenSharing: Boolean(parsedFeatures.screenSharing)
+              };
+            } else if (typeof session.features === 'object' && session.features !== null) {
+              typedFeatures = {
+                video: Boolean(session.features.video),
+                audio: Boolean(session.features.audio),
+                chat: Boolean(session.features.chat),
+                whiteboard: Boolean(session.features.whiteboard),
+                screenSharing: Boolean(session.features.screenSharing)
+              };
+            }
+          } catch (err) {
+            console.error("Error parsing features:", err);
           }
           
           return {
@@ -90,7 +132,7 @@ export function useLiveSessions() {
             status: session.status as 'scheduled' | 'active' | 'ended',
             isPrivate: session.is_private,
             accessCode: session.access_code || undefined,
-            features: session.features,
+            features: typedFeatures,
             createdAt: session.created_at,
             updatedAt: session.updated_at
           } as LiveSession;
@@ -189,13 +231,17 @@ export function useLiveSessions() {
         .single();
       
       // Fetch participants
-      const { data: participantsData } = await supabase
+      const { data: participantsData, error: participantsError } = await supabase
         .from('session_participants')
         .select(`
           user_id,
-          profiles:user_id (id, full_name, avatar_url)
+          profiles (id, full_name, avatar_url)
         `)
         .eq('session_id', data.id);
+      
+      if (participantsError) {
+        console.error("Error fetching participants:", participantsError);
+      }
       
       const host = hostData ? {
         id: hostData.id,
@@ -207,15 +253,52 @@ export function useLiveSessions() {
         avatar: undefined
       };
       
-      const participants = participantsData ? participantsData.map(p => ({
-        id: p.profiles.id,
-        name: p.profiles.full_name || 'Unknown User',
-        avatar: p.profiles.avatar_url || undefined
-      })) : [];
+      const participants = participantsData ? participantsData.map(p => {
+        // Safely access profile data with null checks
+        const profile = p.profiles as Record<string, any> | null;
+        return {
+          id: profile?.id || p.user_id,
+          name: profile?.full_name || 'Unknown User',
+          avatar: profile?.avatar_url || undefined
+        };
+      }) : [];
       
       // Add host to participants if not already included
       if (!participants.some(p => p.id === host.id)) {
         participants.push(host);
+      }
+      
+      // Parse features from JSON to ensure proper typing
+      let typedFeatures = {
+        video: true,
+        audio: true,
+        chat: true,
+        whiteboard: true,
+        screenSharing: true
+      };
+      
+      try {
+        // Handle both string and object JSON formats
+        if (typeof data.features === 'string') {
+          const parsedFeatures = JSON.parse(data.features);
+          typedFeatures = {
+            video: Boolean(parsedFeatures.video),
+            audio: Boolean(parsedFeatures.audio),
+            chat: Boolean(parsedFeatures.chat),
+            whiteboard: Boolean(parsedFeatures.whiteboard),
+            screenSharing: Boolean(parsedFeatures.screenSharing)
+          };
+        } else if (typeof data.features === 'object' && data.features !== null) {
+          typedFeatures = {
+            video: Boolean(data.features.video),
+            audio: Boolean(data.features.audio),
+            chat: Boolean(data.features.chat),
+            whiteboard: Boolean(data.features.whiteboard),
+            screenSharing: Boolean(data.features.screenSharing)
+          };
+        }
+      } catch (err) {
+        console.error("Error parsing features:", err);
       }
       
       const session: LiveSession = {
@@ -231,7 +314,7 @@ export function useLiveSessions() {
         status: data.status as 'scheduled' | 'active' | 'ended',
         isPrivate: data.is_private,
         accessCode: data.access_code || undefined,
-        features: data.features,
+        features: typedFeatures,
         createdAt: data.created_at,
         updatedAt: data.updated_at
       };
@@ -250,8 +333,8 @@ export function useLiveSessions() {
   
   const createSession = async (sessionData: Omit<LiveSession, 'id' | 'createdAt' | 'updatedAt' | 'host' | 'participants'>) => {
     try {
-      const user = supabase.auth.getSession();
-      if (!user) {
+      const user = await supabase.auth.getSession();
+      if (!user.data.session) {
         toast({
           variant: "destructive",
           title: "Authentication required",
@@ -272,6 +355,15 @@ export function useLiveSessions() {
       
       const userId = userData.user.id;
       
+      // Prepare features object for proper storage
+      const features = {
+        video: sessionData.features.video,
+        audio: sessionData.features.audio,
+        chat: sessionData.features.chat,
+        whiteboard: sessionData.features.whiteboard,
+        screenSharing: sessionData.features.screenSharing
+      };
+      
       // Insert session into database
       const { data, error } = await supabase
         .from('live_sessions')
@@ -284,7 +376,7 @@ export function useLiveSessions() {
           status: sessionData.status,
           is_private: sessionData.isPrivate,
           access_code: sessionData.accessCode,
-          features: sessionData.features,
+          features: features,
           host_id: userId
         })
         .select('id')

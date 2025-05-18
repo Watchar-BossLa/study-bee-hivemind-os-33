@@ -9,6 +9,7 @@ interface Participant {
   id: string;
   name: string;
   avatar?: string;
+  role?: string;
 }
 
 interface SessionParticipantsProps {
@@ -46,24 +47,30 @@ const SessionParticipants: React.FC<SessionParticipantsProps> = ({ participants:
       if (!sessionId) return;
       
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('session_participants')
           .select(`
             user_id,
             role,
             is_active,
-            profiles:user_id (id, full_name, avatar_url)
+            profiles (id, full_name, avatar_url)
           `)
           .eq('session_id', sessionId)
           .eq('is_active', true);
         
+        if (error) throw error;
+        
         if (data) {
-          const mappedParticipants = data.map(p => ({
-            id: p.profiles.id,
-            name: p.profiles.full_name || 'Unknown User',
-            avatar: p.profiles.avatar_url || undefined,
-            role: p.role
-          }));
+          const mappedParticipants = data.map(p => {
+            // Safely access profile data with null checks
+            const profile = p.profiles as Record<string, any> | null;
+            return {
+              id: profile?.id || p.user_id,
+              name: profile?.full_name || 'Unknown User',
+              avatar: profile?.avatar_url || undefined,
+              role: p.role
+            };
+          });
           
           setParticipants(mappedParticipants);
           
@@ -105,7 +112,7 @@ const SessionParticipants: React.FC<SessionParticipantsProps> = ({ participants:
         };
       }
     }
-  }, [initialParticipants]);
+  }, [initialParticipants, audioEnabled]);
   
   const toggleAudio = (participantId: string) => {
     setAudioEnabled(prev => ({

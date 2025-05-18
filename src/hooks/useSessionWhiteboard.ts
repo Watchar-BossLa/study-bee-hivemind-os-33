@@ -32,16 +32,33 @@ export function useSessionWhiteboard(sessionId: string) {
       if (error) throw error;
       
       if (data) {
-        const formattedPaths = data.map(path => ({
-          id: path.id,
-          userId: path.user_id,
-          userName: path.user_name,
-          tool: path.tool,
-          color: path.color,
-          brushSize: path.brush_size,
-          points: path.path_data.points,
-          timestamp: path.created_at
-        }));
+        const formattedPaths = data.map(path => {
+          // Safely handle path_data parsing to extract points
+          let points = [];
+          try {
+            // Handle both string and object path_data
+            if (typeof path.path_data === 'string') {
+              const parsedData = JSON.parse(path.path_data);
+              points = parsedData.points || [];
+            } else if (typeof path.path_data === 'object' && path.path_data !== null) {
+              points = path.path_data.points || [];
+            }
+          } catch (err) {
+            console.error("Error parsing path data:", err);
+            points = [];
+          }
+          
+          return {
+            id: path.id,
+            userId: path.user_id,
+            userName: path.user_name,
+            tool: path.tool,
+            color: path.color,
+            brushSize: path.brush_size,
+            points: points,
+            timestamp: path.created_at
+          };
+        });
         
         setPaths(formattedPaths);
       }
@@ -78,6 +95,21 @@ export function useSessionWhiteboard(sessionId: string) {
         (payload) => {
           const newPath = payload.new as any;
           
+          // Safely handle path_data parsing to extract points
+          let points = [];
+          try {
+            // Handle both string and object path_data
+            if (typeof newPath.path_data === 'string') {
+              const parsedData = JSON.parse(newPath.path_data);
+              points = parsedData.points || [];
+            } else if (typeof newPath.path_data === 'object' && newPath.path_data !== null) {
+              points = newPath.path_data.points || [];
+            }
+          } catch (err) {
+            console.error("Error parsing path data:", err);
+            points = [];
+          }
+          
           const formattedPath: WhiteboardPath = {
             id: newPath.id,
             userId: newPath.user_id,
@@ -85,7 +117,7 @@ export function useSessionWhiteboard(sessionId: string) {
             tool: newPath.tool,
             color: newPath.color,
             brushSize: newPath.brush_size,
-            points: newPath.path_data.points,
+            points: points,
             timestamp: newPath.created_at
           };
           
