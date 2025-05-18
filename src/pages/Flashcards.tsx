@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -7,6 +7,25 @@ import { Button } from '@/components/ui/button';
 import FlashcardsList from '@/components/shared/flashcards/FlashcardsList';
 
 const Flashcards = () => {
+  // Mock flashcards data - in a real application, this would come from an API or state management
+  const [flashcards, setFlashcards] = useState([
+    {
+      id: '1',
+      question: 'What is the capital of France?',
+      answer: 'Paris'
+    },
+    {
+      id: '2',
+      question: 'What is the powerhouse of the cell?',
+      answer: 'Mitochondria'
+    },
+    {
+      id: '3',
+      question: 'What is the chemical symbol for water?',
+      answer: 'H₂O'
+    }
+  ]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -22,7 +41,7 @@ const Flashcards = () => {
             </Link>
           </div>
         </div>
-        <FlashcardsList />
+        <FlashcardsList flashcards={flashcards} />
       </main>
       <Footer />
     </div>
