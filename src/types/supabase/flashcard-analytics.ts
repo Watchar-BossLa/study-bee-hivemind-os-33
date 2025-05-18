@@ -60,4 +60,7 @@ export interface FlashcardAnalyticsSummary {
   retention_rate: number;
   streak_days: number;
   last_study_date: string | null;
+  reviewsToday: number;
+  correctReviewsToday: number;
+  studyTimeToday?: number;
 }

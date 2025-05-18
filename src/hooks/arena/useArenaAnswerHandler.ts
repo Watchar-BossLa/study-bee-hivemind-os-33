@@ -28,8 +28,7 @@ export const useArenaAnswerHandler = (matchId: string | null) => {
         match_id_param: matchId,
         user_id_param: user.id,
         score_to_add: scoreToAdd,
-        is_correct: isCorrect,
-        response_time_param: responseTime
+        is_correct: isCorrect
       });
 
       // Set selected answer for UI updates

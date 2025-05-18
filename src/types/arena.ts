@@ -92,5 +92,4 @@ export interface UpdatePlayerProgressParams {
   user_id_param: string;
   score_to_add: number;
   is_correct: boolean;
-  response_time_param?: number; // Optional
 }

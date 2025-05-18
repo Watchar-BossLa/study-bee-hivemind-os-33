@@ -1,5 +1,7 @@
 
 import { QuizQuestion } from '@/types/arena';
+import { CurriculumQuiz, QuizAttempt } from '@/types/quiz';
+import { v4 } from '@/lib/uuid';
 
 export const mockQuizQuestions: QuizQuestion[] = [
   {
@@ -135,3 +137,100 @@ export const mockQuizQuestions: QuizQuestion[] = [
     category: 'Biology'
   }
 ];
+
+// Mock curriculum quizzes for the quiz service
+export const mockCurriculumQuizzes: CurriculumQuiz[] = [
+  {
+    id: '1',
+    title: 'Chemistry Basics Quiz',
+    description: 'Test your understanding of basic chemistry concepts',
+    moduleId: 'mod1',
+    courseId: 'chem101',
+    subjectId: 'science',
+    questions: mockQuizQuestions.filter(q => q.category === 'Chemistry'),
+    difficulty: 'beginner',
+    passingScore: 70,
+    timeLimit: 15
+  },
+  {
+    id: '2',
+    title: 'Geography Quiz',
+    description: 'Test your knowledge of world geography',
+    moduleId: 'mod2',
+    courseId: 'geo101',
+    subjectId: 'humanities',
+    questions: mockQuizQuestions.filter(q => q.category === 'Geography'),
+    difficulty: 'beginner',
+    passingScore: 60
+  },
+  {
+    id: '3',
+    title: 'Mathematics Quiz',
+    description: 'Test your math problem-solving skills',
+    moduleId: 'mod3',
+    courseId: 'math101',
+    subjectId: 'science',
+    questions: mockQuizQuestions.filter(q => q.category === 'Mathematics'),
+    difficulty: 'intermediate',
+    passingScore: 75
+  }
+];
+
+// Mock quiz attempts for the quiz service
+export const mockQuizAttempts: QuizAttempt[] = [
+  {
+    id: v4(),
+    quizId: '1',
+    userId: 'user-123',
+    score: 80,
+    maxScore: 100,
+    answers: [
+      {
+        questionId: '1',
+        selectedAnswer: 'a',
+        isCorrect: true,
+        timeSpent: 8
+      },
+      {
+        questionId: '4',
+        selectedAnswer: 'a',
+        isCorrect: true,
+        timeSpent: 12
+      }
+    ],
+    startedAt: new Date(Date.now() - 600000).toISOString(),
+    completedAt: new Date(Date.now() - 300000).toISOString(),
+    passed: true
+  },
+  {
+    id: v4(),
+    quizId: '2',
+    userId: 'user-123',
+    score: 50,
+    maxScore: 100,
+    answers: [
+      {
+        questionId: '2',
+        selectedAnswer: 'c',
+        isCorrect: true,
+        timeSpent: 7
+      },
+      {
+        questionId: '6',
+        selectedAnswer: 'd',
+        isCorrect: false,
+        timeSpent: 15
+      }
+    ],
+    startedAt: new Date(Date.now() - 86400000).toISOString(),
+    completedAt: new Date(Date.now() - 85800000).toISOString(),
+    passed: false
+  }
+];
+
+// Mock quiz progress for the quiz service
+export const mockQuizProgress: Record<string, number> = {
+  'chem101': 80,
+  'geo101': 50,
+  'math101': 0
+};

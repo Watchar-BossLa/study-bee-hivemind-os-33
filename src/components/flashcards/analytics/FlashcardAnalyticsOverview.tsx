@@ -42,20 +42,20 @@ const FlashcardAnalyticsOverview = () => {
   const statCards = [
     {
       title: "Retention Rate",
-      value: `${summary.retentionRate.toFixed(1)}%`,
+      value: `${summary.retention_rate.toFixed(1)}%`,
       icon: <Brain className="h-5 w-5 text-blue-500" />,
       description: "Overall memory retention"
     },
     {
       title: "Cards Mastered",
-      value: summary.cardsMastered,
-      total: summary.totalCards,
+      value: summary.cards_mastered,
+      total: summary.total_cards,
       icon: <CheckCheck className="h-5 w-5 text-green-500" />,
       description: "Cards you know well"
     },
     {
       title: "Study Streak",
-      value: summary.streak,
+      value: summary.streak_days,
       unit: "days",
       icon: <Calendar className="h-5 w-5 text-amber-500" />,
       description: "Consecutive days studying"

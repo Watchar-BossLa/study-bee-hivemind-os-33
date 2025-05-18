@@ -1,5 +1,6 @@
-import { Routes, Route } from 'react-router-dom';
-import { Toaster } from "@/components/ui/toaster"
+
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Toaster } from "@/components/ui/toaster";
 
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
@@ -8,6 +9,7 @@ import CourseDetail from './pages/CourseDetail';
 import Tutor from './pages/Tutor';
 import Flashcards from './pages/Flashcards';
 import FlashcardReview from './pages/FlashcardReview';
+import FlashcardAnalytics from './pages/FlashcardAnalytics';
 import Analytics from './pages/Analytics';
 import Qualifications from './pages/Qualifications';
 import OCR from './pages/OCR';
@@ -20,9 +22,8 @@ import Settings from './pages/Settings';
 import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
-  
   return (
-    <>
+    <Router>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/dashboard" element={<Dashboard />} />
@@ -31,6 +32,7 @@ function App() {
         <Route path="/tutor" element={<Tutor />} />
         <Route path="/flashcards" element={<Flashcards />} />
         <Route path="/flashcards/review" element={<FlashcardReview />} />
+        <Route path="/flashcards/analytics" element={<FlashcardAnalytics />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/qualifications" element={<Qualifications />} />
         <Route path="/ocr" element={<OCR />} />
@@ -43,7 +45,7 @@ function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Toaster />
-    </>
+    </Router>
   );
 }
 

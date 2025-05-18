@@ -1,30 +1,38 @@
-import React from "react"
-import { Link } from "react-router-dom"
 
-export function NavLinks() {
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+interface NavLinksProps {
+  isActive: (path: string) => boolean;
+}
+
+export const NavLinks: React.FC<NavLinksProps> = ({ isActive }) => {
   return (
-    <nav className="flex items-center gap-6 text-sm">
-      <Link to="/" className="transition-colors hover:text-foreground/80 text-foreground/70">
-        Home
-      </Link>
-      <Link to="/dashboard" className="transition-colors hover:text-foreground/80 text-foreground/70">
+    <nav className="hidden md:flex items-center gap-6">
+      <Link 
+        to="/dashboard" 
+        className={`text-sm font-medium ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+      >
         Dashboard
       </Link>
-      <Link to="/courses" className="transition-colors hover:text-foreground/80 text-foreground/70">
+      <Link 
+        to="/courses" 
+        className={`text-sm font-medium ${isActive('/courses') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+      >
         Courses
       </Link>
-      <Link to="/flashcards" className="transition-colors hover:text-foreground/80 text-foreground/70">
-        Flashcards
-      </Link>
-      <Link to="/qualifications" className="transition-colors hover:text-foreground/80 text-foreground/70">
-        Qualifications
-      </Link>
-      <Link to="/arena" className="transition-colors hover:text-foreground/80 text-foreground/70">
-        Arena
-      </Link>
-      <Link to="/tutor" className="transition-colors hover:text-foreground/80 text-foreground/70">
+      <Link 
+        to="/tutor" 
+        className={`text-sm font-medium ${isActive('/tutor') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+      >
         AI Tutor
+      </Link>
+      <Link 
+        to="/arena" 
+        className={`text-sm font-medium ${isActive('/arena') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+      >
+        Arena
       </Link>
     </nav>
   );
-}
+};

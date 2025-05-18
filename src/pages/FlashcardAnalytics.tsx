@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, BarChart2, BookOpen } from 'lucide-react';
 import FlashcardAnalyticsDashboard from '@/components/flashcards/analytics/FlashcardAnalyticsDashboard';
 
-const FlashcardAnalyticsPage = () => {
+const FlashcardAnalytics = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -43,4 +43,4 @@ const FlashcardAnalyticsPage = () => {
   );
 };
 
-export default FlashcardAnalyticsPage;
+export default FlashcardAnalytics;

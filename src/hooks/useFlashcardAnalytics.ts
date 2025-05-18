@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { FlashcardAnalyticsSummary, FlashcardStatistics } from '@/types/supabase-extensions';
+import type { FlashcardAnalyticsSummary, FlashcardStatistics } from '@/types/supabase/flashcard-analytics';
 
 export const useFlashcardStatistics = () => {
   return useQuery({
@@ -90,13 +90,12 @@ export const useFlashcardAnalyticsSummary = () => {
   });
 
   const summary: FlashcardAnalyticsSummary | undefined = statistics ? {
-    totalCards: statistics.total_cards,
-    cardsDue: statistics.cards_due,
-    cardsLearned: statistics.cards_learned, 
-    cardsMastered: statistics.cards_mastered,
-    retentionRate: statistics.retention_rate,
-    streak: statistics.streak_days,
-    studyTimeToday: 0, // Will be populated if we add study time tracking
+    total_cards: statistics.total_cards,
+    cards_due: statistics.cards_due,
+    cards_mastered: statistics.cards_mastered,
+    retention_rate: statistics.retention_rate,
+    streak_days: statistics.streak_days,
+    last_study_date: statistics.last_study_date,
     reviewsToday: todayReviews?.length || 0,
     correctReviewsToday: todayReviews?.filter(review => review.was_correct).length || 0
   } : undefined;
