@@ -33,26 +33,35 @@ export function useSessionWhiteboard(sessionId: string) {
       
       if (data) {
         const formattedPaths = data.map(path => {
-          // Safely handle path_data parsing to extract points
-          let points: any[] = [];
-          try {
-            // Check if path_data is an object
-            const isPathDataObject = (data: any): data is { points: any[] } => {
-              return typeof data === 'object' && data !== null && Array.isArray(data.points);
-            };
-            
-            // Handle both string and object path_data
-            if (typeof path.path_data === 'string') {
-              const parsedData = JSON.parse(path.path_data);
-              if (isPathDataObject(parsedData)) {
-                points = parsedData.points;
-              }
-            } else if (isPathDataObject(path.path_data)) {
-              points = path.path_data.points;
+          // Helper function to safely extract points from path data
+          const safeExtractPoints = (pathData: any): any[] => {
+            // If it's already an object with points property that is an array
+            if (typeof pathData === 'object' && 
+                pathData !== null && 
+                Array.isArray(pathData.points)) {
+              return pathData.points;
             }
-          } catch (err) {
-            console.error("Error parsing path data:", err);
-          }
+            
+            // If it's a string, try to parse it
+            if (typeof pathData === 'string') {
+              try {
+                const parsed = JSON.parse(pathData);
+                if (typeof parsed === 'object' && 
+                    parsed !== null && 
+                    Array.isArray(parsed.points)) {
+                  return parsed.points;
+                }
+              } catch (parseErr) {
+                console.error("Error parsing path data string:", parseErr);
+              }
+            }
+            
+            // Return empty array as fallback
+            return [];
+          };
+          
+          // Extract points using the helper function
+          const points = safeExtractPoints(path.path_data);
           
           return {
             id: path.id,
@@ -101,20 +110,35 @@ export function useSessionWhiteboard(sessionId: string) {
         (payload) => {
           const newPath = payload.new as any;
           
-          // Safely handle path_data parsing to extract points
-          let points = [];
-          try {
-            // Handle both string and object path_data
-            if (typeof newPath.path_data === 'string') {
-              const parsedData = JSON.parse(newPath.path_data);
-              points = parsedData.points || [];
-            } else if (typeof newPath.path_data === 'object' && newPath.path_data !== null) {
-              points = newPath.path_data.points || [];
+          // Helper function to safely extract points from path data
+          const safeExtractPoints = (pathData: any): any[] => {
+            // If it's already an object with points property that is an array
+            if (typeof pathData === 'object' && 
+                pathData !== null && 
+                Array.isArray(pathData.points)) {
+              return pathData.points;
             }
-          } catch (err) {
-            console.error("Error parsing path data:", err);
-            points = [];
-          }
+            
+            // If it's a string, try to parse it
+            if (typeof pathData === 'string') {
+              try {
+                const parsed = JSON.parse(pathData);
+                if (typeof parsed === 'object' && 
+                    parsed !== null && 
+                    Array.isArray(parsed.points)) {
+                  return parsed.points;
+                }
+              } catch (parseErr) {
+                console.error("Error parsing path data string:", parseErr);
+              }
+            }
+            
+            // Return empty array as fallback
+            return [];
+          };
+          
+          // Extract points using the helper function
+          const points = safeExtractPoints(newPath.path_data);
           
           const formattedPath: WhiteboardPath = {
             id: newPath.id,

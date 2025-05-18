@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { LiveSession } from '@/types/livesessions';
 import { supabase } from '@/integrations/supabase/client';
@@ -96,40 +95,38 @@ export function useLiveSessions() {
           };
           
           try {
-            // Create a type guard function to check if features is an object with expected properties
-            const isValidFeatures = (obj: any): obj is {
-              video?: boolean;
-              audio?: boolean;
-              chat?: boolean;
-              whiteboard?: boolean;
-              screenSharing?: boolean;
-            } => {
-              return typeof obj === 'object' && obj !== null && !Array.isArray(obj);
-            };
-            
-            // Handle both string and object JSON formats
-            if (typeof session.features === 'string') {
-              const parsedFeatures = JSON.parse(session.features);
-              if (isValidFeatures(parsedFeatures)) {
-                typedFeatures = {
-                  video: Boolean(parsedFeatures.video),
-                  audio: Boolean(parsedFeatures.audio),
-                  chat: Boolean(parsedFeatures.chat),
-                  whiteboard: Boolean(parsedFeatures.whiteboard),
-                  screenSharing: Boolean(parsedFeatures.screenSharing)
+            // Helper function to safely parse and extract feature values
+            const safeGetFeatures = (featuresData: any) => {
+              // If it's a plain object with the expected properties
+              if (typeof featuresData === 'object' && 
+                  featuresData !== null && 
+                  !Array.isArray(featuresData)) {
+                return {
+                  video: Boolean(featuresData.video !== undefined ? featuresData.video : true),
+                  audio: Boolean(featuresData.audio !== undefined ? featuresData.audio : true),
+                  chat: Boolean(featuresData.chat !== undefined ? featuresData.chat : true),
+                  whiteboard: Boolean(featuresData.whiteboard !== undefined ? featuresData.whiteboard : true),
+                  screenSharing: Boolean(featuresData.screenSharing !== undefined ? featuresData.screenSharing : true)
                 };
               }
-            } else if (isValidFeatures(session.features)) {
-              typedFeatures = {
-                video: Boolean(session.features.video),
-                audio: Boolean(session.features.audio),
-                chat: Boolean(session.features.chat),
-                whiteboard: Boolean(session.features.whiteboard),
-                screenSharing: Boolean(session.features.screenSharing)
-              };
+              
+              // Return default values if not a valid object
+              return typedFeatures;
+            };
+            
+            if (typeof session.features === 'string') {
+              try {
+                const parsedFeatures = JSON.parse(session.features);
+                typedFeatures = safeGetFeatures(parsedFeatures);
+              } catch (parseErr) {
+                console.error("Error parsing features string:", parseErr);
+              }
+            } else {
+              // Direct object access
+              typedFeatures = safeGetFeatures(session.features);
             }
           } catch (err) {
-            console.error("Error parsing features:", err);
+            console.error("Error handling features:", err);
           }
           
           return {
@@ -291,37 +288,35 @@ export function useLiveSessions() {
       };
       
       try {
-        // Create a type guard function to check if features is an object with expected properties
-        const isValidFeatures = (obj: any): obj is {
-          video?: boolean;
-          audio?: boolean;
-          chat?: boolean;
-          whiteboard?: boolean;
-          screenSharing?: boolean;
-        } => {
-          return typeof obj === 'object' && obj !== null && !Array.isArray(obj);
-        };
-        
-        // Handle both string and object JSON formats
-        if (typeof data.features === 'string') {
-          const parsedFeatures = JSON.parse(data.features);
-          if (isValidFeatures(parsedFeatures)) {
-            typedFeatures = {
-              video: Boolean(parsedFeatures.video),
-              audio: Boolean(parsedFeatures.audio),
-              chat: Boolean(parsedFeatures.chat),
-              whiteboard: Boolean(parsedFeatures.whiteboard),
-              screenSharing: Boolean(parsedFeatures.screenSharing)
+        // Helper function to safely parse and extract feature values
+        const safeGetFeatures = (featuresData: any) => {
+          // If it's a plain object with the expected properties
+          if (typeof featuresData === 'object' && 
+              featuresData !== null && 
+              !Array.isArray(featuresData)) {
+            return {
+              video: Boolean(featuresData.video !== undefined ? featuresData.video : true),
+              audio: Boolean(featuresData.audio !== undefined ? featuresData.audio : true),
+              chat: Boolean(featuresData.chat !== undefined ? featuresData.chat : true),
+              whiteboard: Boolean(featuresData.whiteboard !== undefined ? featuresData.whiteboard : true),
+              screenSharing: Boolean(featuresData.screenSharing !== undefined ? featuresData.screenSharing : true)
             };
           }
-        } else if (isValidFeatures(data.features)) {
-          typedFeatures = {
-            video: Boolean(data.features.video),
-            audio: Boolean(data.features.audio),
-            chat: Boolean(data.features.chat),
-            whiteboard: Boolean(data.features.whiteboard),
-            screenSharing: Boolean(data.features.screenSharing)
-          };
+          
+          // Return default values if not a valid object
+          return typedFeatures;
+        };
+        
+        if (typeof data.features === 'string') {
+          try {
+            const parsedFeatures = JSON.parse(data.features);
+            typedFeatures = safeGetFeatures(parsedFeatures);
+          } catch (parseErr) {
+            console.error("Error parsing features string:", parseErr);
+          }
+        } else {
+          // Direct object access
+          typedFeatures = safeGetFeatures(data.features);
         }
       } catch (err) {
         console.error("Error parsing features:", err);
