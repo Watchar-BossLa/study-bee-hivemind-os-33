@@ -1,7 +1,6 @@
-
 import { SpecializedAgent } from '../../types/agents';
 import { CouncilDecision } from '../../types/councils';
-import { EventEmitter } from 'events';
+import { CustomEventEmitter } from '../../../../lib/CustomEventEmitter';
 
 export enum TaskPriority {
   LOW = 0,
@@ -39,7 +38,7 @@ export interface AgentMessage {
  * Master Control Program Core - Central orchestrator for agent coordination
  * Implements the key MCP-Core functionality outlined in the QuorumForge OS spec
  */
-export class MCPCore extends EventEmitter {
+export class MCPCore extends CustomEventEmitter {
   private tasks: Map<string, AgentTask> = new Map();
   private messageQueue: AgentMessage[] = [];
   private agentRegistry: Map<string, SpecializedAgent> = new Map();
