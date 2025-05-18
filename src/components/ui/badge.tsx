@@ -19,6 +19,12 @@ const badgeVariants = cva(
         // Add success variant for correct flashcard reviews
         success: 
           "border-transparent bg-green-500 text-white hover:bg-green-600",
+        // Add warning variant for dashboard notifications
+        warning:
+          "border-transparent bg-amber-500 text-white hover:bg-amber-600",
+        // Add info variant for general information
+        info:
+          "border-transparent bg-blue-500 text-white hover:bg-blue-600",
       },
     },
     defaultVariants: {
