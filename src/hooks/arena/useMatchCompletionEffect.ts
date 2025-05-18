@@ -20,21 +20,28 @@ export const useMatchCompletionEffect = ({
   fetchLeaderboard,
   resetQuestions
 }: MatchCompletionEffectProps) => {
-  // Handle match completion
+  // Effect to handle match completion
   useEffect(() => {
-    const handleMatchComplete = async () => {
-      if (matchComplete && currentMatch) {
+    if (matchComplete && currentMatch) {
+      const fetchUserAndCheckAchievements = async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           await checkForAchievements(user.id, currentMatch.id);
         }
         
-        fetchUserStats();
-        fetchLeaderboard();
+        await fetchUserStats();
+        await fetchLeaderboard();
         resetQuestions();
-      }
-    };
-
-    handleMatchComplete();
-  }, [matchComplete, currentMatch, fetchUserStats, fetchLeaderboard, resetQuestions, checkForAchievements]);
+      };
+      
+      fetchUserAndCheckAchievements();
+    }
+  }, [
+    matchComplete, 
+    currentMatch, 
+    checkForAchievements, 
+    fetchUserStats, 
+    fetchLeaderboard,
+    resetQuestions
+  ]);
 };

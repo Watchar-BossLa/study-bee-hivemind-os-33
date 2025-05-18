@@ -13,10 +13,10 @@ export const useQuestionsLoadEffect = ({
   questions,
   fetchQuestions
 }: QuestionsLoadEffectProps) => {
-  // Fetch questions when match becomes active
+  // Effect to load questions when match becomes active
   useEffect(() => {
     if (currentMatch?.status === 'active' && questions.length === 0) {
       fetchQuestions();
     }
-  }, [currentMatch?.status, questions.length, fetchQuestions]);
+  }, [currentMatch, questions.length, fetchQuestions]);
 };

@@ -1,6 +1,6 @@
 
 import { useEffect } from 'react';
-import { ArenaMatch, QuizQuestion } from '@/types/arena';
+import { ArenaMatch, QuizQuestion, QuizAnswer } from '@/types/arena';
 
 interface MatchTimerEffectProps {
   currentMatch: ArenaMatch | null;
@@ -10,7 +10,7 @@ interface MatchTimerEffectProps {
   selectedAnswer: string | null;
   timeLeft: number;
   setTimeLeft: React.Dispatch<React.SetStateAction<number>>;
-  answerQuestion: (answer: 'none') => void;
+  answerQuestion: (answer: QuizAnswer) => void;
   moveToNextQuestion: (totalQuestions: number) => boolean;
   resetTimer: () => void;
   finishMatch: () => Promise<void>;
@@ -29,45 +29,65 @@ export const useMatchTimerEffect = ({
   resetTimer,
   finishMatch
 }: MatchTimerEffectProps) => {
-  // Handle active match timer
+  // Timer effect for countdown
   useEffect(() => {
-    if (!currentMatch || currentMatch.status !== 'active' || matchComplete || !questions.length) {
+    if (!currentMatch || matchComplete || currentMatch.status !== 'active' || selectedAnswer) {
+      return;
+    }
+
+    if (questions.length === 0 || currentQuestionIndex >= questions.length) {
       return;
     }
 
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          if (currentQuestionIndex < questions.length - 1) {
-            // Move to next question when time runs out
-            if (selectedAnswer === null) {
-              // Pass 'none' instead of 'x'
-              answerQuestion('none'); 
-            }
-            moveToNextQuestion(questions.length);
-            resetTimer();
-            return 15;
-          } else {
-            clearInterval(timer);
-            finishMatch();
-            return 0;
-          }
+      setTimeLeft(prevTime => {
+        if (prevTime <= 1) {
+          clearInterval(timer);
+          
+          // Time's up - auto-select 'none' as answer
+          answerQuestion('none');
+          
+          return 0;
         }
-        return prev - 1;
+        return prevTime - 1;
       });
     }, 1000);
 
     return () => clearInterval(timer);
   }, [
     currentMatch, 
+    questions, 
     currentQuestionIndex, 
-    questions.length, 
     matchComplete, 
-    finishMatch, 
     selectedAnswer, 
-    answerQuestion,
+    setTimeLeft, 
+    answerQuestion
+  ]);
+
+  // Effect to handle question progression
+  useEffect(() => {
+    if (!currentMatch || matchComplete || !selectedAnswer) {
+      return;
+    }
+
+    const progressTimer = setTimeout(() => {
+      const isLastQuestion = !moveToNextQuestion(questions.length);
+      
+      if (isLastQuestion) {
+        finishMatch();
+      } else {
+        resetTimer();
+      }
+    }, 2000); // Wait 2 seconds before moving to next question
+
+    return () => clearTimeout(progressTimer);
+  }, [
+    selectedAnswer, 
+    currentMatch, 
+    matchComplete, 
+    questions.length, 
     moveToNextQuestion, 
-    resetTimer,
-    setTimeLeft
+    resetTimer, 
+    finishMatch
   ]);
 };
