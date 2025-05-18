@@ -34,18 +34,24 @@ export function useSessionWhiteboard(sessionId: string) {
       if (data) {
         const formattedPaths = data.map(path => {
           // Safely handle path_data parsing to extract points
-          let points = [];
+          let points: any[] = [];
           try {
+            // Check if path_data is an object
+            const isPathDataObject = (data: any): data is { points: any[] } => {
+              return typeof data === 'object' && data !== null && Array.isArray(data.points);
+            };
+            
             // Handle both string and object path_data
             if (typeof path.path_data === 'string') {
               const parsedData = JSON.parse(path.path_data);
-              points = parsedData.points || [];
-            } else if (typeof path.path_data === 'object' && path.path_data !== null) {
-              points = path.path_data.points || [];
+              if (isPathDataObject(parsedData)) {
+                points = parsedData.points;
+              }
+            } else if (isPathDataObject(path.path_data)) {
+              points = path.path_data.points;
             }
           } catch (err) {
             console.error("Error parsing path data:", err);
-            points = [];
           }
           
           return {

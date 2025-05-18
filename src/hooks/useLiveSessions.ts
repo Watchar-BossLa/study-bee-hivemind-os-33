@@ -96,17 +96,30 @@ export function useLiveSessions() {
           };
           
           try {
+            // Create a type guard function to check if features is an object with expected properties
+            const isValidFeatures = (obj: any): obj is {
+              video?: boolean;
+              audio?: boolean;
+              chat?: boolean;
+              whiteboard?: boolean;
+              screenSharing?: boolean;
+            } => {
+              return typeof obj === 'object' && obj !== null && !Array.isArray(obj);
+            };
+            
             // Handle both string and object JSON formats
             if (typeof session.features === 'string') {
               const parsedFeatures = JSON.parse(session.features);
-              typedFeatures = {
-                video: Boolean(parsedFeatures.video),
-                audio: Boolean(parsedFeatures.audio),
-                chat: Boolean(parsedFeatures.chat),
-                whiteboard: Boolean(parsedFeatures.whiteboard),
-                screenSharing: Boolean(parsedFeatures.screenSharing)
-              };
-            } else if (typeof session.features === 'object' && session.features !== null) {
+              if (isValidFeatures(parsedFeatures)) {
+                typedFeatures = {
+                  video: Boolean(parsedFeatures.video),
+                  audio: Boolean(parsedFeatures.audio),
+                  chat: Boolean(parsedFeatures.chat),
+                  whiteboard: Boolean(parsedFeatures.whiteboard),
+                  screenSharing: Boolean(parsedFeatures.screenSharing)
+                };
+              }
+            } else if (isValidFeatures(session.features)) {
               typedFeatures = {
                 video: Boolean(session.features.video),
                 audio: Boolean(session.features.audio),
@@ -278,17 +291,30 @@ export function useLiveSessions() {
       };
       
       try {
+        // Create a type guard function to check if features is an object with expected properties
+        const isValidFeatures = (obj: any): obj is {
+          video?: boolean;
+          audio?: boolean;
+          chat?: boolean;
+          whiteboard?: boolean;
+          screenSharing?: boolean;
+        } => {
+          return typeof obj === 'object' && obj !== null && !Array.isArray(obj);
+        };
+        
         // Handle both string and object JSON formats
         if (typeof data.features === 'string') {
           const parsedFeatures = JSON.parse(data.features);
-          typedFeatures = {
-            video: Boolean(parsedFeatures.video),
-            audio: Boolean(parsedFeatures.audio),
-            chat: Boolean(parsedFeatures.chat),
-            whiteboard: Boolean(parsedFeatures.whiteboard),
-            screenSharing: Boolean(parsedFeatures.screenSharing)
-          };
-        } else if (typeof data.features === 'object' && data.features !== null) {
+          if (isValidFeatures(parsedFeatures)) {
+            typedFeatures = {
+              video: Boolean(parsedFeatures.video),
+              audio: Boolean(parsedFeatures.audio),
+              chat: Boolean(parsedFeatures.chat),
+              whiteboard: Boolean(parsedFeatures.whiteboard),
+              screenSharing: Boolean(parsedFeatures.screenSharing)
+            };
+          }
+        } else if (isValidFeatures(data.features)) {
           typedFeatures = {
             video: Boolean(data.features.video),
             audio: Boolean(data.features.audio),
