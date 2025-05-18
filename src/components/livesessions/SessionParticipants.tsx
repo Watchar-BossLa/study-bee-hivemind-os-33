@@ -13,11 +13,12 @@ interface Participant {
 }
 
 interface SessionParticipantsProps {
+  sessionId: string;
   participants: Participant[];
-  hostId: string;
+  host: Participant;
 }
 
-const SessionParticipants: React.FC<SessionParticipantsProps> = ({ participants: initialParticipants, hostId }) => {
+const SessionParticipants: React.FC<SessionParticipantsProps> = ({ sessionId, participants: initialParticipants, host }) => {
   const [participants, setParticipants] = useState<Participant[]>(initialParticipants);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [audioEnabled, setAudioEnabled] = useState<Record<string, boolean>>({});
@@ -43,7 +44,7 @@ const SessionParticipants: React.FC<SessionParticipantsProps> = ({ participants:
   // Subscribe to participants changes
   useEffect(() => {
     // Function to fetch all active participants
-    const fetchParticipants = async (sessionId: string) => {
+    const fetchParticipants = async () => {
       if (!sessionId) return;
       
       try {
@@ -86,33 +87,26 @@ const SessionParticipants: React.FC<SessionParticipantsProps> = ({ participants:
       }
     };
     
-    // Extract session ID from the first participant
-    if (initialParticipants.length > 0) {
-      const sessionId = initialParticipants[0]?.id.split('_')[0];
+    // Set up subscription
+    const channel = supabase
+      .channel(`participants-changes`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'session_participants',
+          filter: `session_id=eq.${sessionId}`
+        }, 
+        () => {
+          fetchParticipants();
+        }
+      )
+      .subscribe();
       
-      if (sessionId) {
-        // Set up subscription
-        const channel = supabase
-          .channel(`participants-changes`)
-          .on('postgres_changes', 
-            { 
-              event: '*', 
-              schema: 'public', 
-              table: 'session_participants',
-              filter: `session_id=eq.${sessionId}`
-            }, 
-            () => {
-              fetchParticipants(sessionId);
-            }
-          )
-          .subscribe();
-          
-        return () => {
-          supabase.removeChannel(channel);
-        };
-      }
-    }
-  }, [initialParticipants, audioEnabled]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId, audioEnabled]);
   
   const toggleAudio = (participantId: string) => {
     setAudioEnabled(prev => ({
@@ -135,7 +129,7 @@ const SessionParticipants: React.FC<SessionParticipantsProps> = ({ participants:
               </Avatar>
               <div>
                 <p className="font-medium">{participant.name}</p>
-                {participant.id === hostId && (
+                {participant.id === host.id && (
                   <span className="text-xs text-primary">Host</span>
                 )}
               </div>
