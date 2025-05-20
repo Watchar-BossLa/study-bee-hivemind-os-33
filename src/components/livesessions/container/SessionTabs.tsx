@@ -9,9 +9,9 @@ import { useLiveSessions } from '@/hooks/useLiveSessions';
 
 interface SessionTabsProps {
   isAuthenticated: boolean;
-  onJoinSession?: (session: LiveSession) => Promise<LiveSession | null>;
-  onJoinById?: (sessionId: string, accessCode?: string) => Promise<LiveSession | null>;
-  onCreateSession?: (sessionData: Omit<LiveSession, 'id' | 'createdAt' | 'updatedAt' | 'host' | 'participants'>) => Promise<LiveSession | null>;
+  onJoinSession?: (session: LiveSession) => Promise<any>;
+  onJoinById?: (sessionId: string, accessCode?: string) => Promise<any>;
+  onCreateSession?: (sessionData: Omit<LiveSession, 'id' | 'createdAt' | 'updatedAt' | 'host' | 'participants'>) => Promise<any>;
 }
 
 /**

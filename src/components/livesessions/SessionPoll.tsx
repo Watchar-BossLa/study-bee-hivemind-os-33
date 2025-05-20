@@ -16,6 +16,7 @@ interface SessionPollProps {
 
 const SessionPoll: React.FC<SessionPollProps> = ({ sessionId, isHost }) => {
   const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   
   const {
     polls,
@@ -23,6 +24,7 @@ const SessionPoll: React.FC<SessionPollProps> = ({ sessionId, isHost }) => {
     pollResults,
     isLoading,
     hasVoted,
+    isVoting,
     createPoll,
     submitVote,
     endPoll,
@@ -43,33 +45,51 @@ const SessionPoll: React.FC<SessionPollProps> = ({ sessionId, isHost }) => {
 
   const handleSubmitVote = async () => {
     if (selectedOptions.length === 0) return;
-    
     await submitVote(selectedOptions);
     setSelectedOptions([]);
   };
 
   const handleCreatePoll = async (question: string, options: string[], allowMultipleChoices: boolean) => {
     await createPoll(question, options, allowMultipleChoices);
+    setShowCreateForm(false);
   };
   
   const handleEndPoll = async () => {
     await endPoll();
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-32 p-4">
+        <p>Loading polls...</p>
+      </div>
+    );
+  }
+
+  if (showCreateForm) {
+    return (
+      <div className="space-y-6 p-4">
+        <Card className="p-4">
+          <h3 className="text-lg font-medium mb-4">Create a Poll</h3>
+          <CreatePollForm 
+            onSubmit={handleCreatePoll}
+            onCancel={() => setShowCreateForm(false)}
+          />
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-4">
       {isHost && !activePoll && (
         <Card className="p-4">
           <h3 className="text-lg font-medium mb-4">Create a Poll</h3>
-          <CreatePollForm onPollCreated={handleCreatePoll} />
+          <Button onClick={() => setShowCreateForm(true)}>Create New Poll</Button>
         </Card>
       )}
 
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center h-32">
-          <p>Loading polls...</p>
-        </div>
-      ) : activePoll ? (
+      {activePoll ? (
         <Card className="p-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium">{activePoll.question}</h3>
@@ -133,8 +153,11 @@ const SessionPoll: React.FC<SessionPollProps> = ({ sessionId, isHost }) => {
                 ))}
               </div>
               
-              <Button onClick={handleSubmitVote} disabled={selectedOptions.length === 0}>
-                Submit Vote
+              <Button 
+                onClick={handleSubmitVote} 
+                disabled={selectedOptions.length === 0 || isVoting}
+              >
+                {isVoting ? 'Submitting...' : 'Submit Vote'}
               </Button>
             </div>
           )}
@@ -143,8 +166,8 @@ const SessionPoll: React.FC<SessionPollProps> = ({ sessionId, isHost }) => {
         <div className="flex flex-col items-center justify-center h-32">
           <PieChart className="w-12 h-12 text-muted-foreground mb-2" />
           <p className="text-muted-foreground">No active polls right now.</p>
-          {isHost && (
-            <Button variant="link" onClick={refreshPolls}>
+          {isHost && !showCreateForm && (
+            <Button variant="link" onClick={() => setShowCreateForm(true)}>
               Create a poll to gather feedback
             </Button>
           )}

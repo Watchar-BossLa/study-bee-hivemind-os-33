@@ -5,23 +5,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Trash2, Plus } from 'lucide-react';
-import { SessionPoll } from '@/types/livesessions';
 
-type PollFormProps = {
-  onSubmit: (pollData: Omit<SessionPoll, 'id' | 'sessionId' | 'creatorId' | 'createdAt' | 'endedAt'>) => Promise<void>;
+export interface PollFormProps {
+  onSubmit: (question: string, options: string[], allowMultipleChoices: boolean) => Promise<void>;
   onCancel: () => void;
-};
+}
 
 const CreatePollForm: React.FC<PollFormProps> = ({ onSubmit, onCancel }) => {
   const [question, setQuestion] = useState('');
-  const [options, setOptions] = useState([{ text: '' }, { text: '' }]);
+  const [options, setOptions] = useState(['', '']);
   const [allowMultipleChoices, setAllowMultipleChoices] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const addOption = () => {
     if (options.length < 10) {
-      setOptions([...options, { text: '' }]);
+      setOptions([...options, '']);
     }
   };
 
@@ -35,7 +34,7 @@ const CreatePollForm: React.FC<PollFormProps> = ({ onSubmit, onCancel }) => {
 
   const updateOption = (index: number, text: string) => {
     const newOptions = [...options];
-    newOptions[index].text = text;
+    newOptions[index] = text;
     setOptions(newOptions);
   };
 
@@ -49,22 +48,20 @@ const CreatePollForm: React.FC<PollFormProps> = ({ onSubmit, onCancel }) => {
       return;
     }
     
-    if (options.some(opt => !opt.text.trim())) {
+    if (options.some(opt => !opt.trim())) {
       setErrorMessage('All options must have text');
       return;
     }
     
     setIsSubmitting(true);
     
-    const pollData: Omit<SessionPoll, 'id' | 'sessionId' | 'creatorId' | 'createdAt' | 'endedAt'> = {
-      question,
-      options,
-      isActive: true,
-      allowMultipleChoices
-    };
-    
-    await onSubmit(pollData);
-    setIsSubmitting(false);
+    try {
+      await onSubmit(question, options, allowMultipleChoices);
+    } catch (err) {
+      setErrorMessage('Failed to create poll. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -100,7 +97,7 @@ const CreatePollForm: React.FC<PollFormProps> = ({ onSubmit, onCancel }) => {
           <div key={index} className="flex items-center space-x-2">
             <Input
               placeholder={`Option ${index + 1}`}
-              value={option.text}
+              value={option}
               onChange={(e) => updateOption(index, e.target.value)}
               disabled={isSubmitting}
               required
