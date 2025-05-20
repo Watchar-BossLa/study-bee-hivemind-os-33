@@ -28,9 +28,11 @@ const LiveSessionsContainer = () => {
               <AuthenticationAlert onSignIn={handleSignIn} />
             )}
 
-            <ActiveSessionManager isAuthenticated={isAuthenticated}>
-              <SessionTabs isAuthenticated={isAuthenticated} />
-            </ActiveSessionManager>
+            <ActiveSessionManager 
+              isAuthenticated={isAuthenticated}
+              // Passing the children properly
+              children={<SessionTabs isAuthenticated={isAuthenticated} />} 
+            />
           </>
         )}
       </SessionAuthManager>

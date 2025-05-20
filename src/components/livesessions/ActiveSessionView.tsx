@@ -1,49 +1,32 @@
 
-import React, { useState, useEffect } from 'react';
-import { Tabs } from '@/components/ui/tabs';
+import React from 'react';
 import { LiveSession } from '@/types/livesessions';
+import { Tabs } from '@/components/ui/tabs';
 import SessionHeader from './SessionHeader';
 import SessionTabsList from './SessionTabsList';
 import SessionTabsContent from './SessionTabsContent';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ActiveSessionViewProps {
   session: LiveSession;
-  onLeave: () => void;
+  onLeaveSession: () => Promise<void>; // Add this prop
 }
 
-const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ session, onLeave }) => {
-  const [activeTab, setActiveTab] = useState<string>('whiteboard');
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const getUserId = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data?.user) {
-        setUserId(data.user.id);
-      }
-    };
-    
-    getUserId();
-  }, []);
-
-  // Update the session object to include the current user's ID
-  const sessionWithUserContext: LiveSession = {
-    ...session,
-    // Check if the current user is the host
-    host: {
-      ...session.host,
-      isCurrentUser: session.host.id === userId
-    }
-  };
-
+const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ 
+  session, 
+  onLeaveSession // Accept the prop
+}) => {
   return (
-    <div className="container py-4">
-      <SessionHeader session={sessionWithUserContext} onLeave={onLeave} />
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <SessionTabsList session={sessionWithUserContext} />
-        <SessionTabsContent session={sessionWithUserContext} />
+    <div className="space-y-4">
+      <SessionHeader 
+        session={session} 
+        onLeaveSession={onLeaveSession} // Pass the prop to SessionHeader
+      />
+      
+      <Tabs defaultValue="chat" className="w-full">
+        <SessionTabsList session={session} />
+        <div className="mt-4">
+          <SessionTabsContent session={session} />
+        </div>
       </Tabs>
     </div>
   );
