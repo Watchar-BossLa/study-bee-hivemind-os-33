@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { SessionPoll, PollResults } from '@/types/livesessions';
 import { supabase } from '@/integrations/supabase/client';
@@ -229,7 +230,9 @@ export function useSessionPolls(sessionId: string) {
         sessionId: data.session_id,
         creatorId: data.creator_id,
         question: data.question,
-        options: data.options,
+        options: Array.isArray(data.options) 
+          ? data.options.map((opt: any) => ({ text: typeof opt === 'string' ? opt : opt.text })) 
+          : [],
         isActive: data.is_active,
         allowMultipleChoices: data.allow_multiple_choices,
         createdAt: data.created_at,
