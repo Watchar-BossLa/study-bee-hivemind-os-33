@@ -1,118 +1,102 @@
 
-import React, { useState, useEffect } from 'react';
-import { LiveSession } from '@/types/livesessions';
+import React, { useEffect } from 'react';
 import ActiveSessionView from '../ActiveSessionView';
-import { useLiveSessions } from '@/hooks/useLiveSessions';
+import { LiveSession } from '@/types/livesessions';
+import { useToast } from '@/components/ui/use-toast';
 
 interface ActiveSessionManagerProps {
-  children: React.ReactNode;
-  isAuthenticated: boolean;
+  session: LiveSession | null;
+  leaveSession: () => Promise<void>;
+  refreshSession: () => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
 }
 
 /**
- * Manages the active session state and switching between browsing and active session view
+ * Component that manages the active session view and handles session-specific actions
  */
-const ActiveSessionManager: React.FC<ActiveSessionManagerProps> = ({ children, isAuthenticated }) => {
-  const [activeSession, setActiveSession] = useState<LiveSession | null>(null);
-  const { getSessionById, createSession, joinSession, leaveSession } = useLiveSessions();
-  
-  // Optional: recover active session from localStorage on mount
+const ActiveSessionManager: React.FC<ActiveSessionManagerProps> = ({
+  session,
+  leaveSession,
+  refreshSession,
+  isLoading,
+  error
+}) => {
+  const { toast } = useToast();
+
+  // Effect to refresh the session data periodically
   useEffect(() => {
-    const storedSessionId = localStorage.getItem('activeSessionId');
-    if (storedSessionId && isAuthenticated) {
-      getSessionById(storedSessionId).then(session => {
-        if (session) {
-          setActiveSession(session);
-        } else {
-          // Clear invalid session ID
-          localStorage.removeItem('activeSessionId');
-        }
+    if (session) {
+      const intervalId = setInterval(() => {
+        refreshSession();
+      }, 30000); // Refresh every 30 seconds
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [session, refreshSession]);
+
+  // Handle session errors
+  useEffect(() => {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Session Error",
+        description: error
       });
     }
-  }, [getSessionById, isAuthenticated]);
-  
-  // Handle join session
-  const handleJoinSession = async (session: LiveSession) => {
-    if (!isAuthenticated) return null;
-    
-    try {
-      const joinedSession = await joinSession(session.id);
-      if (joinedSession) {
-        setActiveSession(joinedSession);
-        localStorage.setItem('activeSessionId', joinedSession.id);
-      }
-      return joinedSession;
-    } catch (error) {
-      console.error('Failed to join session:', error);
-      return null;
+  }, [error, toast]);
+
+  // Handle when a session ends
+  useEffect(() => {
+    if (session && session.status === 'ended') {
+      toast({
+        title: "Session Ended",
+        description: "This study session has ended"
+      });
     }
-  };
-  
-  // Handle join by ID
-  const handleJoinById = async (sessionId: string, accessCode?: string) => {
-    if (!isAuthenticated) return null;
-    
-    try {
-      const joinedSession = await joinSession(sessionId);
-      if (joinedSession) {
-        setActiveSession(joinedSession);
-        localStorage.setItem('activeSessionId', joinedSession.id);
-      }
-      return joinedSession;
-    } catch (error) {
-      console.error('Failed to join session by ID:', error);
-      return null;
-    }
-  };
-  
-  // Handle create session
-  const handleCreateSession = async (sessionData: Omit<LiveSession, 'id' | 'createdAt' | 'updatedAt' | 'host' | 'participants'>) => {
-    if (!isAuthenticated) return null;
-    
-    try {
-      const newSession = await createSession(sessionData);
-      if (newSession) {
-        setActiveSession(newSession);
-        localStorage.setItem('activeSessionId', newSession.id);
-      }
-      return newSession;
-    } catch (error) {
-      console.error('Failed to create session:', error);
-      return null;
-    }
-  };
-  
-  // Handle leave session
+  }, [session, toast]);
+
   const handleLeaveSession = async () => {
-    if (activeSession) {
-      try {
-        await leaveSession(activeSession.id);
-        localStorage.removeItem('activeSessionId');
-        setActiveSession(null);
-      } catch (error) {
-        console.error('Failed to leave session:', error);
-      }
+    try {
+      await leaveSession();
+      toast({
+        title: "Left Session",
+        description: "You have left the study session"
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to leave the session"
+      });
     }
   };
-  
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-t-primary border-r-transparent border-b-primary border-l-transparent"></div>
+          <p className="mt-2">Loading session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8">
+        <h2 className="text-xl font-semibold mb-2">No Active Session</h2>
+        <p className="text-muted-foreground">Join or create a session to get started</p>
+      </div>
+    );
+  }
+
   return (
-    <>
-      {activeSession ? (
-        <ActiveSessionView 
-          session={activeSession} 
-          onLeaveSession={handleLeaveSession} 
-        />
-      ) : (
-        React.cloneElement(
-          children as React.ReactElement, 
-          { 
-            onJoinSession: handleJoinSession, 
-            onJoinById: handleJoinById,
-            onCreateSession: handleCreateSession
-          }
-        )
-      )}
-    </>
+    <ActiveSessionView 
+      session={session} 
+      onLeaveSession={handleLeaveSession} 
+    />
   );
 };
 
