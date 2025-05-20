@@ -1,78 +1,51 @@
 
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { LiveSession } from '@/types/livesessions';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
 
 export function useSessionActions() {
   const { toast } = useToast();
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   
-  const createSession = async (sessionData: Omit<LiveSession, 'id' | 'createdAt' | 'updatedAt' | 'host' | 'participants'>) => {
+  // Create a new session
+  const createSession = useCallback(async (sessionData: Omit<LiveSession, 'id' | 'createdAt' | 'updatedAt' | 'host' | 'participants'>) => {
     try {
-      const user = await supabase.auth.getSession();
-      if (!user.data.session) {
+      const user = await supabase.auth.getUser();
+      
+      if (!user.data.user) {
         toast({
           variant: "destructive",
-          title: "Authentication required",
-          description: "You must be logged in to create a session"
+          title: "Authentication Required",
+          description: "You must be logged in to create a session."
         });
         return null;
       }
       
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        toast({
-          variant: "destructive",
-          title: "Authentication required",
-          description: "You must be logged in to create a session"
-        });
-        return null;
-      }
-      
-      const userId = userData.user.id;
-      
-      // Prepare features object for proper storage
-      const features = {
-        video: sessionData.features.video,
-        audio: sessionData.features.audio,
-        chat: sessionData.features.chat,
-        whiteboard: sessionData.features.whiteboard,
-        screenSharing: sessionData.features.screenSharing,
-        polls: true // Enable polls by default
-      };
-      
-      // Insert session into database
       const { data, error } = await supabase
         .from('live_sessions')
         .insert({
+          host_id: user.data.user.id,
           title: sessionData.title,
           description: sessionData.description,
           subject: sessionData.subject,
           max_participants: sessionData.maxParticipants,
-          start_time: new Date().toISOString(),
-          status: sessionData.status,
           is_private: sessionData.isPrivate,
           access_code: sessionData.accessCode,
-          features: features,
-          host_id: userId
+          features: sessionData.features,
+          status: sessionData.status
         })
         .select('id')
         .single();
-      
+        
       if (error) throw error;
       
-      // Add host as participant
-      await supabase
-        .from('session_participants')
-        .insert({
-          session_id: data.id,
-          user_id: userId,
-          role: 'host'
-        });
+      // Set as active session
+      setActiveSessionId(data.id);
       
       toast({
-        title: "Session created",
-        description: "Your study session has been created successfully"
+        title: "Session Created",
+        description: "Your study session has been created successfully."
       });
       
       return data.id;
@@ -80,178 +53,136 @@ export function useSessionActions() {
       console.error("Error creating session:", err);
       toast({
         variant: "destructive",
-        title: "Error creating session",
-        description: "Failed to create study session"
+        title: "Failed to Create Session",
+        description: "There was an error creating your session."
       });
       return null;
     }
-  };
+  }, [toast]);
   
-  const joinSession = async (sessionId: string) => {
+  // Join a session
+  const joinSession = useCallback(async (sessionId: string, accessCode?: string) => {
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
+      const user = await supabase.auth.getUser();
+      
+      if (!user.data.user) {
         toast({
           variant: "destructive",
-          title: "Authentication required",
-          description: "You must be logged in to join a session"
+          title: "Authentication Required",
+          description: "You must be logged in to join a session."
         });
-        return null;
+        return false;
       }
       
-      const userId = userData.user.id;
-      
-      // Check if session exists and has capacity
+      // Check if session exists and if it requires an access code
       const { data: sessionData, error: sessionError } = await supabase
         .from('live_sessions')
-        .select('id, max_participants')
+        .select('is_private, access_code')
         .eq('id', sessionId)
         .single();
       
       if (sessionError) throw sessionError;
       
-      // Check participant count
-      const { data: participants, error: participantsError } = await supabase
-        .from('session_participants')
-        .select('id')
-        .eq('session_id', sessionId);
-      
-      if (participantsError) throw participantsError;
-      
-      if (participants && participants.length >= sessionData.max_participants) {
+      // Validate access code if the session is private
+      if (sessionData.is_private && sessionData.access_code !== accessCode) {
         toast({
           variant: "destructive",
-          title: "Session full",
-          description: "This session has reached maximum capacity"
+          title: "Access Denied",
+          description: "Invalid access code for this private session."
         });
-        return null;
-      }
-      
-      // Check if user is already a participant
-      const { data: existingParticipant } = await supabase
-        .from('session_participants')
-        .select('id, is_active')
-        .eq('session_id', sessionId)
-        .eq('user_id', userId)
-        .maybeSingle();
-      
-      if (existingParticipant) {
-        // If already a participant but inactive, reactivate
-        if (!existingParticipant.is_active) {
-          await supabase
-            .from('session_participants')
-            .update({
-              is_active: true,
-              left_at: null
-            })
-            .eq('id', existingParticipant.id);
-        }
-      } else {
-        // Add as new participant
-        await supabase
-          .from('session_participants')
-          .insert({
-            session_id: sessionId,
-            user_id: userId,
-            role: 'participant'
-          });
-      }
-      
-      toast({
-        title: "Session joined",
-        description: "You've joined the study session"
-      });
-      
-      return sessionId;
-    } catch (err) {
-      console.error("Error joining session:", err);
-      toast({
-        variant: "destructive",
-        title: "Error joining session",
-        description: "Failed to join study session"
-      });
-      return null;
-    }
-  };
-  
-  const leaveSession = async (sessionId: string) => {
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
         return false;
       }
       
-      const userId = userData.user.id;
-      
-      // Find the participant record
-      const { data: participantData, error: participantError } = await supabase
+      // Check if user is already a participant
+      const { data: existingParticipant, error: participantError } = await supabase
         .from('session_participants')
-        .select('id, role')
+        .select('id')
         .eq('session_id', sessionId)
-        .eq('user_id', userId)
-        .single();
+        .eq('user_id', user.data.user.id)
+        .eq('is_active', true)
+        .maybeSingle();
       
       if (participantError) throw participantError;
       
-      // Mark as inactive and set left time
-      await supabase
-        .from('session_participants')
-        .update({
-          is_active: false,
-          left_at: new Date().toISOString()
-        })
-        .eq('id', participantData.id);
-      
-      // If host is leaving, end the session or transfer host role
-      if (participantData.role === 'host') {
-        // Find another active participant to make host
-        const { data: nextHost } = await supabase
-          .from('session_participants')
-          .select('id, user_id')
-          .eq('session_id', sessionId)
-          .eq('is_active', true)
-          .neq('user_id', userId)
-          .limit(1)
-          .maybeSingle();
-        
-        if (nextHost) {
-          // Transfer host role
-          await supabase
-            .from('session_participants')
-            .update({ role: 'host' })
-            .eq('id', nextHost.id);
-        } else {
-          // End session if no other participants
-          await supabase
-            .from('live_sessions')
-            .update({
-              status: 'ended',
-              end_time: new Date().toISOString()
-            })
-            .eq('id', sessionId);
-        }
+      // If user is already an active participant, just set as active
+      if (existingParticipant) {
+        setActiveSessionId(sessionId);
+        return true;
       }
       
+      // Add user as a participant
+      const { error: insertError } = await supabase
+        .from('session_participants')
+        .insert({
+          session_id: sessionId,
+          user_id: user.data.user.id,
+          is_active: true
+        });
+      
+      if (insertError) throw insertError;
+      
+      // Set as active session
+      setActiveSessionId(sessionId);
+      
       toast({
-        title: "Session left",
-        description: "You've left the study session"
+        title: "Session Joined",
+        description: "You have joined the study session."
       });
       
       return true;
     } catch (err) {
-      console.error("Error leaving session:", err);
+      console.error("Error joining session:", err);
       toast({
         variant: "destructive",
-        title: "Error leaving session",
-        description: "Failed to leave study session"
+        title: "Failed to Join Session",
+        description: "There was an error joining the session."
       });
       return false;
     }
-  };
-
+  }, [toast]);
+  
+  // Leave a session
+  const leaveSession = useCallback(async () => {
+    try {
+      if (!activeSessionId) {
+        return;
+      }
+      
+      const user = await supabase.auth.getUser();
+      
+      if (!user.data.user) {
+        return;
+      }
+      
+      // Update participant record to set as inactive
+      const { error } = await supabase
+        .from('session_participants')
+        .update({ 
+          is_active: false,
+          left_at: new Date().toISOString()
+        })
+        .eq('session_id', activeSessionId)
+        .eq('user_id', user.data.user.id);
+      
+      if (error) throw error;
+      
+      // Clear active session
+      setActiveSessionId(null);
+      
+    } catch (err) {
+      console.error("Error leaving session:", err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to leave the session properly."
+      });
+    }
+  }, [activeSessionId, toast]);
+  
   return {
     createSession,
     joinSession,
-    leaveSession
+    leaveSession,
+    activeSessionId
   };
 }
