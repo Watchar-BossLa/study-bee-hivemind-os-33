@@ -5,10 +5,10 @@ import { LiveSession } from '@/types/livesessions';
 
 interface SessionHeaderProps {
   session: LiveSession;
-  onLeave: () => void;
+  onLeaveSession: () => Promise<void>; // Changed from onLeave to onLeaveSession
 }
 
-const SessionHeader: React.FC<SessionHeaderProps> = ({ session, onLeave }) => {
+const SessionHeader: React.FC<SessionHeaderProps> = ({ session, onLeaveSession }) => { // Updated parameter name
   return (
     <div className="mb-6 flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
       <div>
@@ -18,7 +18,7 @@ const SessionHeader: React.FC<SessionHeaderProps> = ({ session, onLeave }) => {
         )}
       </div>
       <div className="flex items-center space-x-2">
-        <Button variant="outline" onClick={onLeave}>Leave Session</Button>
+        <Button variant="outline" onClick={onLeaveSession}>Leave Session</Button> {/* Updated onClick handler */}
       </div>
     </div>
   );

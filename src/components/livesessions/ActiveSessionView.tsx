@@ -8,18 +8,18 @@ import SessionTabsContent from './SessionTabsContent';
 
 interface ActiveSessionViewProps {
   session: LiveSession;
-  onLeaveSession: () => Promise<void>; // Add this prop
+  onLeaveSession: () => Promise<void>;
 }
 
 const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ 
   session, 
-  onLeaveSession // Accept the prop
+  onLeaveSession
 }) => {
   return (
     <div className="space-y-4">
       <SessionHeader 
         session={session} 
-        onLeaveSession={onLeaveSession} // Pass the prop to SessionHeader
+        onLeaveSession={onLeaveSession} // Passing the correct prop name
       />
       
       <Tabs defaultValue="chat" className="w-full">

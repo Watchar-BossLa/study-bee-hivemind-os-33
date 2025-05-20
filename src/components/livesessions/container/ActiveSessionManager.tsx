@@ -10,7 +10,8 @@ interface ActiveSessionManagerProps {
   refreshSession: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
-  children?: React.ReactNode; // Add children prop
+  children?: React.ReactNode;
+  isAuthenticated: boolean; // Add isAuthenticated prop
 }
 
 /**
@@ -22,7 +23,8 @@ const ActiveSessionManager: React.FC<ActiveSessionManagerProps> = ({
   refreshSession,
   isLoading,
   error,
-  children // Handle the children prop
+  children,
+  isAuthenticated // Handle the added prop
 }) => {
   const { toast } = useToast();
 
