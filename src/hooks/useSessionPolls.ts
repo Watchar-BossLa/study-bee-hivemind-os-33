@@ -1,111 +1,198 @@
-
 import { useState, useEffect, useCallback } from 'react';
+import { SessionPoll, PollResults } from '@/types/livesessions';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { SessionPoll, PollResponse, PollResults } from '@/types/livesessions';
 
 export function useSessionPolls(sessionId: string) {
   const [polls, setPolls] = useState<SessionPoll[]>([]);
   const [activePoll, setActivePoll] = useState<SessionPoll | null>(null);
-  const [pollResponses, setPollResponses] = useState<Record<string, PollResponse[]>>({});
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [pollResults, setPollResults] = useState<PollResults | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasVoted, setHasVoted] = useState(false);
   const { toast } = useToast();
 
-  // Fetch polls for the current session
   const fetchPolls = useCallback(async () => {
+    if (!sessionId) return;
+
     try {
       setIsLoading(true);
-      setError(null);
-      
-      const { data, error: pollsError } = await supabase
+      const { data, error } = await supabase
         .from('session_polls')
         .select('*')
         .eq('session_id', sessionId)
         .order('created_at', { ascending: false });
-      
-      if (pollsError) throw pollsError;
+
+      if (error) throw error;
 
       if (data) {
-        const formattedPolls: SessionPoll[] = data.map(poll => ({
-          id: poll.id,
-          sessionId: poll.session_id,
-          creatorId: poll.creator_id,
-          question: poll.question,
-          options: Array.isArray(poll.options) ? poll.options : [],
-          isActive: poll.is_active,
-          allowMultipleChoices: poll.allow_multiple_choices || false,
-          createdAt: poll.created_at,
-          endedAt: poll.ended_at
-        }));
+        // Transform the data to match the SessionPoll type
+        const formattedPolls = data.map(poll => {
+          // Ensure options is correctly formatted as array of {text: string} objects
+          let formattedOptions: { text: string }[] = [];
+          
+          try {
+            if (Array.isArray(poll.options)) {
+              // If it's already an array, make sure each item has the correct format
+              formattedOptions = poll.options.map((opt: any) => {
+                if (typeof opt === 'string') {
+                  return { text: opt };
+                } else if (typeof opt === 'object' && opt !== null && 'text' in opt) {
+                  return { text: String(opt.text) };
+                } else {
+                  return { text: String(opt) };
+                }
+              });
+            } else if (typeof poll.options === 'object' && poll.options !== null) {
+              // Handle case where options might be an object with numeric keys
+              formattedOptions = Object.values(poll.options).map((opt: any) => {
+                if (typeof opt === 'string') {
+                  return { text: opt };
+                } else if (typeof opt === 'object' && opt !== null && 'text' in opt) {
+                  return { text: String(opt.text) };
+                } else {
+                  return { text: String(opt) };
+                }
+              });
+            }
+          } catch (err) {
+            console.error("Error formatting poll options:", err, poll.options);
+            formattedOptions = [{ text: "Error loading options" }];
+          }
+
+          return {
+            id: poll.id,
+            sessionId: poll.session_id,
+            creatorId: poll.creator_id,
+            question: poll.question,
+            options: formattedOptions,
+            isActive: poll.is_active,
+            allowMultipleChoices: poll.allow_multiple_choices,
+            createdAt: poll.created_at,
+            endedAt: poll.ended_at || undefined
+          };
+        });
         
         setPolls(formattedPolls);
         
-        // Set the active poll if there is one
+        // Find the active poll
         const active = formattedPolls.find(p => p.isActive);
         setActivePoll(active || null);
+        
+        if (active) {
+          await fetchPollResults(active.id);
+          await checkUserVote(active.id);
+        } else {
+          setPollResults(null);
+          setHasVoted(false);
+        }
       }
       
       setIsLoading(false);
     } catch (err) {
-      console.error('Error fetching polls:', err);
-      setError('Failed to load polls');
+      console.error("Error fetching polls:", err);
       setIsLoading(false);
       toast({
         variant: "destructive",
         title: "Error loading polls",
-        description: "Please try again later"
+        description: "Failed to load polls for this session"
       });
     }
   }, [sessionId, toast]);
 
-  // Fetch responses for a specific poll
-  const fetchPollResponses = useCallback(async (pollId: string) => {
+  const fetchPollResults = useCallback(async (pollId: string) => {
     try {
-      const { data, error: responsesError } = await supabase
+      const { data: responses, error: responsesError } = await supabase
         .from('poll_responses')
-        .select(`
-          id,
-          poll_id,
-          user_id,
-          selected_options,
-          created_at,
-          profiles:user_id (id, full_name, avatar_url)
-        `)
+        .select('id, user_id, selected_options')
         .eq('poll_id', pollId);
-      
+
       if (responsesError) throw responsesError;
 
-      if (data) {
-        const responses: PollResponse[] = data.map(item => ({
-          id: item.id,
-          pollId: item.poll_id,
-          userId: item.user_id,
-          selectedOptions: item.selected_options,
-          createdAt: item.created_at
-        }));
-        
-        setPollResponses(prev => ({
-          ...prev,
-          [pollId]: responses
-        }));
-      }
+      // Fetch total responses
+      const totalResponses = responses ? responses.length : 0;
+
+      // Initialize option counts
+      const optionCounts = activePoll ? activePoll.options.map(() => 0) : [];
+
+      // Aggregate option counts
+      responses?.forEach(response => {
+        if (Array.isArray(response.selected_options)) {
+          response.selected_options.forEach(optionIndex => {
+            if (optionIndex >= 0 && optionIndex < optionCounts.length) {
+              optionCounts[optionIndex]++;
+            }
+          });
+        }
+      });
+
+      // Fetch respondent details
+      const respondents = await Promise.all(
+        (responses || []).map(async (response) => {
+          const { data: user, error: userError } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .eq('id', response.user_id)
+            .single();
+
+          if (userError) {
+            console.error("Error fetching user details:", userError);
+            return {
+              id: response.user_id,
+              name: 'Unknown User',
+              avatar: undefined,
+              selectedOptions: response.selected_options
+            };
+          }
+
+          return {
+            id: user.id,
+            name: user.full_name || 'Unknown User',
+            avatar: user.avatar_url || undefined,
+            selectedOptions: response.selected_options
+          };
+        })
+      );
+
+      // Set the poll results
+      setPollResults({
+        totalResponses,
+        optionCounts,
+        respondents
+      });
     } catch (err) {
-      console.error('Error fetching poll responses:', err);
+      console.error("Error fetching poll results:", err);
       toast({
         variant: "destructive",
-        title: "Error loading poll responses",
-        description: "Please try again later"
+        title: "Error fetching poll results",
+        description: "Failed to load poll results"
       });
     }
-  }, [toast]);
+  }, [activePoll, toast]);
 
-  // Create a new poll
-  const createPoll = useCallback(async (pollData: Omit<SessionPoll, 'id' | 'sessionId' | 'creatorId' | 'createdAt' | 'endedAt'>) => {
+  const checkUserVote = useCallback(async (pollId: string) => {
     try {
-      setIsSubmitting(true);
-      
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const userId = userData.user.id;
+
+      const { data, error } = await supabase
+        .from('poll_responses')
+        .select('id')
+        .eq('poll_id', pollId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      setHasVoted(!!data);
+    } catch (err) {
+      console.error("Error checking user vote:", err);
+    }
+  }, []);
+
+  const createPoll = async (question: string, options: string[], allowMultipleChoices: boolean) => {
+    try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) {
         toast({
@@ -113,47 +200,120 @@ export function useSessionPolls(sessionId: string) {
           title: "Authentication required",
           description: "You must be logged in to create a poll"
         });
-        setIsSubmitting(false);
-        return null;
+        return;
       }
-      
+
+      const creatorId = userData.user.id;
+
+      // Format options to the correct structure
+      const formattedOptions = options.map(text => ({ text }));
+
       const { data, error } = await supabase
         .from('session_polls')
         .insert({
           session_id: sessionId,
-          creator_id: userData.user.id,
-          question: pollData.question,
-          options: pollData.options,
-          is_active: pollData.isActive,
-          allow_multiple_choices: pollData.allowMultipleChoices
+          creator_id: creatorId,
+          question,
+          options: formattedOptions,
+          is_active: true,
+          allow_multiple_choices: allowMultipleChoices
         })
-        .select('id')
+        .select('*')
         .single();
-      
+
       if (error) throw error;
-      
+
+      // Transform the data to match the SessionPoll type
+      const newPoll: SessionPoll = {
+        id: data.id,
+        sessionId: data.session_id,
+        creatorId: data.creator_id,
+        question: data.question,
+        options: data.options,
+        isActive: data.is_active,
+        allowMultipleChoices: data.allow_multiple_choices,
+        createdAt: data.created_at,
+        endedAt: data.ended_at || undefined
+      };
+
+      setPolls(prev => [newPoll, ...prev]);
+      setActivePoll(newPoll);
+      await fetchPollResults(newPoll.id);
+
       toast({
         title: "Poll created",
         description: "Your poll has been created successfully"
       });
-      
-      await fetchPolls();
-      setIsSubmitting(false);
-      return data.id;
     } catch (err) {
-      console.error('Error creating poll:', err);
+      console.error("Error creating poll:", err);
       toast({
         variant: "destructive",
         title: "Error creating poll",
-        description: "Please try again later"
+        description: "Failed to create poll"
       });
-      setIsSubmitting(false);
-      return null;
     }
-  }, [sessionId, fetchPolls, toast]);
+  };
 
-  // End an active poll
-  const endPoll = useCallback(async (pollId: string) => {
+  const submitVote = async (selectedOptions: number[]) => {
+    if (!activePoll) {
+      toast({
+        variant: "destructive",
+        title: "No active poll",
+        description: "There is no active poll to submit a vote for"
+      });
+      return;
+    }
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        toast({
+          variant: "destructive",
+          title: "Authentication required",
+          description: "You must be logged in to submit a vote"
+        });
+        return;
+      }
+
+      const userId = userData.user.id;
+
+      const { error } = await supabase
+        .from('poll_responses')
+        .insert({
+          poll_id: activePoll.id,
+          user_id: userId,
+          selected_options: selectedOptions
+        });
+
+      if (error) throw error;
+
+      setHasVoted(true);
+      await fetchPollResults(activePoll.id);
+
+      toast({
+        title: "Vote submitted",
+        description: "Your vote has been submitted successfully"
+      });
+    } catch (err) {
+      console.error("Error submitting vote:", err);
+      toast({
+        variant: "destructive",
+        title: "Error submitting vote",
+        description: "Failed to submit vote"
+      });
+    }
+  };
+
+  const endPoll = async () => {
+    if (!activePoll) {
+      toast({
+        variant: "destructive",
+        title: "No active poll",
+        description: "There is no active poll to end"
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('session_polls')
@@ -161,207 +321,44 @@ export function useSessionPolls(sessionId: string) {
           is_active: false,
           ended_at: new Date().toISOString()
         })
-        .eq('id', pollId);
-      
+        .eq('id', activePoll.id);
+
       if (error) throw error;
-      
+
+      // Update the local state
+      setPolls(prev => prev.map(poll =>
+        poll.id === activePoll.id ? { ...poll, isActive: false, endedAt: new Date().toISOString() } : poll
+      ));
+      setActivePoll(null);
+      setPollResults(null);
+
       toast({
         title: "Poll ended",
         description: "The poll has been ended successfully"
       });
-      
-      await fetchPolls();
-      return true;
     } catch (err) {
-      console.error('Error ending poll:', err);
+      console.error("Error ending poll:", err);
       toast({
         variant: "destructive",
         title: "Error ending poll",
-        description: "Please try again later"
-      });
-      return false;
-    }
-  }, [fetchPolls, toast]);
-
-  // Submit a response to a poll
-  const submitPollResponse = useCallback(async (pollId: string, selectedOptions: number[]) => {
-    try {
-      setIsSubmitting(true);
-      
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        toast({
-          variant: "destructive",
-          title: "Authentication required",
-          description: "You must be logged in to respond to a poll"
-        });
-        setIsSubmitting(false);
-        return false;
-      }
-      
-      // Check if user has already responded
-      const { data: existingResponse } = await supabase
-        .from('poll_responses')
-        .select('id')
-        .eq('poll_id', pollId)
-        .eq('user_id', userData.user.id)
-        .maybeSingle();
-      
-      if (existingResponse) {
-        toast({
-          variant: "destructive",
-          title: "Already responded",
-          description: "You have already submitted a response to this poll"
-        });
-        setIsSubmitting(false);
-        return false;
-      }
-      
-      const { error } = await supabase
-        .from('poll_responses')
-        .insert({
-          poll_id: pollId,
-          user_id: userData.user.id,
-          selected_options: selectedOptions
-        });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Response submitted",
-        description: "Your response has been recorded"
-      });
-      
-      await fetchPollResponses(pollId);
-      setIsSubmitting(false);
-      return true;
-    } catch (err) {
-      console.error('Error submitting poll response:', err);
-      toast({
-        variant: "destructive",
-        title: "Error submitting response",
-        description: "Please try again later"
-      });
-      setIsSubmitting(false);
-      return false;
-    }
-  }, [fetchPollResponses, toast]);
-
-  // Calculate poll results
-  const calculatePollResults = useCallback((pollId: string): PollResults | null => {
-    const poll = polls.find(p => p.id === pollId);
-    const responses = pollResponses[pollId] || [];
-    
-    if (!poll) return null;
-    
-    // Count responses for each option
-    const optionCounts = Array(poll.options.length).fill(0);
-    
-    // Track respondents
-    const respondents: {
-      id: string;
-      name: string;
-      avatar?: string;
-      selectedOptions: number[];
-    }[] = [];
-    
-    // Process responses
-    responses.forEach(response => {
-      // Increment option counts
-      response.selectedOptions.forEach(optionIndex => {
-        if (optionIndex >= 0 && optionIndex < optionCounts.length) {
-          optionCounts[optionIndex]++;
-        }
-      });
-      
-      // Add respondent info
-      respondents.push({
-        id: response.userId,
-        name: 'Participant', // In a real app, you'd fetch from profiles
-        selectedOptions: response.selectedOptions
-      });
-    });
-    
-    return {
-      totalResponses: responses.length,
-      optionCounts,
-      respondents
-    };
-  }, [polls, pollResponses]);
-
-  // Initial data fetch
-  useEffect(() => {
-    if (sessionId) {
-      fetchPolls();
-    }
-  }, [sessionId, fetchPolls]);
-
-  // Set up real-time subscriptions for polls
-  useEffect(() => {
-    const channel = supabase
-      .channel('session-polls')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'session_polls',
-          filter: `session_id=eq.${sessionId}`
-        }, 
-        () => {
-          fetchPolls();
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [sessionId, fetchPolls]);
-
-  // Set up real-time subscriptions for poll responses
-  useEffect(() => {
-    const channel = supabase
-      .channel('poll-responses')
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'poll_responses'
-        }, 
-        (payload) => {
-          const pollId = payload.new.poll_id;
-          if (pollId) {
-            fetchPollResponses(pollId);
-          }
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchPollResponses]);
-
-  // Fetch responses for all polls
-  useEffect(() => {
-    if (polls.length > 0) {
-      polls.forEach(poll => {
-        fetchPollResponses(poll.id);
+        description: "Failed to end poll"
       });
     }
-  }, [polls, fetchPollResponses]);
+  };
+
+  useEffect(() => {
+    fetchPolls();
+  }, [fetchPolls]);
 
   return {
     polls,
     activePoll,
-    pollResponses,
+    pollResults,
     isLoading,
-    isSubmitting,
-    error,
+    hasVoted,
     createPoll,
+    submitVote,
     endPoll,
-    submitPollResponse,
-    calculatePollResults,
     refreshPolls: fetchPolls
   };
 }
