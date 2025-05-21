@@ -11,7 +11,7 @@ interface ActiveSessionManagerProps {
   isLoading: boolean;
   error: string | null;
   children?: React.ReactNode;
-  isAuthenticated: boolean; // Add isAuthenticated prop
+  isAuthenticated: boolean;
 }
 
 /**
@@ -24,7 +24,7 @@ const ActiveSessionManager: React.FC<ActiveSessionManagerProps> = ({
   isLoading,
   error,
   children,
-  isAuthenticated // Handle the added prop
+  isAuthenticated
 }) => {
   const { toast } = useToast();
 
@@ -92,7 +92,7 @@ const ActiveSessionManager: React.FC<ActiveSessionManagerProps> = ({
       <div className="flex flex-col items-center justify-center p-8">
         <h2 className="text-xl font-semibold mb-2">No Active Session</h2>
         <p className="text-muted-foreground">Join or create a session to get started</p>
-        {children} {/* Render children when no session is active */}
+        {children}
       </div>
     );
   }

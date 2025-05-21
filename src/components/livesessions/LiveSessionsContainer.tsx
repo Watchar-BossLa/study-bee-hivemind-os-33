@@ -32,35 +32,57 @@ const LiveSessionsContainer = () => {
 
   // Wrapper functions to handle session state
   const handleJoinSession = async (session: LiveSession) => {
-    const result = await joinSession(session.id);
-    if (result) {
-      setActiveSession(result);
+    try {
+      // Here we need to extract the ID from the session object and pass only that
+      const result = await joinSession(session.id);
+      if (result) {
+        setActiveSession(result);
+      }
+      return result;
+    } catch (err) {
+      console.error("Error joining session:", err);
+      return null;
     }
-    return result;
   };
 
   const handleJoinById = async (sessionId: string, accessCode?: string) => {
-    const result = await joinSession(sessionId, accessCode);
-    if (result) {
-      const sessionData = await getSessionById(sessionId);
-      if (sessionData) {
-        setActiveSession(sessionData);
+    try {
+      const result = await joinSession(sessionId, accessCode);
+      if (result) {
+        setActiveSession(result);
       }
+      return result;
+    } catch (err) {
+      console.error("Error joining session by ID:", err);
+      return null;
     }
-    return result;
   };
 
   const handleCreateSession = async (sessionData: Omit<LiveSession, 'id' | 'createdAt' | 'updatedAt' | 'host' | 'participants'>) => {
-    const result = await createSession(sessionData);
-    if (result) {
-      setActiveSession(result);
+    try {
+      const result = await createSession(sessionData);
+      if (result) {
+        setActiveSession(result);
+      }
+      return result;
+    } catch (err) {
+      console.error("Error creating session:", err);
+      return null;
     }
-    return result;
   };
 
   const handleLeaveSession = async () => {
-    await leaveSession();
-    setActiveSession(null);
+    try {
+      await leaveSession();
+      setActiveSession(null);
+    } catch (err) {
+      console.error("Error leaving session:", err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to leave the session properly."
+      });
+    }
   };
 
   return (

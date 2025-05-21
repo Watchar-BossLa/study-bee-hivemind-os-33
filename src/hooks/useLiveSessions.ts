@@ -62,8 +62,8 @@ export function useLiveSessions() {
   };
 
   // Enhanced version of joinSession that fetches and returns the complete session
-  const joinSessionAndGet = async (sessionId: string) => {
-    const joined = await joinSession(sessionId);
+  const joinSessionAndGet = async (sessionId: string, accessCode?: string) => {
+    const joined = await joinSession(sessionId, accessCode);
     if (joined) {
       return await getSessionById(sessionId);
     }
