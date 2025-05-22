@@ -16,12 +16,12 @@ export const ArenaSubjectSelect: React.FC<ArenaSubjectSelectProps> = ({
   disabled = false
 }) => {
   return (
-    <Select value={selectedSubject || ''} onValueChange={onSelectSubject} disabled={disabled}>
+    <Select value={selectedSubject || 'random'} onValueChange={onSelectSubject} disabled={disabled}>
       <SelectTrigger className="w-[200px]">
         <SelectValue placeholder="Select Subject" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="">Random Topics</SelectItem>
+        <SelectItem value="random">Random Topics</SelectItem>
         {subjectAreas.map((subject) => (
           <SelectItem key={subject.id} value={subject.id}>
             <div className="flex items-center">
