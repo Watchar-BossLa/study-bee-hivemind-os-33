@@ -14,6 +14,19 @@ import FlashcardFilters from '@/components/flashcards/FlashcardFilters';
 import { FlashcardFilter } from '@/components/shared/flashcards/types';
 import { ArrowLeft, Edit, Trash2, Loader2, Plus } from 'lucide-react';
 
+// Define the Flashcard interface to fix the type error
+interface Flashcard {
+  id: string;
+  user_id: string;
+  question: string;
+  answer: string;
+  subject_area?: string;
+  difficulty?: string;
+  is_preloaded?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 interface FlashcardRow extends Flashcard {
   selected: boolean;
 }
