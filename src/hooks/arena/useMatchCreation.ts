@@ -17,55 +17,56 @@ export const useMatchCreation = () => {
         console.error('Error checking arena_matches schema:', columnsError);
       }
 
-      // Base query for waiting matches
-      let baseQuery = supabase
-        .from('arena_matches')
-        .select('id')
-        .eq('status', 'waiting')
-        .order('created_at', { ascending: false })
-        .limit(5);
-      
+      let waitingMatches;
+      let error;
+
       // If the column exists, filter by subject focus
       if (!columnsError) {
         if (subjectFocus) {
           // For specific subject focus
-          const { data: waitingMatches, error } = await baseQuery
-            .eq('subject_focus', subjectFocus);
-          
-          if (error) {
-            console.error('Error fetching waiting matches:', error);
-            return null;
-          }
-          
-          if (waitingMatches && waitingMatches.length > 0) {
-            return waitingMatches[0].id;
-          }
+          const result = await supabase
+            .from('arena_matches')
+            .select('id')
+            .eq('status', 'waiting')
+            .eq('subject_focus', subjectFocus)
+            .order('created_at', { ascending: false })
+            .limit(5);
+            
+          waitingMatches = result.data;
+          error = result.error;
         } else {
           // For null subject focus (random matches)
-          const { data: waitingMatches, error } = await baseQuery
-            .is('subject_focus', null);
-          
-          if (error) {
-            console.error('Error fetching waiting matches:', error);
-            return null;
-          }
-          
-          if (waitingMatches && waitingMatches.length > 0) {
-            return waitingMatches[0].id;
-          }
+          const result = await supabase
+            .from('arena_matches')
+            .select('id')
+            .eq('status', 'waiting')
+            .is('subject_focus', null)
+            .order('created_at', { ascending: false })
+            .limit(5);
+            
+          waitingMatches = result.data;
+          error = result.error;
         }
       } else {
         // Fallback if column doesn't exist
-        const { data: waitingMatches, error } = await baseQuery;
-        
-        if (error) {
-          console.error('Error fetching waiting matches:', error);
-          return null;
-        }
-        
-        if (waitingMatches && waitingMatches.length > 0) {
-          return waitingMatches[0].id;
-        }
+        const result = await supabase
+          .from('arena_matches')
+          .select('id')
+          .eq('status', 'waiting')
+          .order('created_at', { ascending: false })
+          .limit(5);
+          
+        waitingMatches = result.data;
+        error = result.error;
+      }
+      
+      if (error) {
+        console.error('Error fetching waiting matches:', error);
+        return null;
+      }
+      
+      if (waitingMatches && waitingMatches.length > 0) {
+        return waitingMatches[0].id;
       }
       
       return null;
