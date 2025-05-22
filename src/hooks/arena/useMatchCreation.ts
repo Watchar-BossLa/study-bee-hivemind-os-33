@@ -17,22 +17,39 @@ export const useMatchCreation = () => {
         console.error('Error checking arena_matches schema:', columnsError);
       }
 
-      // Construct the appropriate query based on subject focus
+      // Build query parameters based on subject focus
+      const queryParams: any = {
+        status: 'waiting'
+      };
+      
+      // Only add subject_focus filter if the column exists
+      if (!columnsError && subjectFocus !== undefined) {
+        if (subjectFocus === null) {
+          // Handle explicit null case separately - we'll use .is() method later
+        } else {
+          queryParams.subject_focus = subjectFocus;
+        }
+      }
+      
+      // Create the base query without any filters first
       let query = supabase
         .from('arena_matches')
-        .select('id')
-        .eq('status', 'waiting')
-        .order('created_at', { ascending: false })
-        .limit(5);
+        .select('id');
       
-      // If the schema check passed and we have a subject focus
-      if (!columnsError && subjectFocus) {
-        // Add subject focus filter
-        query = query.eq('subject_focus', subjectFocus);
-      } else if (!columnsError && subjectFocus === null) {
-        // For explicit null subject focus (random matches)
+      // Apply all regular filters with .eq()
+      Object.entries(queryParams).forEach(([key, value]) => {
+        query = query.eq(key, value);
+      });
+      
+      // Special handling for null subject focus
+      if (!columnsError && subjectFocus === null) {
         query = query.is('subject_focus', null);
       }
+      
+      // Add common query parts that don't cause type issues
+      query = query
+        .order('created_at', { ascending: false })
+        .limit(5);
       
       // Execute the query
       const { data: waitingMatches, error } = await query;
