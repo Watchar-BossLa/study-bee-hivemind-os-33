@@ -1,5 +1,5 @@
 
-import { Book, BookOpen, FlaskConical, Dumbbell, PencilRuler, Brain, FlashIcon } from 'lucide-react';
+import { Book, BookOpen, FlaskConical, Dumbbell, PencilRuler, Brain, FlipVertical } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface LearnMenuItem {
@@ -20,7 +20,7 @@ export const learnMenuItems: LearnMenuItem[] = [
     title: "Flashcards",
     description: "Create and review flashcards with spaced repetition",
     url: "/flashcards",
-    icon: FlashIcon
+    icon: FlipVertical
   },
   {
     title: "AI Tutor",
