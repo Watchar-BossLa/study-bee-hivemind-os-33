@@ -9,7 +9,7 @@ interface ArenaHeaderProps {
   isLoading: boolean;
   currentMatch: ArenaMatch | null;
   selectedSubject: string | null;
-  onSelectSubject: (subject: string | null) => void;
+  onSelectSubject: (subject: string) => void;
   onJoinMatch: () => void;
   onLeaveMatch: () => void;
 }
@@ -25,7 +25,7 @@ export const ArenaHeader: React.FC<ArenaHeaderProps> = ({
   return (
     <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
       <div>
-        <h1 className="text-3xl font-bold">Quiz Arena</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Quiz Arena</h1>
         <p className="text-muted-foreground">Compete with other students in real-time quiz battles</p>
       </div>
       

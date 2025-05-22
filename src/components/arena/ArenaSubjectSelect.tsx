@@ -21,7 +21,12 @@ export const ArenaSubjectSelect: React.FC<ArenaSubjectSelectProps> = ({
         <SelectValue placeholder="Select Subject" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="random">Random Topics</SelectItem>
+        <SelectItem value="random">
+          <div className="flex items-center">
+            <BookOpen className="mr-2 h-4 w-4" />
+            Random Topics
+          </div>
+        </SelectItem>
         {subjectAreas.map((subject) => (
           <SelectItem key={subject.id} value={subject.id}>
             <div className="flex items-center">

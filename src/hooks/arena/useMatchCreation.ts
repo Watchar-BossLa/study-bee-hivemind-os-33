@@ -10,7 +10,7 @@ export const useMatchCreation = () => {
       // by just fetching a single record - we'll handle any errors
       const { data: columnsData, error: columnsError } = await supabase
         .from('arena_matches')
-        .select('id')
+        .select('id, subject_focus')
         .limit(1);
 
       // Just log schema issues but continue with basic functionality
@@ -18,11 +18,21 @@ export const useMatchCreation = () => {
         console.error('Error checking arena_matches schema:', columnsError);
       }
 
-      // Fetch waiting matches with simple query - avoid referencing subject_focus
-      const { data: waitingMatches, error } = await supabase
+      // Construct the query based on whether we want a subject-specific match
+      let query = supabase
         .from('arena_matches')
         .select('id')
-        .eq('status', 'waiting')
+        .eq('status', 'waiting');
+
+      // If we have a subject focus and the column exists, add it to the query
+      if (subjectFocus && !columnsError) {
+        query = query.eq('subject_focus', subjectFocus);
+      } else if (!subjectFocus && !columnsError) {
+        // If no subject focus specified, find matches with null subject_focus
+        query = query.is('subject_focus', null);
+      }
+
+      const { data: waitingMatches, error } = await query
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -47,12 +57,24 @@ export const useMatchCreation = () => {
     try {
       const matchId = uuidv4();
       
-      // Create new match record with basic required fields only
-      const { error } = await supabase.from('arena_matches').insert({
+      // First, check if subject_focus column exists in the arena_matches table
+      const { data: columnsData, error: columnsError } = await supabase
+        .from('arena_matches')
+        .select('subject_focus')
+        .limit(1);
+      
+      // Create new match record with appropriate fields based on schema
+      let insertData: any = {
         id: matchId,
         status: 'waiting'
-        // We omit subject_focus since the column might not exist
-      });
+      };
+      
+      // Only add subject_focus if the column exists and a subject is specified
+      if (!columnsError && subjectFocus) {
+        insertData.subject_focus = subjectFocus;
+      }
+      
+      const { error } = await supabase.from('arena_matches').insert(insertData);
       
       if (error) {
         throw error;

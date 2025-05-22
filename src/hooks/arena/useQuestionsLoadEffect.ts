@@ -16,7 +16,12 @@ export const useQuestionsLoadEffect = ({
   // Effect to load questions when match becomes active
   useEffect(() => {
     if (currentMatch?.status === 'active' && questions.length === 0) {
-      fetchQuestions();
+      const loadQuestions = async () => {
+        console.log('Loading questions for match', currentMatch.id);
+        await fetchQuestions();
+      };
+
+      loadQuestions();
     }
   }, [currentMatch, questions.length, fetchQuestions]);
 };
