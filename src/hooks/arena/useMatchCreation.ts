@@ -17,48 +17,25 @@ export const useMatchCreation = () => {
         console.error('Error checking arena_matches schema:', columnsError);
       }
 
-      let waitingMatches;
-      let error;
-
-      // If the column exists, filter by subject focus
-      if (!columnsError) {
-        if (subjectFocus) {
-          // For specific subject focus
-          const result = await supabase
-            .from('arena_matches')
-            .select('id')
-            .eq('status', 'waiting')
-            .eq('subject_focus', subjectFocus)
-            .order('created_at', { ascending: false })
-            .limit(5);
-            
-          waitingMatches = result.data;
-          error = result.error;
-        } else {
-          // For null subject focus (random matches)
-          const result = await supabase
-            .from('arena_matches')
-            .select('id')
-            .eq('status', 'waiting')
-            .is('subject_focus', null)
-            .order('created_at', { ascending: false })
-            .limit(5);
-            
-          waitingMatches = result.data;
-          error = result.error;
-        }
-      } else {
-        // Fallback if column doesn't exist
-        const result = await supabase
-          .from('arena_matches')
-          .select('id')
-          .eq('status', 'waiting')
-          .order('created_at', { ascending: false })
-          .limit(5);
-          
-        waitingMatches = result.data;
-        error = result.error;
+      // Construct the appropriate query based on subject focus
+      let query = supabase
+        .from('arena_matches')
+        .select('id')
+        .eq('status', 'waiting')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      // If the schema check passed and we have a subject focus
+      if (!columnsError && subjectFocus) {
+        // Add subject focus filter
+        query = query.eq('subject_focus', subjectFocus);
+      } else if (!columnsError && subjectFocus === null) {
+        // For explicit null subject focus (random matches)
+        query = query.is('subject_focus', null);
       }
+      
+      // Execute the query
+      const { data: waitingMatches, error } = await query;
       
       if (error) {
         console.error('Error fetching waiting matches:', error);
