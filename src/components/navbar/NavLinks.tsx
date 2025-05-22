@@ -22,6 +22,12 @@ export const NavLinks: React.FC<NavLinksProps> = ({ isActive }) => {
         Courses
       </Link>
       <Link 
+        to="/flashcards" 
+        className={`text-sm font-medium ${isActive('/flashcards') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+      >
+        Flashcards
+      </Link>
+      <Link 
         to="/tutor" 
         className={`text-sm font-medium ${isActive('/tutor') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
       >

@@ -1,55 +1,55 @@
 
-import { BookOpen, Camera, Brain, Award, Users, User, FileText } from "lucide-react";
-import { LucideIcon } from "lucide-react";
+import { Book, BookOpen, FlaskConical, Dumbbell, PencilRuler, Brain, FlashIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface LearnMenuItem {
   title: string;
+  description: string;
   url: string;
   icon: LucideIcon;
-  description: string;
 }
 
 export const learnMenuItems: LearnMenuItem[] = [
   {
     title: "Courses",
+    description: "Browse our structured learning courses",
     url: "/courses",
-    icon: BookOpen,
-    description: "Browse our extensive course catalog"
+    icon: BookOpen
   },
   {
-    title: "OCR Flashcards",
-    url: "/ocr",
-    icon: Camera,
-    description: "Create flashcards from your notes instantly"
+    title: "Flashcards",
+    description: "Create and review flashcards with spaced repetition",
+    url: "/flashcards",
+    icon: FlashIcon
   },
   {
     title: "AI Tutor",
+    description: "Get personalized help from our AI tutor",
     url: "/tutor",
-    icon: Brain,
-    description: "Get personalized help with Graph-RAG tutoring"
+    icon: Brain
   },
   {
-    title: "Quiz Arena",
+    title: "Live Sessions",
+    description: "Join interactive live study sessions",
+    url: "/live-sessions",
+    icon: Book
+  },
+  {
+    title: "Practice Arena",
+    description: "Test your knowledge in competitive quizzes",
     url: "/arena",
-    icon: Award,
-    description: "Compete in real-time quiz battles"
+    icon: Dumbbell
   },
   {
-    title: "Study Groups",
-    url: "/study-groups",
-    icon: Users,
-    description: "Join study groups and learn together"
+    title: "OCR Flashcards",
+    description: "Create flashcards by scanning notes",
+    url: "/ocr",
+    icon: PencilRuler
   },
   {
-    title: "Peer Learning",
-    url: "/peer-learning",
-    icon: User,
-    description: "Connect with study partners"
-  },
-  {
-    title: "Collaborative Notes",
-    url: "/collaborative-notes",
-    icon: FileText,
-    description: "Create and share study notes"
+    title: "Labs",
+    description: "Experimental learning features",
+    url: "/labs",
+    icon: FlaskConical
   }
 ];
