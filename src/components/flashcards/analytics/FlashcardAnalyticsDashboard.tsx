@@ -9,6 +9,7 @@ import {
 import { ChartBar, Clock, Calendar } from 'lucide-react';
 import FlashcardAnalyticsOverview from './FlashcardAnalyticsOverview';
 import FlashcardReviewHistory from './FlashcardReviewHistory';
+import { FlashcardStudyTimeStats } from './FlashcardStudyTimeStats';
 
 const FlashcardAnalyticsDashboard = () => {
   return (
@@ -31,6 +32,9 @@ const FlashcardAnalyticsDashboard = () => {
         
         <TabsContent value="overview" className="space-y-6 mt-6">
           <FlashcardAnalyticsOverview />
+          <div className="grid md:grid-cols-2 gap-6">
+            <FlashcardStudyTimeStats />
+          </div>
         </TabsContent>
         
         <TabsContent value="history" className="space-y-6 mt-6">

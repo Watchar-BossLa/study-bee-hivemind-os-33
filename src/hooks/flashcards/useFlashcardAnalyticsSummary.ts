@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFlashcardStatistics } from './useFlashcardStatistics';
+import { useFlashcardStudyTime } from './useFlashcardStudyTime';
 import type { FlashcardAnalyticsSummary } from '@/types/supabase/flashcard-analytics';
 
 /**
@@ -9,6 +10,7 @@ import type { FlashcardAnalyticsSummary } from '@/types/supabase/flashcard-analy
  */
 export const useFlashcardAnalyticsSummary = () => {
   const { data: statistics, isLoading: isLoadingStats } = useFlashcardStatistics();
+  const { data: studyTimeData, isLoading: isLoadingStudyTime } = useFlashcardStudyTime('today');
 
   const { data: todayReviews, isLoading: isLoadingTodayReviews } = useQuery({
     queryKey: ['today-flashcard-reviews'],
@@ -126,12 +128,13 @@ export const useFlashcardAnalyticsSummary = () => {
     streak_days: statistics.streak_days || 0,
     last_study_date: statistics.last_study_date,
     reviewsToday: todayReviews?.length || 0,
-    correctReviewsToday: todayReviews?.filter(review => review.was_correct).length || 0
+    correctReviewsToday: todayReviews?.filter(review => review.was_correct).length || 0,
+    studyTimeToday: studyTimeData?.totalTimeMs || 0
   } : undefined;
 
   return {
     summary,
     isLoading: isLoadingStats || isLoadingTodayReviews || isLoadingDueCards || 
-               isLoadingMasteredCards || isLoadingTotalCards
+               isLoadingMasteredCards || isLoadingTotalCards || isLoadingStudyTime
   };
 };

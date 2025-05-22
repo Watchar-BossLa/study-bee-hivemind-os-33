@@ -8,8 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Book, BarChart2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useFlashcardAnalyticsSummary } from '@/hooks/flashcards';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const FlashcardReviewPage = () => {
+  const { summary, isLoading } = useFlashcardAnalyticsSummary();
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -97,24 +101,31 @@ const FlashcardReviewPage = () => {
                 <CardDescription>Your flashcard learning stats</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-muted/50 p-3 rounded-md text-center">
-                    <div className="text-2xl font-bold">0</div>
-                    <div className="text-xs text-muted-foreground">Due Today</div>
+                {isLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
                   </div>
-                  <div className="bg-muted/50 p-3 rounded-md text-center">
-                    <div className="text-2xl font-bold">0</div>
-                    <div className="text-xs text-muted-foreground">Reviewed</div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-muted/50 p-3 rounded-md text-center">
+                      <div className="text-2xl font-bold">{summary?.cards_due || 0}</div>
+                      <div className="text-xs text-muted-foreground">Due Today</div>
+                    </div>
+                    <div className="bg-muted/50 p-3 rounded-md text-center">
+                      <div className="text-2xl font-bold">{summary?.reviewsToday || 0}</div>
+                      <div className="text-xs text-muted-foreground">Reviewed</div>
+                    </div>
+                    <div className="bg-muted/50 p-3 rounded-md text-center">
+                      <div className="text-2xl font-bold">{summary?.cards_mastered || 0}</div>
+                      <div className="text-xs text-muted-foreground">Mastered</div>
+                    </div>
+                    <div className="bg-muted/50 p-3 rounded-md text-center">
+                      <div className="text-2xl font-bold">{summary?.total_cards || 0}</div>
+                      <div className="text-xs text-muted-foreground">Total Cards</div>
+                    </div>
                   </div>
-                  <div className="bg-muted/50 p-3 rounded-md text-center">
-                    <div className="text-2xl font-bold">0</div>
-                    <div className="text-xs text-muted-foreground">Mastered</div>
-                  </div>
-                  <div className="bg-muted/50 p-3 rounded-md text-center">
-                    <div className="text-2xl font-bold">0</div>
-                    <div className="text-xs text-muted-foreground">Total Cards</div>
-                  </div>
-                </div>
+                )}
                 <div className="mt-4">
                   <Link to="/flashcards/analytics">
                     <Button variant="secondary" className="w-full flex items-center justify-center gap-2">

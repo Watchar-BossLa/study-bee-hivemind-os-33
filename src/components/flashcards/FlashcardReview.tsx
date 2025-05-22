@@ -22,6 +22,7 @@ const FlashcardReview: React.FC<FlashcardReviewProps> = ({
 }) => {
   const [isAnswerVisible, setIsAnswerVisible] = React.useState(false);
   const { submitReview, isSubmitting } = useSpacedRepetition(id);
+  const [startTime] = React.useState(Date.now());
 
   // Fetch additional card details
   const { data: cardDetails } = useQuery({
@@ -44,7 +45,10 @@ const FlashcardReview: React.FC<FlashcardReviewProps> = ({
   });
 
   const handleResponse = async (wasCorrect: boolean) => {
-    await submitReview(wasCorrect);
+    // Calculate response time
+    const responseTimeMs = Date.now() - startTime;
+    
+    await submitReview(wasCorrect, responseTimeMs);
     setIsAnswerVisible(false);
     onComplete();
   };
