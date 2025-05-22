@@ -62,6 +62,9 @@ export function useSpacedRepetition(flashcardId: string) {
         if (copyCheckError) throw copyCheckError;
         
         if (!existingCopy) {
+          // Calculate initial review values for the new card
+          const reviewResult = calculateNextReview(0, 2.5, wasCorrect);
+          
           // Clone the preloaded card for this user if they don't have a copy yet
           const { error: cloneError } = await supabase
             .from('flashcards')
@@ -72,9 +75,9 @@ export function useSpacedRepetition(flashcardId: string) {
               subject_area: flashcard.subject_area,
               difficulty: flashcard.difficulty,
               is_preloaded: false,
-              consecutive_correct_answers: wasCorrect ? 1 : 0,
-              easiness_factor: 2.5,
-              next_review_at: calculateNextReview(wasCorrect ? 1 : 0, 2.5)
+              consecutive_correct_answers: reviewResult.consecutiveCorrect,
+              easiness_factor: reviewResult.easinessFactor,
+              next_review_at: reviewResult.nextReviewDate.toISOString()
             });
             
           if (cloneError) throw cloneError;
@@ -97,16 +100,22 @@ export function useSpacedRepetition(flashcardId: string) {
         : 0;
         
       const newEasinessFactor = flashcard.easiness_factor || 2.5;
-      const nextReviewDate = calculateNextReview(newConsecutiveCorrectAnswers, newEasinessFactor);
+      
+      // Calculate the next review date
+      const reviewResult = calculateNextReview(
+        flashcard.consecutive_correct_answers || 0,
+        newEasinessFactor,
+        wasCorrect
+      );
       
       // Update the flashcard
       const { error: updateError } = await supabase
         .from('flashcards')
         .update({
-          consecutive_correct_answers: newConsecutiveCorrectAnswers,
-          easiness_factor: newEasinessFactor,
+          consecutive_correct_answers: reviewResult.consecutiveCorrect,
+          easiness_factor: reviewResult.easinessFactor,
           last_reviewed_at: new Date().toISOString(),
-          next_review_at: nextReviewDate.toISOString()
+          next_review_at: reviewResult.nextReviewDate.toISOString()
         })
         .eq('id', flashcardId);
         

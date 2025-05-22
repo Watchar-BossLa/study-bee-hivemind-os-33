@@ -7,8 +7,8 @@ export interface ReviewResult {
 }
 
 export function calculateNextReview(
-  easinessFactor: number,
   consecutiveCorrect: number,
+  easinessFactor: number,
   wasCorrect: boolean
 ): ReviewResult {
   if (!wasCorrect) {
