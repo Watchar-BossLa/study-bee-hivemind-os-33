@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -10,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import FlashcardFilters from '@/components/flashcards/FlashcardFilters';
 import { FlashcardFilter } from '@/components/shared/flashcards/types';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, ListFilter } from 'lucide-react';
 
 const Flashcards = () => {
   const { toast } = useToast();
@@ -153,18 +152,25 @@ const Flashcards = () => {
       <main className="container mx-auto px-4 py-8 flex-grow">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h1 className="text-3xl font-bold">My Flashcards</h1>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Link to="/flashcards/review">
               <Button>Start Review</Button>
             </Link>
             <Link to="/flashcards/analytics">
               <Button variant="outline">View Analytics</Button>
             </Link>
-            {/* Future enhancement: Add flashcard creation link */}
-            <Button variant="secondary" className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              <span>Create Card</span>
-            </Button>
+            <Link to="/flashcards/manage">
+              <Button variant="outline" className="flex items-center gap-2">
+                <ListFilter className="h-4 w-4" />
+                <span>Manage</span>
+              </Button>
+            </Link>
+            <Link to="/flashcards/create">
+              <Button variant="secondary" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                <span>Create Card</span>
+              </Button>
+            </Link>
           </div>
         </div>
         
