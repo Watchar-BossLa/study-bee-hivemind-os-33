@@ -10,6 +10,7 @@ import { ChartBar, Clock, Calendar } from 'lucide-react';
 import FlashcardAnalyticsOverview from './FlashcardAnalyticsOverview';
 import FlashcardReviewHistory from './FlashcardReviewHistory';
 import { FlashcardStudyTimeStats } from './FlashcardStudyTimeStats';
+import FlashcardCalendarView from './FlashcardCalendarView';
 
 const FlashcardAnalyticsDashboard = () => {
   return (
@@ -42,9 +43,7 @@ const FlashcardAnalyticsDashboard = () => {
         </TabsContent>
         
         <TabsContent value="calendar" className="space-y-6 mt-6">
-          <div className="text-center text-muted-foreground py-12">
-            Calendar view will be implemented in the next sprint.
-          </div>
+          <FlashcardCalendarView />
         </TabsContent>
       </Tabs>
     </div>
