@@ -1,83 +1,135 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 import { calculateNextReview } from '@/utils/spacedRepetition';
-import { useToast } from '@/hooks/use-toast';
 
-export const useSpacedRepetition = (flashcardId: string) => {
+export function useSpacedRepetition(flashcardId: string) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-
-  const submitReview = async (wasCorrect: boolean) => {
+  
+  const submitReview = useCallback(async (wasCorrect: boolean) => {
+    setIsSubmitting(true);
+    
     try {
-      setIsSubmitting(true);
-
-      // Get current user session
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.user) {
-        throw new Error("User not authenticated");
-      }
-      
-      const userId = session.session.user.id;
-
-      // Get current flashcard data
+      // Get the current flashcard data
       const { data: flashcard, error: fetchError } = await supabase
         .from('flashcards')
-        .select('easiness_factor, consecutive_correct_answers')
+        .select('*')
         .eq('id', flashcardId)
         .single();
-
+      
       if (fetchError) throw fetchError;
-
-      // Calculate next review parameters
-      const result = calculateNextReview(
-        flashcard?.easiness_factor || 2.5,
-        flashcard?.consecutive_correct_answers || 0,
-        wasCorrect
-      );
-
-      // Update flashcard with new SRS data
-      const { error: updateError } = await supabase
-        .from('flashcards')
-        .update({
-          easiness_factor: result.easinessFactor,
-          consecutive_correct_answers: result.consecutiveCorrect,
-          last_reviewed_at: new Date().toISOString(),
-          next_review_at: result.nextReviewDate.toISOString()
-        })
-        .eq('id', flashcardId);
-
-      if (updateError) throw updateError;
-
-      // Record the review in flashcard_reviews table
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "You need to be logged in to review flashcards",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const startTime = new Date();
+      const responseTimeMs = Math.floor(startTime.getTime() - (new Date().getTime() - 5000)); // Approx 5 seconds for review
+      
+      // Record the review
       const { error: reviewError } = await supabase
         .from('flashcard_reviews')
         .insert({
-          user_id: userId,
           flashcard_id: flashcardId,
+          user_id: user.id,
           was_correct: wasCorrect,
-          review_time: new Date().toISOString()
+          response_time_ms: responseTimeMs,
+          confidence_level: wasCorrect ? 3 : 1
         });
-
+      
       if (reviewError) throw reviewError;
-
-      toast({
-        description: wasCorrect ? "Great job! Card scheduled for review." : "Keep practicing! Card will be reviewed soon.",
+        
+      // Check if this is a preloaded card
+      if (flashcard.is_preloaded) {
+        // For preloaded cards, first check if the user already has a copy
+        const { data: existingCopy, error: copyCheckError } = await supabase
+          .from('flashcards')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('question', flashcard.question)
+          .maybeSingle();
+          
+        if (copyCheckError) throw copyCheckError;
+        
+        if (!existingCopy) {
+          // Clone the preloaded card for this user if they don't have a copy yet
+          const { error: cloneError } = await supabase
+            .from('flashcards')
+            .insert({
+              user_id: user.id,
+              question: flashcard.question,
+              answer: flashcard.answer,
+              subject_area: flashcard.subject_area,
+              difficulty: flashcard.difficulty,
+              is_preloaded: false,
+              consecutive_correct_answers: wasCorrect ? 1 : 0,
+              easiness_factor: 2.5,
+              next_review_at: calculateNextReview(wasCorrect ? 1 : 0, 2.5)
+            });
+            
+          if (cloneError) throw cloneError;
+          
+          toast({
+            title: "Card added to your collection",
+            description: "This preloaded card has been added to your personal collection.",
+            duration: 3000
+          });
+        }
+        
+        // For preloaded cards, we don't update the original
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Calculate new values based on spaced repetition algorithm
+      const newConsecutiveCorrectAnswers = wasCorrect
+        ? (flashcard.consecutive_correct_answers || 0) + 1
+        : 0;
+        
+      const newEasinessFactor = flashcard.easiness_factor || 2.5;
+      const nextReviewDate = calculateNextReview(newConsecutiveCorrectAnswers, newEasinessFactor);
+      
+      // Update the flashcard
+      const { error: updateError } = await supabase
+        .from('flashcards')
+        .update({
+          consecutive_correct_answers: newConsecutiveCorrectAnswers,
+          easiness_factor: newEasinessFactor,
+          last_reviewed_at: new Date().toISOString(),
+          next_review_at: nextReviewDate.toISOString()
+        })
+        .eq('id', flashcardId);
+        
+      if (updateError) throw updateError;
+      
+      // Call the function to update user's statistics
+      const { error: statsError } = await supabase.rpc('update_daily_flashcard_stats', {
+        user_id_param: user.id
       });
-
+      
+      if (statsError) console.error("Failed to update stats:", statsError);
+      
     } catch (error) {
+      console.error('Error submitting review:', error);
       toast({
-        variant: "destructive",
-        description: "Failed to update flashcard review status.",
+        title: "Error",
+        description: "Failed to submit your review. Please try again.",
+        variant: "destructive"
       });
-      console.error("Error updating flashcard review:", error);
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  return {
-    submitReview,
-    isSubmitting
-  };
-};
+  }, [flashcardId, toast]);
+  
+  return { submitReview, isSubmitting };
+}

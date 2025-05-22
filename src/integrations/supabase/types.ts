@@ -197,11 +197,14 @@ export type Database = {
           answer: string
           consecutive_correct_answers: number | null
           created_at: string
+          difficulty: string | null
           easiness_factor: number | null
           id: string
+          is_preloaded: boolean | null
           last_reviewed_at: string | null
           next_review_at: string | null
           question: string
+          subject_area: string | null
           updated_at: string
           upload_id: string | null
           user_id: string
@@ -210,11 +213,14 @@ export type Database = {
           answer: string
           consecutive_correct_answers?: number | null
           created_at?: string
+          difficulty?: string | null
           easiness_factor?: number | null
           id?: string
+          is_preloaded?: boolean | null
           last_reviewed_at?: string | null
           next_review_at?: string | null
           question: string
+          subject_area?: string | null
           updated_at?: string
           upload_id?: string | null
           user_id: string
@@ -223,11 +229,14 @@ export type Database = {
           answer?: string
           consecutive_correct_answers?: number | null
           created_at?: string
+          difficulty?: string | null
           easiness_factor?: number | null
           id?: string
+          is_preloaded?: boolean | null
           last_reviewed_at?: string | null
           next_review_at?: string | null
           question?: string
+          subject_area?: string | null
           updated_at?: string
           upload_id?: string | null
           user_id?: string
