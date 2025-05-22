@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { v4 as uuidv4 } from '@/lib/uuid';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,58 +16,49 @@ export const useMatchCreation = () => {
         console.error('Error checking arena_matches schema:', columnsError);
       }
 
-      // Build query parameters based on subject focus
-      const queryParams: any = {
-        status: 'waiting'
-      };
-      
-      // Only add subject_focus filter if the column exists
-      if (!columnsError && subjectFocus !== undefined) {
-        if (subjectFocus === null) {
-          // Handle explicit null case separately - we'll use .is() method later
-        } else {
-          queryParams.subject_focus = subjectFocus;
-        }
-      }
-      
-      // Create the base query without any filters first
-      let query = supabase
+      // Create the initial query
+      const query = supabase
         .from('arena_matches')
-        .select('id');
-      
-      // Apply all regular filters with .eq()
-      Object.entries(queryParams).forEach(([key, value]) => {
-        query = query.eq(key, value);
-      });
-      
-      // Special handling for null subject focus
-      if (!columnsError && subjectFocus === null) {
-        query = query.is('subject_focus', null);
-      }
-      
-      // Add common query parts that don't cause type issues
-      query = query
+        .select('id')
+        .eq('status', 'waiting')
         .order('created_at', { ascending: false })
         .limit(5);
       
-      // Execute the query
-      const { data: waitingMatches, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching waiting matches:', error);
-        return null;
+      // Only add subject focus filter if the column exists and we have a value
+      if (!columnsError) {
+        if (subjectFocus === null) {
+          // Handle explicit null case for random matches
+          return executeQuery(query.is('subject_focus', null));
+        } else if (subjectFocus !== undefined) {
+          // Handle specific subject focus
+          return executeQuery(query.eq('subject_focus', subjectFocus));
+        }
       }
       
-      if (waitingMatches && waitingMatches.length > 0) {
-        return waitingMatches[0].id;
-      }
+      // Execute without subject focus filter
+      return executeQuery(query);
       
-      return null;
     } catch (error) {
       console.error('Error finding waiting match:', error);
       return null;
     }
   }, []);
+
+  // Helper function to execute the query and extract the first match ID
+  const executeQuery = async (query: any): Promise<string | null> => {
+    const { data: waitingMatches, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching waiting matches:', error);
+      return null;
+    }
+    
+    if (waitingMatches && waitingMatches.length > 0) {
+      return waitingMatches[0].id;
+    }
+    
+    return null;
+  };
 
   const createMatch = useCallback(async (subjectFocus?: string | null): Promise<string> => {
     try {
