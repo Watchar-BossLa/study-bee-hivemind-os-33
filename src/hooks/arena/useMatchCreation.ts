@@ -6,8 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 export const useMatchCreation = () => {
   const findWaitingMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
     try {
-      // First, check if subject_focus column exists in the arena_matches table
-      // by just fetching a single record - we'll handle any errors
+      // Check if the column exists by fetching a single record
       const { data: columnsData, error: columnsError } = await supabase
         .from('arena_matches')
         .select('id, subject_focus')
@@ -18,32 +17,55 @@ export const useMatchCreation = () => {
         console.error('Error checking arena_matches schema:', columnsError);
       }
 
-      // Construct the query based on whether we want a subject-specific match
-      let query = supabase
+      // Base query for waiting matches
+      let baseQuery = supabase
         .from('arena_matches')
         .select('id')
-        .eq('status', 'waiting');
-
-      // If we have a subject focus and the column exists, add it to the query
-      if (subjectFocus && !columnsError) {
-        query = query.eq('subject_focus', subjectFocus);
-      } else if (!subjectFocus && !columnsError) {
-        // If no subject focus specified, find matches with null subject_focus
-        query = query.is('subject_focus', null);
-      }
-
-      const { data: waitingMatches, error } = await query
+        .eq('status', 'waiting')
         .order('created_at', { ascending: false })
         .limit(5);
-
-      if (error || !waitingMatches) {
-        console.error('Error fetching waiting matches:', error);
-        return null;
-      }
-
-      // Just return the first waiting match if any exist
-      if (waitingMatches.length > 0) {
-        return waitingMatches[0].id;
+      
+      // If the column exists, filter by subject focus
+      if (!columnsError) {
+        if (subjectFocus) {
+          // For specific subject focus
+          const { data: waitingMatches, error } = await baseQuery
+            .eq('subject_focus', subjectFocus);
+          
+          if (error) {
+            console.error('Error fetching waiting matches:', error);
+            return null;
+          }
+          
+          if (waitingMatches && waitingMatches.length > 0) {
+            return waitingMatches[0].id;
+          }
+        } else {
+          // For null subject focus (random matches)
+          const { data: waitingMatches, error } = await baseQuery
+            .is('subject_focus', null);
+          
+          if (error) {
+            console.error('Error fetching waiting matches:', error);
+            return null;
+          }
+          
+          if (waitingMatches && waitingMatches.length > 0) {
+            return waitingMatches[0].id;
+          }
+        }
+      } else {
+        // Fallback if column doesn't exist
+        const { data: waitingMatches, error } = await baseQuery;
+        
+        if (error) {
+          console.error('Error fetching waiting matches:', error);
+          return null;
+        }
+        
+        if (waitingMatches && waitingMatches.length > 0) {
+          return waitingMatches[0].id;
+        }
       }
       
       return null;
@@ -57,13 +79,13 @@ export const useMatchCreation = () => {
     try {
       const matchId = uuidv4();
       
-      // First, check if subject_focus column exists in the arena_matches table
+      // Check if subject_focus column exists
       const { data: columnsData, error: columnsError } = await supabase
         .from('arena_matches')
         .select('subject_focus')
         .limit(1);
       
-      // Create new match record with appropriate fields based on schema
+      // Create insert data object
       let insertData: any = {
         id: matchId,
         status: 'waiting'
