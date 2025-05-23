@@ -1,8 +1,6 @@
-
 import { useCallback } from 'react';
 import { v4 as uuidv4 } from '@/lib/uuid';
 import { supabase } from '@/integrations/supabase/client';
-import { PostgrestFilterBuilder } from '@supabase/supabase-js';
 
 export const useMatchCreation = () => {
   const findWaitingMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
@@ -18,13 +16,8 @@ export const useMatchCreation = () => {
         console.error('Error checking arena_matches schema:', columnsError);
       }
 
-      // Define our type for the query to avoid excessive type instantiation
-      type ArenaMatchQuery = PostgrestFilterBuilder<any, any, {
-        id: string;
-      }[]>;
-      
-      // Create base query with common filters
-      const baseQuery: ArenaMatchQuery = supabase
+      // Define base query
+      const baseQuery = supabase
         .from('arena_matches')
         .select('id')
         .eq('status', 'waiting')
@@ -32,22 +25,22 @@ export const useMatchCreation = () => {
         .limit(5);
       
       // Apply subject focus filter based on conditions
+      let finalQuery;
       if (columnsError) {
         // If there was an error checking columns, just use the base query
-        return executeQuery(baseQuery);
-      }
-      
-      // Add subject focus filter if provided
-      if (subjectFocus === null) {
+        finalQuery = baseQuery;
+      } else if (subjectFocus === null) {
         // Explicit null for random matches
-        return executeQuery(baseQuery.is('subject_focus', null));
+        finalQuery = baseQuery.is('subject_focus', null);
       } else if (subjectFocus !== undefined) {
         // Specific subject focus
-        return executeQuery(baseQuery.eq('subject_focus', subjectFocus));
+        finalQuery = baseQuery.eq('subject_focus', subjectFocus);
+      } else {
+        // Default case - no subject filter
+        finalQuery = baseQuery;
       }
       
-      // Default case - no subject filter
-      return executeQuery(baseQuery);
+      return executeQuery(finalQuery);
       
     } catch (error) {
       console.error('Error finding waiting match:', error);
@@ -56,7 +49,7 @@ export const useMatchCreation = () => {
   }, []);
 
   // Helper function to execute the query and extract the first match ID
-  const executeQuery = async (query: PostgrestFilterBuilder<any, any, any>): Promise<string | null> => {
+  const executeQuery = async (query: any): Promise<string | null> => {
     const { data: waitingMatches, error } = await query;
     
     if (error) {
