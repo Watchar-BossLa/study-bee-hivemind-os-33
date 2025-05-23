@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { v4 as uuidv4 } from '@/lib/uuid';
 import { supabase } from '@/integrations/supabase/client';
+import { PostgrestFilterBuilder } from '@supabase/supabase-js';
 
 export const useMatchCreation = () => {
   const findWaitingMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
@@ -25,44 +26,41 @@ export const useMatchCreation = () => {
         .limit(5);
       
       // Apply subject focus filter based on conditions
-      let finalQuery;
+      let query;
+      
       if (columnsError) {
         // If there was an error checking columns, just use the base query
-        finalQuery = baseQuery;
+        query = baseQuery;
       } else if (subjectFocus === null) {
         // Explicit null for random matches
-        finalQuery = baseQuery.is('subject_focus', null);
+        query = baseQuery.is('subject_focus', null);
       } else if (subjectFocus !== undefined) {
         // Specific subject focus
-        finalQuery = baseQuery.eq('subject_focus', subjectFocus);
+        query = baseQuery.eq('subject_focus', subjectFocus);
       } else {
         // Default case - no subject filter
-        finalQuery = baseQuery;
+        query = baseQuery;
       }
       
-      return executeQuery(finalQuery);
+      // Execute the final query
+      const { data: waitingMatches, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching waiting matches:', error);
+        return null;
+      }
+      
+      if (waitingMatches && waitingMatches.length > 0) {
+        return waitingMatches[0].id;
+      }
+      
+      return null;
       
     } catch (error) {
       console.error('Error finding waiting match:', error);
       return null;
     }
   }, []);
-
-  // Helper function to execute the query and extract the first match ID
-  const executeQuery = async (query: any): Promise<string | null> => {
-    const { data: waitingMatches, error } = await query;
-    
-    if (error) {
-      console.error('Error fetching waiting matches:', error);
-      return null;
-    }
-    
-    if (waitingMatches && waitingMatches.length > 0) {
-      return waitingMatches[0].id;
-    }
-    
-    return null;
-  };
 
   const createMatch = useCallback(async (subjectFocus?: string | null): Promise<string> => {
     try {
