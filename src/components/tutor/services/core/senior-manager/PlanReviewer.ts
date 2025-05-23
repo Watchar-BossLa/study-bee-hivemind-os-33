@@ -1,15 +1,19 @@
 
 import { Plan } from '../../frameworks/CrewAIPlanner';
 import { CouncilService } from '../../CouncilService';
+import { PydanticValidator } from '../../frameworks/PydanticValidator';
+import { pydanticAI } from '../../frameworks/PydanticAIService';
 
 /**
  * Reviews and validates plans created by CrewAI
  */
 export class PlanReviewer {
   private councilService: CouncilService;
+  private pydanticValidator: PydanticValidator;
   
   constructor(councilService: CouncilService) {
     this.councilService = councilService;
+    this.pydanticValidator = new PydanticValidator(pydanticAI);
   }
   
   /**
@@ -17,6 +21,21 @@ export class PlanReviewer {
    */
   public async reviewPlan(plan: Plan, context: Record<string, any> = {}): Promise<any> {
     console.log(`PlanReviewer reviewing plan: ${plan.title}`);
+    
+    // Validate the plan using PydanticAI
+    try {
+      // This will throw an error if validation fails
+      const validatedPlan = this.pydanticValidator.validatePlan(plan);
+      console.log('Plan validation successful using PydanticAI');
+    } catch (error) {
+      console.error('Plan validation failed:', error);
+      return {
+        approved: false,
+        status: 'rejected',
+        reason: 'Schema validation failed',
+        errors: error instanceof Error ? error.message : 'Unknown validation error'
+      };
+    }
     
     // Check if security council exists
     const securityCouncil = this.councilService.getCouncil('security-council');

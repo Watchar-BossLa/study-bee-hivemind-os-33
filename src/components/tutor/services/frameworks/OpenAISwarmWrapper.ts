@@ -1,154 +1,118 @@
-import { v4 as uuidv4 } from '@/lib/uuid';
 
 /**
- * OpenAI Swarm Wrapper - Parallel execution framework for LLM tasks
- * Implements the swarm-wrapper functionality from QuorumForge OS spec
+ * OpenAI-Swarm parallel execution wrapper
+ * Implements the swarm-wrapper feature from QuorumForge OS spec
  */
 export class OpenAISwarmWrapper {
-  private metrics: {
-    taskCount: number;
-    averageTimeMs: number;
-    successRate: number;
-    fanoutRatio: number;
-    lastExecutionStats: {
-      startTime: Date;
-      endTime: Date | null;
-      tasksCompleted: number;
-      tasksFailed: number;
-    };
-  };
-
-  constructor() {
-    this.metrics = {
-      taskCount: 0,
-      averageTimeMs: 0,
-      successRate: 1.0,
-      fanoutRatio: 1.0,
-      lastExecutionStats: {
-        startTime: new Date(),
-        endTime: null,
-        tasksCompleted: 0,
-        tasksFailed: 0
-      }
-    };
+  private concurrencyLimit: number;
+  private tokenLimit: number;
+  
+  constructor(concurrencyLimit: number = 3, tokenLimit: number = 4000) {
+    this.concurrencyLimit = concurrencyLimit;
+    this.tokenLimit = tokenLimit;
     
-    console.log('OpenAI Swarm Wrapper initialized');
+    console.log(`OpenAI Swarm Wrapper initialized with concurrency limit: ${concurrencyLimit}`);
   }
   
   /**
-   * Run multiple tasks in parallel via OpenAI Swarm
+   * Run multiple tasks in parallel using OpenAI's Swarm execution model
+   * @param tasks Array of tasks to be executed in parallel
+   * @param context Optional context to be provided to each task
+   * @returns Array of results corresponding to each task
    */
-  public async runSwarm(tasks: string[]): Promise<string[]> {
-    console.log(`Running ${tasks.length} tasks in OpenAI Swarm`);
+  public async runSwarm(tasks: string[] | Record<string, any>[], context?: Record<string, any>): Promise<string[]> {
+    console.log(`Running ${tasks.length} tasks in parallel with swarm execution`);
     
-    this.metrics.lastExecutionStats = {
-      startTime: new Date(),
-      endTime: null,
-      tasksCompleted: 0,
-      tasksFailed: 0
-    };
+    // Calculate how many batches we need based on concurrency limit
+    const batchCount = Math.ceil(tasks.length / this.concurrencyLimit);
+    const batches: (string | Record<string, any>)[][] = [];
     
-    // Calculate fanout ratio for metrics
-    this.metrics.fanoutRatio = tasks.length / Math.max(1, Math.ceil(tasks.length / 3));
+    // Create batches
+    for (let i = 0; i < batchCount; i++) {
+      const start = i * this.concurrencyLimit;
+      const end = Math.min(start + this.concurrencyLimit, tasks.length);
+      batches.push(tasks.slice(start, end));
+    }
+    
+    // Run batches sequentially, with tasks in each batch running in parallel
+    const allResults: string[] = [];
+    
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex];
+      console.log(`Processing batch ${batchIndex + 1}/${batches.length} with ${batch.length} tasks`);
+      
+      // Process all tasks in this batch in parallel
+      const batchPromises = batch.map(task => this.processTask(task, context));
+      const batchResults = await Promise.all(batchPromises);
+      
+      // Add results to the overall results array
+      allResults.push(...batchResults);
+    }
+    
+    return allResults;
+  }
+  
+  /**
+   * Process a single task with the simulated OpenAI API
+   * In a real implementation, this would call the OpenAI API
+   */
+  private async processTask(task: string | Record<string, any>, context?: Record<string, any>): Promise<string> {
+    // Simulate processing delay
+    const processingTime = 300 + Math.random() * 700; // 300-1000ms
+    await new Promise(resolve => setTimeout(resolve, processingTime));
+    
+    // Generate a response based on the task
+    const taskDescription = typeof task === 'string' ? task : JSON.stringify(task);
     
     try {
-      // In a production environment, this would make API calls to OpenAI
-      // For now, simulate parallel execution with Promise.all and setTimeout
-      const results = await Promise.all(
-        tasks.map(async (task, index) => {
-          // Simulate varying processing times
-          const processingTime = 500 + Math.random() * 1000;
-          
-          return new Promise<string>((resolve, reject) => {
-            setTimeout(() => {
-              // Simulate occasional failures
-              if (Math.random() > 0.95) {
-                this.metrics.lastExecutionStats.tasksFailed++;
-                reject(new Error(`Task ${index} failed`));
-              } else {
-                this.metrics.lastExecutionStats.tasksCompleted++;
-                resolve(`Result for task: ${task}`);
-              }
-            }, processingTime);
-          });
-        })
-      ).catch(error => {
-        console.error('Error in Swarm execution:', error);
-        // Return partial results if some tasks failed
-        return tasks.map((task, i) => 
-          i < this.metrics.lastExecutionStats.tasksCompleted ? 
-          `Result for task: ${task}` : 
-          `Error processing: ${task}`
-        );
-      });
-      
-      // Update metrics
-      const executionTime = new Date().getTime() - this.metrics.lastExecutionStats.startTime.getTime();
-      this.metrics.averageTimeMs = (this.metrics.averageTimeMs * this.metrics.taskCount + executionTime) / 
-                                   (this.metrics.taskCount + tasks.length);
-      this.metrics.taskCount += tasks.length;
-      this.metrics.successRate = (this.metrics.successRate * (this.metrics.taskCount - tasks.length) + 
-                                 this.metrics.lastExecutionStats.tasksCompleted / tasks.length) / 
-                                 this.metrics.taskCount;
-      
-      this.metrics.lastExecutionStats.endTime = new Date();
-      
-      // Push metrics to storage for dashboard visualization
-      this.storeSwarmMetrics();
-      
-      return results;
+      return `Result for task: ${taskDescription.substring(0, 50)}${taskDescription.length > 50 ? '...' : ''}`;
     } catch (error) {
-      console.error('Fatal error in Swarm execution:', error);
-      this.metrics.successRate = (this.metrics.successRate * (this.metrics.taskCount - tasks.length)) / 
-                                this.metrics.taskCount;
-      return tasks.map(task => `Error: Failed to process task ${task}`);
+      console.error('Error processing task:', error);
+      return `Error processing task: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
   }
   
   /**
-   * Store execution metrics for dashboard visualization
+   * Process tasks in parallel with advanced batching strategy
+   * This is an alternative implementation that can be used based on context
    */
-  private storeSwarmMetrics() {
-    try {
-      // In a real implementation, this would store metrics to a database or local storage
-      // For now, we'll just log them
-      const metricsRecord = {
-        timestamp: new Date(),
-        taskCount: this.metrics.lastExecutionStats.tasksCompleted + 
-                  this.metrics.lastExecutionStats.tasksFailed,
-        durationMs: this.metrics.lastExecutionStats.endTime ? 
-                   this.metrics.lastExecutionStats.endTime.getTime() - 
-                   this.metrics.lastExecutionStats.startTime.getTime() : 0,
-        successRate: this.metrics.lastExecutionStats.tasksCompleted / 
-                    (this.metrics.lastExecutionStats.tasksCompleted + 
-                     this.metrics.lastExecutionStats.tasksFailed),
-        fanoutRatio: this.metrics.fanoutRatio
-      };
-      
-      console.log('Swarm metrics:', metricsRecord);
-      
-      // Store in localStorage for the dashboard to access
-      try {
-        const existingMetrics = JSON.parse(localStorage.getItem('swarm_metrics') || '[]');
-        existingMetrics.push(metricsRecord);
-        // Keep only last 50 records
-        if (existingMetrics.length > 50) {
-          existingMetrics.shift();
-        }
-        localStorage.setItem('swarm_metrics', JSON.stringify(existingMetrics));
-      } catch (e) {
-        console.error('Failed to store swarm metrics in localStorage:', e);
-      }
-      
-    } catch (error) {
-      console.error('Error storing swarm metrics:', error);
+  public async processParallel(
+    tasks: string[] | Record<string, any>[],
+    maxConcurrency?: number,
+    context?: Record<string, any>
+  ): Promise<string[]> {
+    const actualConcurrency = maxConcurrency || this.concurrencyLimit;
+    
+    console.log(`Processing ${tasks.length} tasks with max concurrency: ${actualConcurrency}`);
+    
+    // Here we would implement a more sophisticated batching strategy
+    // For now, just call the standard runSwarm method
+    return this.runSwarm(tasks, context);
+  }
+  
+  /**
+   * Update the concurrency limit
+   */
+  public setConcurrencyLimit(limit: number): void {
+    if (limit < 1) {
+      console.warn(`Invalid concurrency limit: ${limit}. Setting to 1.`);
+      this.concurrencyLimit = 1;
+    } else {
+      this.concurrencyLimit = limit;
+      console.log(`Concurrency limit updated to: ${limit}`);
     }
   }
   
   /**
-   * Get the current metrics
+   * Update the token limit
    */
-  public getMetrics() {
-    return { ...this.metrics };
+  public setTokenLimit(limit: number): void {
+    if (limit < 100) {
+      console.warn(`Invalid token limit: ${limit}. Setting to 100.`);
+      this.tokenLimit = 100;
+    } else {
+      this.tokenLimit = limit;
+      console.log(`Token limit updated to: ${limit}`);
+    }
   }
 }

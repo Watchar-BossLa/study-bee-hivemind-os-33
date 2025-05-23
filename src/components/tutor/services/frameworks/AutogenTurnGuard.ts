@@ -7,11 +7,13 @@ export class AutogenTurnGuard {
   private defaultMaxTurns: number;
   private threadLimits: Map<string, number>;
   private threadTurnCounts: Map<string, number>;
+  private activeSessions: Map<string, { startTime: Date, threadIds: Set<string> }>;
   
   constructor(defaultMaxTurns: number = 6) {
     this.defaultMaxTurns = defaultMaxTurns;
     this.threadLimits = new Map();
     this.threadTurnCounts = new Map();
+    this.activeSessions = new Map();
     
     console.log(`Autogen Turn Guard initialized with default max turns: ${defaultMaxTurns}`);
   }
@@ -53,6 +55,57 @@ export class AutogenTurnGuard {
   }
   
   /**
+   * Start a new Autogen session
+   * A session can contain multiple threads
+   */
+  public startSession(sessionId: string): string[] {
+    // Create a new session record
+    this.activeSessions.set(sessionId, {
+      startTime: new Date(),
+      threadIds: new Set()
+    });
+    
+    console.log(`Started new Autogen session: ${sessionId}`);
+    return [];
+  }
+  
+  /**
+   * Add a thread to an existing session
+   */
+  public addThreadToSession(sessionId: string, threadId: string): void {
+    const session = this.activeSessions.get(sessionId);
+    
+    if (session) {
+      session.threadIds.add(threadId);
+      console.log(`Added thread ${threadId} to session ${sessionId}`);
+    } else {
+      console.warn(`Attempted to add thread to non-existent session: ${sessionId}`);
+    }
+  }
+  
+  /**
+   * End a session and clean up all associated threads
+   */
+  public endSession(sessionId: string): void {
+    const session = this.activeSessions.get(sessionId);
+    
+    if (session) {
+      // Clean up all threads in the session
+      session.threadIds.forEach(threadId => {
+        this.threadTurnCounts.delete(threadId);
+        this.threadLimits.delete(threadId);
+      });
+      
+      // Remove the session
+      this.activeSessions.delete(sessionId);
+      
+      console.log(`Ended Autogen session: ${sessionId}, cleaned up ${session.threadIds.size} threads`);
+    } else {
+      console.warn(`Attempted to end non-existent session: ${sessionId}`);
+    }
+  }
+  
+  /**
    * Get current turn count for a thread
    */
   public getTurnCount(threadId: string): number {
@@ -85,5 +138,26 @@ export class AutogenTurnGuard {
    */
   public getActiveThreads(): string[] {
     return Array.from(this.threadLimits.keys());
+  }
+  
+  /**
+   * Get all active sessions
+   */
+  public getActiveSessions(): string[] {
+    return Array.from(this.activeSessions.keys());
+  }
+  
+  /**
+   * Get information about a specific session
+   */
+  public getSessionInfo(sessionId: string): { startTime: Date, threadCount: number } | null {
+    const session = this.activeSessions.get(sessionId);
+    
+    if (!session) return null;
+    
+    return {
+      startTime: session.startTime,
+      threadCount: session.threadIds.size
+    };
   }
 }

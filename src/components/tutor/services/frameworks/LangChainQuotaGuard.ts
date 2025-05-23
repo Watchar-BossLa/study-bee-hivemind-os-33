@@ -75,6 +75,41 @@ export class LangChainQuotaGuard {
   }
   
   /**
+   * Check if a chain has exceeded its quota
+   */
+  public hasExceededQuota(chainName: string): boolean {
+    const quota = this.quotaLimits.get(chainName);
+    
+    if (!quota) {
+      return false;
+    }
+    
+    // Check if we need to reset the quota
+    const now = new Date();
+    if (now >= quota.resetAt) {
+      return false;
+    }
+    
+    return quota.current >= quota.limit;
+  }
+  
+  /**
+   * Manually increment usage for a chain
+   */
+  public incrementUsage(chainName: string, amount: number = 1): void {
+    const quota = this.quotaLimits.get(chainName);
+    
+    if (!quota) {
+      return;
+    }
+    
+    quota.current += amount;
+    this.quotaLimits.set(chainName, quota);
+    
+    console.log(`Incremented usage for ${chainName}: ${quota.current}/${quota.limit}`);
+  }
+  
+  /**
    * Get current quota usage for all chains
    */
   public getQuotaUsage(): Record<string, { current: number; limit: number; percentage: number }> {

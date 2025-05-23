@@ -1,43 +1,76 @@
 
+import { PydanticAIService, pydanticAI } from './PydanticAIService';
+
+/**
+ * PydanticValidator - Runtime type validation using the PydanticAI service
+ */
 export class PydanticValidator {
-  private schemas: Map<string, any> = new Map();
+  private pydanticService: PydanticAIService;
   
-  constructor() {
-    this.initializeSchemas();
+  constructor(pydanticService: PydanticAIService = pydanticAI) {
+    this.pydanticService = pydanticService;
     console.log('PydanticValidator initialized for runtime type safety');
   }
   
-  private initializeSchemas(): void {
-    // Define schemas similar to Pydantic models
-    this.schemas.set('InteractionContext', {
-      properties: {
-        complexity: { type: 'string', enum: ['low', 'medium', 'high'] },
-        urgency: { type: 'string', enum: ['low', 'medium', 'high'] },
-        costSensitivity: { type: 'string', enum: ['low', 'medium', 'high'] },
-        userSkillLevel: { type: 'string', enum: ['beginner', 'intermediate', 'advanced', 'expert'] },
-        topicId: { type: 'string' },
-        preferredModality: { type: 'string', enum: ['text', 'visual', 'audio'] },
-        useCrewAI: { type: 'boolean' },
-        sequential: { type: 'boolean' }
-      },
-      required: []
-    });
+  /**
+   * Validate an interaction context
+   */
+  public validateContext(context: Record<string, any>): Record<string, any> {
+    console.log('Validating interaction context');
     
-    this.schemas.set('Plan', {
-      properties: {
-        planId: { type: 'string' },
-        type: { type: 'string' },
-        summary: { type: 'string' },
-        riskScore: { type: 'number', minimum: 0, maximum: 1 },
-        steps: { type: 'array', items: { type: 'string' } }
-      },
-      required: ['planId', 'type', 'summary']
-    });
+    try {
+      // Try to validate using the schema
+      const validation = this.pydanticService.validateContext(context);
+      
+      if (validation.valid) {
+        console.log('Context validation successful');
+        return validation.context!;
+      }
+      
+      // If validation failed, log the errors and apply fallback validation
+      console.warn('Context validation failed:', validation.errors);
+      return this.fallbackContextValidation(context);
+      
+    } catch (error) {
+      console.error('Error during context validation:', error);
+      return this.fallbackContextValidation(context);
+    }
   }
   
-  public validateContext(context: Record<string, any>): Record<string, any> {
+  /**
+   * Validate a plan
+   */
+  public validatePlan(plan: any): any {
+    console.log('Validating plan');
+    
+    try {
+      // Try to validate using the schema
+      const validation = this.pydanticService.validatePlan(plan);
+      
+      if (validation.valid) {
+        console.log('Plan validation successful');
+        return validation.plan!;
+      }
+      
+      // If validation failed, log the errors
+      console.warn('Plan validation failed:', validation.errors);
+      
+      // For plans, we throw an error rather than using fallback validation
+      // since plans need to be strictly validated
+      throw new Error(`Plan validation failed: ${validation.errors.map(e => `${e.field}: ${e.message}`).join(', ')}`);
+      
+    } catch (error) {
+      console.error('Error during plan validation:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Fallback validation for interaction context
+   * Used when the schema validation fails
+   */
+  private fallbackContextValidation(context: Record<string, any>): Record<string, any> {
     // Simple validation logic - in a real system this would be more robust
-    const schema = this.schemas.get('InteractionContext');
     const validatedContext = { ...context };
     
     // Set defaults for missing properties
@@ -65,20 +98,5 @@ export class PydanticValidator {
     }
     
     return validatedContext;
-  }
-  
-  public validatePlan(plan: any): any {
-    const schema = this.schemas.get('Plan');
-    
-    // Ensure required fields exist
-    if (!plan.planId) plan.planId = `plan-${Date.now()}`;
-    if (!plan.type) plan.type = 'default';
-    if (!plan.summary) plan.summary = 'No summary provided';
-    
-    // Ensure riskScore is within bounds
-    if (typeof plan.riskScore !== 'number') plan.riskScore = 0;
-    plan.riskScore = Math.max(0, Math.min(1, plan.riskScore));
-    
-    return plan;
   }
 }
