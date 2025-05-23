@@ -10,8 +10,10 @@ import { FrameworkManager } from './core/FrameworkManager';
 import { DeliberationManager } from './core/DeliberationManager';
 import { InteractionManager } from './core/InteractionManager';
 import { mcpCore, MCPCore } from './core/MCPCore';
+import { RedisEventBus, redisEventBus } from './core/RedisEventBus';
 import { createSeniorManagerGPT, SeniorManagerGPT } from './core/SeniorManagerGPT';
 import { createA2AHub, A2AHub } from './frameworks/A2AHub';
+import { createP2PHub, A2AP2PHub } from './frameworks/A2AP2PHub';
 import { A2AOAuthHandler } from './frameworks/A2AOAuthHandler';
 import { AgentCommunication } from './quorum-forge/AgentCommunication';
 import { AgentTaskManager } from './quorum-forge/AgentTaskManager';
@@ -19,12 +21,18 @@ import { CouncilDeliberation } from './quorum-forge/CouncilDeliberation';
 import { UserInteractionManager } from './quorum-forge/UserInteractionManager';
 import { AgentRegistry } from './quorum-forge/AgentRegistry';
 import { SeniorManager } from './quorum-forge/SeniorManager';
+import { CrewAIPlanner } from './frameworks/CrewAIPlanner';
+import { SwarmMetricsService } from './metrics/SwarmMetricsService';
 
 export class QuorumForge {
   // Core services
   private mcpCore: MCPCore;
   private seniorManagerGPT: SeniorManagerGPT;
   private a2aHub: A2AHub;
+  private a2aP2PHub: A2AP2PHub;
+  private eventBus: RedisEventBus;
+  private crewAIPlanner: CrewAIPlanner;
+  private swarmMetricsService: SwarmMetricsService;
   
   // Refactored modules
   private agentCommunication: AgentCommunication;
@@ -52,11 +60,17 @@ export class QuorumForge {
     const deliberationService = new DeliberationService();
     const interactionService = new InteractionService(router);
     
+    // Initialize Redis EventBus
+    this.eventBus = redisEventBus;
+    
     // Initialize MCP-Core and related components
     this.mcpCore = mcpCore;
-    const a2aOAuthHandler = new A2AOAuthHandler();
+    const a2aOAuthHandler = new A2AOAuthHandler(this.eventBus);
     this.a2aHub = createA2AHub(a2aOAuthHandler, this.mcpCore);
-    this.seniorManagerGPT = createSeniorManagerGPT(this.mcpCore, this.councilService);
+    this.a2aP2PHub = createP2PHub(a2aOAuthHandler, this.eventBus, this.mcpCore);
+    this.seniorManagerGPT = createSeniorManagerGPT(this.mcpCore, this.councilService, router);
+    this.crewAIPlanner = new CrewAIPlanner(this.councilService, router);
+    this.swarmMetricsService = new SwarmMetricsService(this.eventBus);
     
     // Register all agents with MCP-Core
     agents.forEach(agent => {
@@ -76,7 +90,8 @@ export class QuorumForge {
     this.interactionManager = new InteractionManager(
       interactionService,
       this.councilService,
-      this.frameworkManager
+      this.frameworkManager,
+      this.mcpCore
     );
     
     // Integrate A2A Hub with MCP-Core
@@ -173,14 +188,32 @@ export class QuorumForge {
   }
   
   // ==========================================
-  // Plan Review via SeniorManagerGPT
+  // CrewAI Plan Management via SeniorManagerGPT
   // ==========================================
   
   /**
-   * Submit a plan for review by SeniorManagerGPT
+   * Create a plan for a topic using CrewAI
+   */
+  public async createPlan(
+    topic: string,
+    councilId: string,
+    context: Record<string, any> = {}
+  ): Promise<any> {
+    return this.seniorManagerGPT.createPlan(topic, councilId, context);
+  }
+  
+  /**
+   * Review a plan using SeniorManagerGPT
    */
   public async reviewPlan(plan: any, context: Record<string, any> = {}): Promise<any> {
     return this.seniorManager.reviewPlan(plan, context);
+  }
+  
+  /**
+   * Execute a plan using CrewAI
+   */
+  public async executePlan(plan: any, context: Record<string, any> = {}): Promise<any> {
+    return this.seniorManagerGPT.executePlan(plan, context);
   }
   
   // ==========================================
@@ -293,6 +326,10 @@ export class QuorumForge {
     return this.userInteractionManager.getUserTopInterests(userId, limit);
   }
   
+  // ==========================================
+  // Core Services Access
+  // ==========================================
+  
   /**
    * Get LangChain orchestrator
    */
@@ -303,6 +340,13 @@ export class QuorumForge {
   /**
    * Get MCP-Core instance
    */
+  public getMCP() {
+    return this.mcpCore;
+  }
+  
+  /**
+   * Get MCP-Core instance (alias for getMCP)
+   */
   public getMCPCore() {
     return this.mcpCore;
   }
@@ -312,6 +356,34 @@ export class QuorumForge {
    */
   public getA2AHub() {
     return this.a2aHub;
+  }
+  
+  /**
+   * Get A2A P2P Hub instance
+   */
+  public getA2AP2PHub() {
+    return this.a2aP2PHub;
+  }
+  
+  /**
+   * Get Redis EventBus instance
+   */
+  public getEventBus() {
+    return this.eventBus;
+  }
+  
+  /**
+   * Get CrewAI Planner instance
+   */
+  public getCrewAIPlanner() {
+    return this.crewAIPlanner;
+  }
+  
+  /**
+   * Get Swarm Metrics Service instance
+   */
+  public getSwarmMetricsService() {
+    return this.swarmMetricsService;
   }
 }
 

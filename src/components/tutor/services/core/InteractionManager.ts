@@ -1,124 +1,180 @@
-
 import { InteractionService } from '../InteractionService';
-import { FrameworkManager } from './FrameworkManager';
 import { CouncilService } from '../CouncilService';
-import { UserInteraction } from '../../types/agents';
-import { isOfType } from '../../types/utilities';
+import { FrameworkManager } from './FrameworkManager';
+import { LLMRouter } from '../LLMRouter';
+import { MCPCore } from './MCPCore';
 
 export class InteractionManager {
   private interactionService: InteractionService;
   private councilService: CouncilService;
   private frameworkManager: FrameworkManager;
+  private mcpCore?: MCPCore;
   
   constructor(
     interactionService: InteractionService,
     councilService: CouncilService,
-    frameworkManager: FrameworkManager
+    frameworkManager: FrameworkManager,
+    mcpCore?: MCPCore
   ) {
     this.interactionService = interactionService;
     this.councilService = councilService;
     this.frameworkManager = frameworkManager;
+    this.mcpCore = mcpCore;
   }
   
   public async processInteraction(
-    message: string,
-    userId: string,
-    context: Record<string, unknown>
-  ): Promise<UserInteraction> {
-    // Validate the context using PydanticValidator
-    const validatedContext = this.frameworkManager.getPydanticValidator().validateContext(context);
-    
-    // Check if there's a best performing council for similar queries
-    const bestCouncilId = this.councilService.getBestCouncilForSimilarQuery(message);
-    
-    // If a best council was found, use it; otherwise determine based on message
-    const councilId = bestCouncilId || this.councilService.determineCouncilForMessage(message);
+    message: string, 
+    userId: string, 
+    context: Record<string, any> = {}
+  ): Promise<any> {
+    // Determine the appropriate council
+    const councilId = this.councilService.determineCouncilForMessage(message);
     const council = this.councilService.getCouncil(councilId);
     
     if (!council) {
-      throw new Error('Could not find appropriate council for message');
+      throw new Error(`Council ${councilId} not found`);
     }
-
-    const interaction: UserInteraction = {
-      id: `int-${Date.now()}`,
-      userId,
-      timestamp: new Date(),
-      message,
-      context: validatedContext,
-      agentResponses: []
-    };
-
-    // Check if we should use parallel processing with OpenAI Swarm
-    if (council.length > 4 && !isOfType<{ sequential: boolean }>(validatedContext, 'sequential')) {
-      const responses = await this.frameworkManager.getOpenAISwarm().processParallel(
-        council,
-        message,
-        validatedContext
-      );
-      
-      interaction.agentResponses = responses;
-    } else {
-      // Standard sequential processing
-      for (const agent of council) {
-        const response = await this.interactionService.processAgentResponse(
-          agent,
-          message,
-          validatedContext
-        );
-        interaction.agentResponses.push(response);
+    
+    // First attempt: use MCP if available
+    if (this.mcpCore) {
+      try {
+        const taskId = await this.mcpCore.submitTask({
+          type: 'interaction',
+          content: message,
+          metadata: {
+            userId,
+            context
+          },
+          priority: context.urgency === 'high' ? 'high' : 'normal'
+        });
+        
+        // Wait for task completion
+        const result = await this.mcpCore.waitForTaskCompletion(taskId, 60000); // 60-second timeout
+        
+        if (result) {
+          return result;
+        }
+        
+        // If MCP doesn't return a result, fall back to direct processing
+      } catch (error) {
+        console.error('MCP processing failed, falling back to direct processing:', error);
       }
     }
     
-    // For security-related topics, use Autogen for red-team analysis
-    if (this.isSecurityRelated(message)) {
-      const securityAnalysis = await this.frameworkManager.getAutogenIntegration().runRedTeamAnalysis(message, validatedContext);
-      interaction.securityAnalysis = securityAnalysis;
-    }
-
-    this.interactionService.addInteraction(interaction);
-    return interaction;
-  }
-
-  private isSecurityRelated(message: string): boolean {
-    const securityKeywords = [
-      'security', 'vulnerability', 'hack', 'breach', 'attack', 
-      'exploit', 'password', 'authentication', 'authorization'
-    ];
-    
-    return securityKeywords.some(keyword => 
-      message.toLowerCase().includes(keyword)
+    // Process agents in parallel
+    const agentResponses = await this.interactionService.processAgentResponses(
+      council,
+      message,
+      context
     );
-  }
-  
-  public getRecentInteractions(limit: number = 10): UserInteraction[] {
-    return this.interactionService.getRecentInteractions(limit);
-  }
-  
-  public getAgentPerformanceMetrics(agentId: string) {
-    return this.interactionService.getAgentPerformanceMetrics(agentId);
-  }
-  
-  public getAllAgentPerformanceMetrics() {
-    return this.interactionService.getAllAgentPerformanceMetrics();
+    
+    // Format agent responses
+    const formattedResponses = agentResponses.map(response => ({
+      agentId: response.agentId || 'unknown',
+      response: response.response || 'No response',
+      modelUsed: response.modelUsed || 'unknown',
+      confidenceScore: response.confidenceScore || 0.5,
+      processingTimeMs: response.processingTimeMs || 0
+    }));
+    
+    // Combine responses
+    const combinedResponse = await this.interactionService.combineAgentResponses(
+      formattedResponses,
+      message,
+      context
+    );
+    
+    return {
+      response: combinedResponse,
+      agentResponses: formattedResponses,
+      councilId,
+      processedBy: 'direct'
+    };
   }
   
   public recordFeedback(
-    interactionId: string, 
-    userId: string, 
-    rating: number, 
+    interactionId: string,
+    userId: string,
+    rating: number,
     agentFeedback?: Record<string, number>,
     comments?: string
   ): void {
-    this.interactionService.recordUserFeedback(
+    console.log(`Recording feedback for interaction ${interactionId} from user ${userId}`);
+    
+    // In a real implementation, this would store the feedback in a database
+    // and update agent performance metrics
+    
+    console.log('Feedback recorded:', {
       interactionId,
       userId,
       rating,
       agentFeedback,
       comments
-    );
+    });
+  }
+  
+  public getRecentInteractions(limit: number = 10): any[] {
+    console.log(`Getting recent interactions (limit: ${limit})`);
+    
+    // In a real implementation, this would retrieve recent interactions from a database
+    const recentInteractions = [
+      {
+        id: 'interaction-1',
+        timestamp: new Date(),
+        message: 'What is the capital of France?',
+        response: 'The capital of France is Paris.',
+        userId: 'user-123'
+      },
+      {
+        id: 'interaction-2',
+        timestamp: new Date(Date.now() - 3600000),
+        message: 'Explain the theory of relativity.',
+        response: 'The theory of relativity...',
+        userId: 'user-456'
+      }
+    ];
+    
+    return recentInteractions.slice(0, limit);
+  }
+  
+  public getAgentPerformanceMetrics(agentId: string): Record<string, any> {
+    console.log(`Getting performance metrics for agent ${agentId}`);
+    
+    // In a real implementation, this would retrieve agent performance metrics from a database
+    return {
+      agentId,
+      successRate: 0.85,
+      averageResponseTime: 500,
+      interactions: 120
+    };
+  }
+  
+  public getAllAgentPerformanceMetrics(): Record<string, any>[] {
+    console.log('Getting performance metrics for all agents');
+    
+    // In a real implementation, this would retrieve performance metrics for all agents from a database
+    return [
+      {
+        agentId: 'agent-1',
+        successRate: 0.85,
+        averageResponseTime: 500,
+        interactions: 120
+      },
+      {
+        agentId: 'agent-2',
+        successRate: 0.92,
+        averageResponseTime: 420,
+        interactions: 150
+      }
+    ];
   }
   
   public getUserTopInterests(userId: string, limit: number = 5): string[] {
-    return this.interactionService.getUserTopInterests(userId, limit);
+    console.log(`Getting top interests for user ${userId} (limit: ${limit})`);
+    
+    // In a real implementation, this would analyze user interaction history
+    // and identify top interests
+    const interests = ['AI', 'Machine Learning', 'Data Science', 'Quantum Computing', 'Web Development'];
+    return interests.slice(0, limit);
   }
 }

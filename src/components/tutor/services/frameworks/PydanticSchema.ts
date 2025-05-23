@@ -1,77 +1,70 @@
 
 /**
- * PydanticSchema - Type-safe schema validation similar to Pydantic in Python
+ * PydanticSchema - Core schema validation engine
  * Implements the pydantic-schemas feature from QuorumForge OS spec
  */
-
-// Basic types for schema validation
-type SchemaType = 'string' | 'number' | 'boolean' | 'array' | 'object' | 'any';
-
-interface SchemaField {
-  type: SchemaType;
+export interface SchemaField {
+  type: string;
   required?: boolean;
   default?: any;
-  validator?: (value: any) => boolean;
-  errorMessage?: string;
-  items?: SchemaDefinition; // For array items
-  properties?: Record<string, SchemaField>; // For object properties
-  enum?: any[]; // For enumerated values
-  minLength?: number; // For strings and arrays
-  maxLength?: number; // For strings and arrays
-  minimum?: number; // For numbers
-  maximum?: number; // For numbers
-  pattern?: string; // For strings (regex)
+  description?: string;
+  enum?: string[];
+  minLength?: number;
+  maxLength?: number;
+  minimum?: number;
+  maximum?: number;
+  format?: string;
+  pattern?: string;
+  properties?: Record<string, SchemaField>;
+  items?: SchemaField;
 }
 
-interface SchemaDefinition {
-  name: string;
+export interface SchemaDefinition {
   fields: Record<string, SchemaField>;
   description?: string;
+  examples?: any[];
 }
 
-interface ValidationError {
-  field: string;
-  message: string;
-  value?: any;
-}
-
-interface ValidationResult {
+export interface ValidationResult<T = any> {
   valid: boolean;
-  errors: ValidationError[];
-  validated?: Record<string, any>;
+  errors: Array<{
+    field: string;
+    message: string;
+    value?: any;
+  }>;
+  validated?: T;
 }
 
 /**
- * PydanticSchema - Class for schema definition and validation
+ * PydanticSchema - Provides schema validation similar to Python's Pydantic
  */
 export class PydanticSchema {
   private schemas: Map<string, SchemaDefinition> = new Map();
   
-  constructor() {
-    console.log('PydanticSchema initialized');
-  }
-  
   /**
    * Define a new schema
    */
-  public defineSchema(schema: SchemaDefinition): void {
-    if (this.schemas.has(schema.name)) {
-      console.warn(`Schema "${schema.name}" already exists and will be overwritten`);
-    }
-    
-    this.schemas.set(schema.name, schema);
-    console.log(`Schema "${schema.name}" defined with ${Object.keys(schema.fields).length} fields`);
+  public defineSchema(name: string, schema: SchemaDefinition): void {
+    this.schemas.set(name, schema);
+    console.log(`Schema "${name}" defined with ${Object.keys(schema.fields).length} fields`);
   }
   
   /**
-   * Get schema definition
+   * Get a schema by name
    */
-  public getSchema(schemaName: string): SchemaDefinition | undefined {
-    return this.schemas.get(schemaName);
+  public getSchema(name: string): SchemaDefinition | undefined {
+    return this.schemas.get(name);
   }
   
   /**
-   * List all defined schemas
+   * Check if a schema exists
+   */
+  public hasSchema(name: string): boolean {
+    return this.schemas.has(name);
+  }
+  
+  /**
+   * List all defined schema names
    */
   public listSchemas(): string[] {
     return Array.from(this.schemas.keys());
@@ -80,254 +73,255 @@ export class PydanticSchema {
   /**
    * Validate data against a schema
    */
-  public validate(data: Record<string, any>, schemaName: string): ValidationResult {
+  public validate<T = any>(data: any, schemaName: string): ValidationResult<T> {
     const schema = this.schemas.get(schemaName);
     
     if (!schema) {
       return {
         valid: false,
-        errors: [{ field: '_schema', message: `Schema "${schemaName}" not found` }]
+        errors: [{
+          field: 'schema',
+          message: `Schema "${schemaName}" not found`
+        }]
       };
     }
     
-    const errors: ValidationError[] = [];
-    const validated: Record<string, any> = {};
+    const errors: Array<{
+      field: string;
+      message: string;
+      value?: any;
+    }> = [];
     
-    // Check for required fields and validate each field
-    for (const [fieldName, fieldSchema] of Object.entries(schema.fields)) {
-      // Check if the field is present
-      if (!(fieldName in data)) {
-        // Field is missing - check if it's required
-        if (fieldSchema.required) {
-          errors.push({
-            field: fieldName,
-            message: `Required field "${fieldName}" is missing`
-          });
-        } else if ('default' in fieldSchema) {
-          // Use default value
-          validated[fieldName] = fieldSchema.default;
-        }
-        continue;
-      }
-      
-      const value = data[fieldName];
-      const validationErrors = this.validateField(value, fieldSchema, fieldName);
-      
-      if (validationErrors.length > 0) {
-        errors.push(...validationErrors);
-      } else {
-        validated[fieldName] = this.coerceValue(value, fieldSchema);
+    // Check required fields
+    for (const [fieldName, fieldDef] of Object.entries(schema.fields)) {
+      if (fieldDef.required && (data[fieldName] === undefined || data[fieldName] === null)) {
+        errors.push({
+          field: fieldName,
+          message: `Required field "${fieldName}" is missing`
+        });
       }
     }
     
-    // Return validation result
+    // Validate fields
+    for (const [fieldName, value] of Object.entries(data)) {
+      const fieldDef = schema.fields[fieldName];
+      
+      if (!fieldDef) {
+        // Skip unknown fields
+        continue;
+      }
+      
+      // Validate field value
+      const fieldErrors = this.validateField(value, fieldDef, fieldName);
+      errors.push(...fieldErrors);
+    }
+    
+    // If valid, create a validated object with default values
+    if (errors.length === 0) {
+      const validated = { ...data };
+      
+      // Apply default values for missing optional fields
+      for (const [fieldName, fieldDef] of Object.entries(schema.fields)) {
+        if (fieldDef.default !== undefined && validated[fieldName] === undefined) {
+          validated[fieldName] = fieldDef.default;
+        }
+      }
+      
+      return {
+        valid: true,
+        errors: [],
+        validated: validated as T
+      };
+    }
+    
     return {
-      valid: errors.length === 0,
-      errors,
-      validated: errors.length === 0 ? validated : undefined
+      valid: false,
+      errors
     };
   }
   
   /**
-   * Create a model instance with schema validation
+   * Create a model instance from data
    */
-  public createModel<T extends Record<string, any>>(
-    data: Record<string, any>, 
-    schemaName: string
-  ): T {
-    const validation = this.validate(data, schemaName);
+  public createModel<T = any>(data: any, schemaName: string): T {
+    const result = this.validate<T>(data, schemaName);
     
-    if (!validation.valid) {
-      const errorMessages = validation.errors.map(e => `${e.field}: ${e.message}`).join(', ');
+    if (!result.valid) {
+      const errorMessages = result.errors.map(e => `${e.field}: ${e.message}`).join(', ');
       throw new Error(`Validation failed: ${errorMessages}`);
     }
     
-    return validation.validated as T;
+    return result.validated as T;
   }
   
   /**
-   * Validate a specific field against its schema definition
+   * Validate a single field against its schema definition
    */
   private validateField(
-    value: any,
-    fieldSchema: SchemaField,
-    fieldName: string
-  ): ValidationError[] {
-    const errors: ValidationError[] = [];
+    value: any, 
+    fieldDef: SchemaField, 
+    fieldName: string, 
+    path: string = ''
+  ): Array<{ field: string; message: string; value?: any }> {
+    const errors: Array<{ field: string; message: string; value?: any }> = [];
+    const fullPath = path ? `${path}.${fieldName}` : fieldName;
     
-    // Type validation
-    if (!this.validateType(value, fieldSchema.type)) {
-      errors.push({
-        field: fieldName,
-        message: fieldSchema.errorMessage || `Expected type "${fieldSchema.type}", got "${typeof value}"`,
-        value
-      });
-      return errors; // Return early if type is invalid
+    // Skip validation if value is undefined and field is not required
+    if (value === undefined) {
+      return errors;
     }
     
-    // Enumeration validation
-    if (fieldSchema.enum && !fieldSchema.enum.includes(value)) {
-      errors.push({
-        field: fieldName,
-        message: `Value must be one of: ${fieldSchema.enum.join(', ')}`,
-        value
-      });
-    }
-    
-    // String validations
-    if (fieldSchema.type === 'string') {
-      // Min length
-      if (fieldSchema.minLength !== undefined && value.length < fieldSchema.minLength) {
-        errors.push({
-          field: fieldName,
-          message: `String must be at least ${fieldSchema.minLength} characters long`,
-          value
-        });
-      }
-      
-      // Max length
-      if (fieldSchema.maxLength !== undefined && value.length > fieldSchema.maxLength) {
-        errors.push({
-          field: fieldName,
-          message: `String must be at most ${fieldSchema.maxLength} characters long`,
-          value
-        });
-      }
-      
-      // Regex pattern
-      if (fieldSchema.pattern) {
-        const regex = new RegExp(fieldSchema.pattern);
-        if (!regex.test(value)) {
+    // Validate by type
+    switch (fieldDef.type) {
+      case 'string':
+        if (typeof value !== 'string') {
           errors.push({
-            field: fieldName,
-            message: `String must match pattern: ${fieldSchema.pattern}`,
+            field: fullPath,
+            message: `Expected string, got ${typeof value}`,
+            value
+          });
+          return errors;
+        }
+        
+        if (fieldDef.minLength !== undefined && value.length < fieldDef.minLength) {
+          errors.push({
+            field: fullPath,
+            message: `String is too short, minimum length is ${fieldDef.minLength}`,
             value
           });
         }
-      }
-    }
-    
-    // Number validations
-    if (fieldSchema.type === 'number') {
-      // Minimum
-      if (fieldSchema.minimum !== undefined && value < fieldSchema.minimum) {
-        errors.push({
-          field: fieldName,
-          message: `Number must be at least ${fieldSchema.minimum}`,
-          value
-        });
-      }
-      
-      // Maximum
-      if (fieldSchema.maximum !== undefined && value > fieldSchema.maximum) {
-        errors.push({
-          field: fieldName,
-          message: `Number must be at most ${fieldSchema.maximum}`,
-          value
-        });
-      }
-    }
-    
-    // Array validations
-    if (fieldSchema.type === 'array') {
-      // Min length
-      if (fieldSchema.minLength !== undefined && value.length < fieldSchema.minLength) {
-        errors.push({
-          field: fieldName,
-          message: `Array must contain at least ${fieldSchema.minLength} items`,
-          value
-        });
-      }
-      
-      // Max length
-      if (fieldSchema.maxLength !== undefined && value.length > fieldSchema.maxLength) {
-        errors.push({
-          field: fieldName,
-          message: `Array must contain at most ${fieldSchema.maxLength} items`,
-          value
-        });
-      }
-      
-      // Validate array items if schema is provided
-      if (fieldSchema.items && value.length > 0) {
-        value.forEach((item: any, index: number) => {
-          const itemErrors = this.validateField(
-            item, 
-            fieldSchema.items as SchemaField, 
-            `${fieldName}[${index}]`
-          );
-          errors.push(...itemErrors);
-        });
-      }
-    }
-    
-    // Object validations
-    if (fieldSchema.type === 'object' && fieldSchema.properties) {
-      for (const [propName, propSchema] of Object.entries(fieldSchema.properties)) {
-        if (propSchema.required && !(propName in value)) {
+        
+        if (fieldDef.maxLength !== undefined && value.length > fieldDef.maxLength) {
           errors.push({
-            field: `${fieldName}.${propName}`,
-            message: `Required property "${propName}" is missing`
+            field: fullPath,
+            message: `String is too long, maximum length is ${fieldDef.maxLength}`,
+            value
           });
-          continue;
         }
         
-        if (propName in value) {
-          const propErrors = this.validateField(
-            value[propName], 
-            propSchema, 
-            `${fieldName}.${propName}`
-          );
-          errors.push(...propErrors);
+        if (fieldDef.pattern !== undefined) {
+          const regex = new RegExp(fieldDef.pattern);
+          if (!regex.test(value)) {
+            errors.push({
+              field: fullPath,
+              message: `String does not match pattern ${fieldDef.pattern}`,
+              value
+            });
+          }
         }
-      }
-    }
-    
-    // Custom validator function
-    if (fieldSchema.validator && !fieldSchema.validator(value)) {
-      errors.push({
-        field: fieldName,
-        message: fieldSchema.errorMessage || `Validation failed for field "${fieldName}"`,
-        value
-      });
+        
+        if (fieldDef.enum !== undefined && !fieldDef.enum.includes(value)) {
+          errors.push({
+            field: fullPath,
+            message: `Value must be one of: ${fieldDef.enum.join(', ')}`,
+            value
+          });
+        }
+        
+        break;
+        
+      case 'number':
+        if (typeof value !== 'number') {
+          errors.push({
+            field: fullPath,
+            message: `Expected number, got ${typeof value}`,
+            value
+          });
+          return errors;
+        }
+        
+        if (fieldDef.minimum !== undefined && value < fieldDef.minimum) {
+          errors.push({
+            field: fullPath,
+            message: `Number is too small, minimum value is ${fieldDef.minimum}`,
+            value
+          });
+        }
+        
+        if (fieldDef.maximum !== undefined && value > fieldDef.maximum) {
+          errors.push({
+            field: fullPath,
+            message: `Number is too large, maximum value is ${fieldDef.maximum}`,
+            value
+          });
+        }
+        
+        break;
+        
+      case 'boolean':
+        if (typeof value !== 'boolean') {
+          errors.push({
+            field: fullPath,
+            message: `Expected boolean, got ${typeof value}`,
+            value
+          });
+        }
+        break;
+        
+      case 'array':
+        if (!Array.isArray(value)) {
+          errors.push({
+            field: fullPath,
+            message: `Expected array, got ${typeof value}`,
+            value
+          });
+          return errors;
+        }
+        
+        if (fieldDef.items) {
+          // Validate array items
+          value.forEach((item, index) => {
+            const itemErrors = this.validateField(
+              item, 
+              fieldDef.items!, 
+              `${index}`, 
+              fullPath
+            );
+            errors.push(...itemErrors);
+          });
+        }
+        break;
+        
+      case 'object':
+        if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+          errors.push({
+            field: fullPath,
+            message: `Expected object, got ${typeof value}`,
+            value
+          });
+          return errors;
+        }
+        
+        if (fieldDef.properties) {
+          // Validate object properties
+          for (const [propName, propDef] of Object.entries(fieldDef.properties)) {
+            if (propDef.required && (value[propName] === undefined || value[propName] === null)) {
+              errors.push({
+                field: `${fullPath}.${propName}`,
+                message: `Required property "${propName}" is missing`
+              });
+            } else if (value[propName] !== undefined) {
+              const propErrors = this.validateField(
+                value[propName], 
+                propDef, 
+                propName, 
+                fullPath
+              );
+              errors.push(...propErrors);
+            }
+          }
+        }
+        
+        break;
+        
+      default:
+        // Unknown type
+        errors.push({
+          field: fullPath,
+          message: `Unknown type: ${fieldDef.type}`
+        });
     }
     
     return errors;
   }
-  
-  /**
-   * Validate that a value matches the expected type
-   */
-  private validateType(value: any, type: SchemaType): boolean {
-    switch (type) {
-      case 'string':
-        return typeof value === 'string';
-      case 'number':
-        return typeof value === 'number' && !isNaN(value);
-      case 'boolean':
-        return typeof value === 'boolean';
-      case 'array':
-        return Array.isArray(value);
-      case 'object':
-        return typeof value === 'object' && value !== null && !Array.isArray(value);
-      case 'any':
-        return true;
-      default:
-        return false;
-    }
-  }
-  
-  /**
-   * Coerce value to the correct type if possible
-   */
-  private coerceValue(value: any, fieldSchema: SchemaField): any {
-    // For now, just return the original value
-    // In a more robust implementation, we could add type coercion here
-    return value;
-  }
-}
-
-// Utility function to create a new PydanticSchema instance
-export function createPydanticSchema(): PydanticSchema {
-  return new PydanticSchema();
 }

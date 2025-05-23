@@ -1,215 +1,321 @@
 
-import React, { useEffect, useState } from 'react';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import SwarmMetricsTab from '@/components/tutor/components/dashboard/SwarmMetricsTab';
 import { SwarmVisualization } from '@/components/tutor/components/dashboard/SwarmVisualization';
 import { quorumForge } from '@/components/tutor/services/QuorumForge';
-import { Toaster } from '@/components/ui/toaster';
-import { SwarmMetricsRecord } from '@/components/tutor/services/metrics/SwarmMetricsService';
 
 const QuorumDashboard = () => {
-  const [swarmMetrics, setSwarmMetrics] = useState<SwarmMetricsRecord[]>([]);
-  const [langchainQuotaStats, setLangchainQuotaStats] = useState<Record<string, any>>({});
-  const [activeAutogenSessions, setActiveAutogenSessions] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState('swarm');
   
-  useEffect(() => {
-    // This would normally fetch real data from the services
-    // For now, we'll generate mock data
-    
-    const mockSwarmMetrics: SwarmMetricsRecord[] = Array.from({ length: 8 }, (_, i) => ({
-      timestamp: new Date(Date.now() - (i * 3600000)),
-      taskCount: Math.floor(Math.random() * 12) + 4,
-      durationMs: Math.floor(Math.random() * 800) + 200,
-      successRate: 0.7 + (Math.random() * 0.3),
-      fanoutRatio: Math.random() * 3 + 1
-    }));
-    
-    setSwarmMetrics(mockSwarmMetrics);
-    
-    setLangchainQuotaStats({
-      'tutor-chain': { current: 42, limit: 150, percentage: 0.28 },
-      'assessment-chain': { current: 18, limit: 75, percentage: 0.24 },
-      'cot-reasoning': { current: 36, limit: 50, percentage: 0.72 }
-    });
-    
-    setActiveAutogenSessions(['session-123', 'session-456']);
-    
-  }, []);
-  
+  // Example swarm metrics data
+  const exampleSwarmMetrics = [
+    {
+      timestamp: new Date(Date.now() - 3600000),
+      taskCount: 12,
+      durationMs: 450,
+      successRate: 0.92,
+      fanoutRatio: 3.5
+    },
+    {
+      timestamp: new Date(Date.now() - 2400000),
+      taskCount: 18,
+      durationMs: 520,
+      successRate: 0.89,
+      fanoutRatio: 4.0
+    },
+    {
+      timestamp: new Date(Date.now() - 1200000),
+      taskCount: 15,
+      durationMs: 380,
+      successRate: 0.95,
+      fanoutRatio: 3.8
+    },
+    {
+      timestamp: new Date(),
+      taskCount: 22,
+      durationMs: 490,
+      successRate: 0.91,
+      fanoutRatio: 4.2
+    }
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <main className="flex-grow container max-w-7xl mx-auto px-4 py-8 mb-8">
-        <div className="mb-8 space-y-4">
-          <h1 className="text-3xl font-bold">QuorumForge OS Dashboard</h1>
-          <p className="text-muted-foreground">Monitor and manage agent frameworks, services, and performance metrics.</p>
-        </div>
+    <div className="container mx-auto py-6">
+      <h1 className="text-3xl font-bold mb-6">QuorumForge Dashboard</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Active Agents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">10</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              2 councils active
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Swarm Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">67</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              +12 in last hour
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">92.3%</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              +2.1% from yesterday
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Budget Usage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">$2.87</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              72% of daily budget
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+        <TabsList className="mb-4">
+          <TabsTrigger value="swarm">Swarm Performance</TabsTrigger>
+          <TabsTrigger value="councils">Council Activity</TabsTrigger>
+          <TabsTrigger value="a2a">A2A Network</TabsTrigger>
+          <TabsTrigger value="plans">Plans & Execution</TabsTrigger>
+        </TabsList>
         
-        <Tabs defaultValue="overview">
-          <TabsList className="grid grid-cols-4 mb-8">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="swarm">Swarm Metrics</TabsTrigger>
-            <TabsTrigger value="quotas">Framework Quotas</TabsTrigger>
-            <TabsTrigger value="config">Configuration</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="overview">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Active Frameworks</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    <li className="flex items-center justify-between">
-                      <span>OpenAI Swarm</span>
-                      <span className="text-green-500 font-medium">Active</span>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span>LangChain Integration</span>
-                      <span className="text-green-500 font-medium">Active</span>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span>Autogen</span>
-                      <span className="text-green-500 font-medium">Active</span>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span>CrewAI Planner</span>
-                      <span className="text-green-500 font-medium">Active</span>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span>A2A Hub</span>
-                      <span className="text-green-500 font-medium">Active</span>
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Active Autogen Sessions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {activeAutogenSessions.length > 0 ? (
-                    <ul className="space-y-2">
-                      {activeAutogenSessions.map(sessionId => (
-                        <li key={sessionId} className="flex items-center justify-between">
-                          <span>{sessionId}</span>
-                          <span className="text-blue-500 font-medium">Running</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-muted-foreground">No active sessions</p>
-                  )}
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>System Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="font-medium">OAuth Status</p>
-                      <p className="text-green-500">Connected</p>
-                    </div>
-                    <div>
-                      <p className="font-medium">Schema Validator</p>
-                      <p className="text-green-500">Online</p>
-                    </div>
-                    <div>
-                      <p className="font-medium">Storage</p>
-                      <p className="text-green-500">Operational</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+        <TabsContent value="swarm">
+          <SwarmMetricsTab />
+        </TabsContent>
+        
+        <TabsContent value="councils">
+          <Card>
+            <CardHeader>
+              <CardTitle>Council Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Security Council</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">3 Agents</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        12 decisions in last 24h
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Learning Council</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">4 Agents</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        24 decisions in last 24h
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Assessment Council</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">3 Agents</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        8 decisions in last 24h
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+                <div className="h-96 bg-muted/20 rounded-lg border p-4 flex items-center justify-center">
+                  <p className="text-muted-foreground">Council activity visualization will appear here</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="a2a">
+          <Card>
+            <CardHeader>
+              <CardTitle>A2A Network Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Active Connections</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">8</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        6 direct, 2 relay
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Messages</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">127</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        ~4.2/min rate
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Capabilities</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">14</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        5 unique providers
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+                <div className="h-96 bg-muted/20 rounded-lg border p-4 flex items-center justify-center">
+                  <p className="text-muted-foreground">A2A network graph will appear here</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="plans">
+          <Card>
+            <CardHeader>
+              <CardTitle>Plan Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Active Plans</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">3</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        1 critical, 2 normal
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Completed Plans</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">21</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        7 in last 24h
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xl font-bold">94.7%</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        21/22 successful
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+                <div className="h-96 bg-muted/20 rounded-lg border p-4 flex items-center justify-center">
+                  <p className="text-muted-foreground">Plan execution timeline will appear here</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Swarm Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SwarmVisualization metrics={exampleSwarmMetrics} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>System Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span>MCP-Core:</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                  Online
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Redis EventBus:</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">
+                  Simulated
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>A2A P2P Protocol:</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                  Online
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>OpenAI Swarm:</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                  Active
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>LangChain Quote Guard:</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                  Active
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Autogen TurnGuard:</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                  Active
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>SeniorManagerGPT:</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                  Online
+                </span>
+              </div>
             </div>
-          </TabsContent>
-          
-          <TabsContent value="swarm">
-            <div className="space-y-6">
-              <SwarmVisualization metrics={swarmMetrics} />
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Swarm Task Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-60 flex items-center justify-center">
-                    <p className="text-muted-foreground">Task distribution chart would appear here</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="quotas">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>LangChain Quota Usage</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {Object.entries(langchainQuotaStats).map(([chainId, stats]) => (
-                      <div key={chainId}>
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="font-medium">{chainId}</p>
-                          <p className="text-sm">{stats.current}/{stats.limit} ({Math.round(stats.percentage * 100)}%)</p>
-                        </div>
-                        <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full ${stats.percentage > 0.8 ? 'bg-red-500' : 'bg-blue-500'}`} 
-                            style={{ width: `${stats.percentage * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="config">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Framework Configuration</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">Configure framework integrations and thresholds</p>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="font-medium mb-2">A2A OAuth Configuration</p>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div><span className="text-muted-foreground">Domain:</span> studybee-dev.us.auth0.com</div>
-                        <div><span className="text-muted-foreground">Audience:</span> a2a-api</div>
-                        <div><span className="text-muted-foreground">Client ID:</span> agent-to-agent-client</div>
-                        <div><span className="text-muted-foreground">Grant Type:</span> client_credentials</div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <p className="font-medium mb-2">Autogen Turn Guard</p>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div><span className="text-muted-foreground">Default Max Turns:</span> 6</div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
-      <Footer />
-      <Toaster />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

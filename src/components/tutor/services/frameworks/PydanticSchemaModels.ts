@@ -1,302 +1,250 @@
 
-import { PydanticSchema } from './PydanticSchema';
+import { PydanticSchema, SchemaField } from './PydanticSchema';
 
-// Define the schemas for various model types used in the application
+export interface Plan {
+  id: string;
+  title: string;
+  type?: string;
+  summary?: string;
+  tasks: Array<{
+    id: string;
+    title?: string;
+    description?: string;
+    priority?: number;
+  }>;
+  memberCount?: number;
+  members?: string[];
+}
+
+export interface InteractionContext {
+  userId: string;
+  sessionId?: string;
+  complexity?: 'low' | 'medium' | 'high';
+  urgency?: 'low' | 'medium' | 'high';
+  costSensitivity?: 'low' | 'medium' | 'high';
+  userSkillLevel?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  preferredModality?: 'text' | 'audio' | 'visual';
+  preferences?: Record<string, any>;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  capabilities?: string[];
+  knowledgeAreas?: string[];
+  trustLevel?: 'low' | 'medium' | 'high';
+}
+
+export interface Council {
+  id: string;
+  name: string;
+  agents: string[];
+  domain?: string;
+  consensusThreshold?: number;
+  maxDeliberationTurns?: number;
+}
+
+/**
+ * Register all schema models with the PydanticSchema instance
+ */
 export function registerSchemaModels(schema: PydanticSchema): void {
-  // Define Plan schema
-  schema.defineSchema({
-    name: 'Plan',
-    description: 'A plan created by an agent or council',
+  // Plan Schema
+  schema.defineSchema('Plan', {
     fields: {
       id: {
         type: 'string',
         required: true,
-        errorMessage: 'Plan ID is required'
+        description: 'Unique identifier for the plan'
       },
       title: {
         type: 'string',
         required: true,
-        minLength: 3,
-        maxLength: 100,
-        errorMessage: 'Plan title must be between 3 and 100 characters'
-      },
-      description: {
-        type: 'string',
-        required: false,
-        maxLength: 1000
+        description: 'Title of the plan'
       },
       type: {
         type: 'string',
-        required: true,
-        enum: ['action', 'research', 'strategy', 'fix', 'enhance'],
-        errorMessage: 'Plan type must be one of: action, research, strategy, fix, enhance'
+        enum: ['action', 'decision', 'learning', 'assessment', 'fix_plan'],
+        default: 'action',
+        description: 'Type of plan'
       },
-      created: {
-        type: 'string', // ISO date string
-        required: false,
-        default: () => new Date().toISOString(),
-        validator: (value) => !isNaN(Date.parse(value)),
-        errorMessage: 'Invalid date format'
-      },
-      priority: {
+      summary: {
         type: 'string',
-        required: false,
-        default: 'medium',
-        enum: ['low', 'medium', 'high', 'critical'],
-        errorMessage: 'Priority must be one of: low, medium, high, critical'
+        description: 'Summary of the plan'
       },
       tasks: {
         type: 'array',
         required: true,
-        minLength: 1,
-        errorMessage: 'Plan must contain at least one task',
+        description: 'Tasks associated with the plan',
         items: {
           type: 'object',
           properties: {
             id: {
               type: 'string',
-              required: true
+              required: true,
+              description: 'Unique identifier for the task'
             },
             title: {
               type: 'string',
-              required: true
+              description: 'Title of the task'
             },
             description: {
               type: 'string',
-              required: false
+              description: 'Description of the task'
             },
-            assignedTo: {
-              type: 'string',
-              required: false
-            },
-            status: {
-              type: 'string',
-              required: false,
-              default: 'pending',
-              enum: ['pending', 'in-progress', 'completed', 'failed'],
-              errorMessage: 'Task status must be one of: pending, in-progress, completed, failed'
+            priority: {
+              type: 'number',
+              minimum: 1,
+              maximum: 5,
+              default: 3,
+              description: 'Priority of the task (1-5, where 5 is highest)'
             }
           }
         }
       },
-      metadata: {
-        type: 'object',
-        required: false,
-        properties: {
-          costEstimate: {
-            type: 'number',
-            required: false,
-            minimum: 0
-          },
-          timeEstimate: {
-            type: 'number',
-            required: false,
-            minimum: 0
-          },
-          riskLevel: {
-            type: 'number',
-            required: false,
-            minimum: 0,
-            maximum: 1
-          },
-          tags: {
-            type: 'array',
-            required: false,
-            items: {
-              type: 'string'
-            }
-          }
+      memberCount: {
+        type: 'number',
+        description: 'Number of members involved in this plan'
+      },
+      members: {
+        type: 'array',
+        description: 'List of member IDs involved in this plan',
+        items: {
+          type: 'string'
         }
       }
-    }
+    },
+    description: 'A plan created by CrewAI or other planning frameworks'
   });
   
-  // Define InteractionContext schema
-  schema.defineSchema({
-    name: 'InteractionContext',
-    description: 'Context for user interactions with the system',
+  // InteractionContext Schema
+  schema.defineSchema('InteractionContext', {
     fields: {
       userId: {
         type: 'string',
-        required: true
+        required: true,
+        description: 'ID of the user for this interaction'
       },
       sessionId: {
         type: 'string',
-        required: true
-      },
-      timestamp: {
-        type: 'string', // ISO date string
-        required: false,
-        default: () => new Date().toISOString()
+        description: 'ID of the current session'
       },
       complexity: {
         type: 'string',
-        required: false,
-        default: 'medium',
         enum: ['low', 'medium', 'high'],
-        errorMessage: 'Complexity must be one of: low, medium, high'
+        default: 'medium',
+        description: 'Complexity level of the interaction'
       },
       urgency: {
         type: 'string',
-        required: false,
-        default: 'medium',
         enum: ['low', 'medium', 'high'],
-        errorMessage: 'Urgency must be one of: low, medium, high'
+        default: 'medium',
+        description: 'Urgency level of the interaction'
       },
-      topicId: {
+      costSensitivity: {
         type: 'string',
-        required: false
+        enum: ['low', 'medium', 'high'],
+        default: 'medium',
+        description: 'Cost sensitivity for this interaction'
       },
       userSkillLevel: {
         type: 'string',
-        required: false,
-        default: 'intermediate',
         enum: ['beginner', 'intermediate', 'advanced', 'expert'],
-        errorMessage: 'Skill level must be one of: beginner, intermediate, advanced, expert'
+        default: 'intermediate',
+        description: 'Skill level of the user'
       },
       preferredModality: {
         type: 'string',
-        required: false,
+        enum: ['text', 'audio', 'visual'],
         default: 'text',
-        enum: ['text', 'visual', 'audio'],
-        errorMessage: 'Preferred modality must be one of: text, visual, audio'
+        description: 'Preferred modality for this interaction'
+      },
+      preferences: {
+        type: 'object',
+        description: 'Additional preferences for this interaction'
       }
-    }
+    },
+    description: 'Context for user interactions with the system'
   });
   
-  // Define Agent schema
-  schema.defineSchema({
-    name: 'Agent',
-    description: 'An agent in the system',
+  // Agent Schema
+  schema.defineSchema('Agent', {
     fields: {
       id: {
         type: 'string',
-        required: true
+        required: true,
+        description: 'Unique identifier for the agent'
       },
       name: {
         type: 'string',
-        required: true
-      },
-      type: {
-        type: 'string',
         required: true,
-        enum: ['specialized', 'general', 'coordinator', 'security'],
-        errorMessage: 'Agent type must be one of: specialized, general, coordinator, security'
+        description: 'Name of the agent'
       },
       capabilities: {
         type: 'array',
-        required: true,
-        minLength: 1,
+        description: 'List of capabilities this agent has',
         items: {
           type: 'string'
         }
       },
-      model: {
+      knowledgeAreas: {
+        type: 'array',
+        description: 'Knowledge areas this agent specializes in',
+        items: {
+          type: 'string'
+        }
+      },
+      trustLevel: {
         type: 'string',
-        required: false,
-        default: 'gpt-4o-mini'
+        enum: ['low', 'medium', 'high'],
+        default: 'medium',
+        description: 'Trust level assigned to this agent'
       }
-    }
+    },
+    description: 'An intelligent agent in the system'
   });
   
-  // Define Council schema
-  schema.defineSchema({
-    name: 'Council',
-    description: 'A council of agents',
+  // Council Schema
+  schema.defineSchema('Council', {
     fields: {
       id: {
         type: 'string',
-        required: true
+        required: true,
+        description: 'Unique identifier for the council'
       },
       name: {
         type: 'string',
-        required: true
+        required: true,
+        description: 'Name of the council'
       },
-      description: {
-        type: 'string',
-        required: false
-      },
-      members: {
+      agents: {
         type: 'array',
         required: true,
-        minLength: 2,
-        errorMessage: 'Council must have at least 2 members',
+        description: 'List of agent IDs that are part of this council',
         items: {
-          type: 'string' // agent IDs
+          type: 'string'
         }
+      },
+      domain: {
+        type: 'string',
+        description: 'Domain of expertise for this council'
       },
       consensusThreshold: {
         type: 'number',
-        required: false,
+        minimum: 0,
+        maximum: 1,
         default: 0.8,
-        minimum: 0.5,
-        maximum: 1.0,
-        errorMessage: 'Consensus threshold must be between 0.5 and 1.0'
+        description: 'Threshold required for achieving consensus (0-1)'
       },
-      maxDeliberationRounds: {
+      maxDeliberationTurns: {
         type: 'number',
-        required: false,
-        default: 3,
         minimum: 1,
         maximum: 10,
-        errorMessage: 'Max deliberation rounds must be between 1 and 10'
+        default: 3,
+        description: 'Maximum number of deliberation turns allowed'
       }
-    }
+    },
+    description: 'A council of agents that work together on specific domains'
   });
   
   console.log('Schema models registered successfully');
-}
-
-// Create Plan type that matches the schema
-export interface Plan {
-  id: string;
-  title: string;
-  description?: string;
-  type: 'action' | 'research' | 'strategy' | 'fix' | 'enhance';
-  created?: string;
-  priority?: 'low' | 'medium' | 'high' | 'critical';
-  tasks: Array<{
-    id: string;
-    title: string;
-    description?: string;
-    assignedTo?: string;
-    status?: 'pending' | 'in-progress' | 'completed' | 'failed';
-  }>;
-  metadata?: {
-    costEstimate?: number;
-    timeEstimate?: number;
-    riskLevel?: number;
-    tags?: string[];
-  };
-}
-
-// Create InteractionContext type that matches the schema
-export interface InteractionContext {
-  userId: string;
-  sessionId: string;
-  timestamp?: string;
-  complexity?: 'low' | 'medium' | 'high';
-  urgency?: 'low' | 'medium' | 'high';
-  topicId?: string;
-  userSkillLevel?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  preferredModality?: 'text' | 'visual' | 'audio';
-}
-
-// Create Agent type that matches the schema
-export interface Agent {
-  id: string;
-  name: string;
-  type: 'specialized' | 'general' | 'coordinator' | 'security';
-  capabilities: string[];
-  model?: string;
-}
-
-// Create Council type that matches the schema
-export interface Council {
-  id: string;
-  name: string;
-  description?: string;
-  members: string[];
-  consensusThreshold?: number;
-  maxDeliberationRounds?: number;
 }

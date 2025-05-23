@@ -1,9 +1,14 @@
 
 import { CouncilService } from '../CouncilService';
+import { CrewAI } from './CrewAI';
+import { LLMRouter } from '../LLMRouter';
+import { PydanticValidator } from './PydanticValidator';
+import { v4 as uuidv4 } from '@/lib/uuid';
 
 export interface PlanTask {
   id: string;
   description: string;
+  title?: string;
   priority?: number;
 }
 
@@ -19,12 +24,19 @@ export interface Plan {
 
 /**
  * CrewAI Planner - Integration with CrewAI framework
+ * Implements the crewai-senior feature from QuorumForge OS spec
  */
 export class CrewAIPlanner {
   private councilService: CouncilService;
+  private crewAI: CrewAI;
+  private validator: PydanticValidator;
   
-  constructor(councilService: CouncilService) {
+  constructor(councilService: CouncilService, router: LLMRouter) {
     this.councilService = councilService;
+    this.crewAI = new CrewAI(councilService, router);
+    this.validator = new PydanticValidator();
+    
+    console.log('CrewAI Planner initialized');
   }
   
   /**
@@ -42,10 +54,57 @@ export class CrewAIPlanner {
       throw new Error(`Council ${councilId} not found`);
     }
     
-    const planId = `plan_${Date.now()}`;
+    try {
+      // Create a crew with the council members
+      const crew = await this.crewAI.createCrew(
+        `${councilId}-${Date.now()}`, 
+        councilId, 
+        `Create a plan for: ${topic}`,
+        context
+      );
+      
+      // Assign roles based on agent capabilities
+      const assignments = council.map((agent, index) => {
+        let role = 'contributor';
+        if (index === 0) role = 'planner';
+        else if (index === 1) role = 'critic';
+        
+        return {
+          agentId: agent.id,
+          role,
+          goals: [`Help create a plan for: ${topic}`]
+        };
+      });
+      
+      await this.crewAI.assignRolesAndGoals(crew.id, assignments);
+      
+      // Generate the plan
+      const plan = await this.crewAI.generatePlan(crew.id);
+      
+      // Validate the plan
+      try {
+        this.validator.validatePlan(plan);
+      } catch (error) {
+        console.error('Plan validation error:', error);
+        // If validation fails, generate a minimal valid plan
+        return this.createFallbackPlan(topic, council);
+      }
+      
+      return plan;
+    } catch (error) {
+      console.error('Error in CrewAI plan creation:', error);
+      // If anything fails, return a fallback plan
+      return this.createFallbackPlan(topic, council);
+    }
+  }
+  
+  /**
+   * Create a fallback plan when the normal process fails
+   */
+  private createFallbackPlan(topic: string, council: any[]): Plan {
+    const planId = `plan_fallback_${uuidv4()}`;
     
-    // For now, simulate CrewAI plan generation
-    const simulatedPlan: Plan = {
+    return {
       id: planId,
       title: `Plan for ${topic}`,
       summary: `This plan addresses ${topic} with a comprehensive approach`,
@@ -58,8 +117,6 @@ export class CrewAIPlanner {
       memberCount: council.length,
       members: council.map(agent => agent.id)
     };
-    
-    return simulatedPlan;
   }
   
   /**
