@@ -12,18 +12,21 @@ export class CouncilService {
   private manager: DynamicCouncilManager;
   private swarmMetricsService: SwarmMetricsService;
   
-  constructor(agents: SpecializedAgent[]) {
+  constructor() {
     this.repository = new CouncilRepository();
     this.selector = new CouncilSelector();
     this.manager = new DynamicCouncilManager();
     this.swarmMetricsService = new SwarmMetricsService();
     
     // Initialize councils from repository or create defaults
-    this.councils = this.repository.getAvailableCouncils();
+    this.councils = this.repository.getAllCouncils();
     
-    if (this.councils.size === 0) {
+    if (this.councils.size === 0 && arguments.length > 0) {
       // If no councils in repository, create defaults from agents
+      const agents = arguments[0] as SpecializedAgent[];
       this.createDefaultCouncils(agents);
+    } else {
+      this.councils = new Map();
     }
   }
   
@@ -122,11 +125,11 @@ export class CouncilService {
   }
   
   public determineCouncilForMessage(message: string): string {
-    return this.selector.selectCouncilForMessage(message, this.councils);
+    return this.selector.selectCouncilForMessage(message, Array.from(this.councils.keys()));
   }
   
   public createDynamicCouncil(topic: string, agents: SpecializedAgent[]): string {
-    return this.manager.createDynamicCouncil(topic, agents, this.councils);
+    return this.manager.createDynamicCouncil(topic, agents);
   }
   
   /**

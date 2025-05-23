@@ -1,44 +1,42 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import MenuLink from './MenuLink';
+import LearnMenu from './LearnMenu';
 
-interface NavLinksProps {
-  isActive: (path: string) => boolean;
-}
+const NavLinks = () => {
+  const location = useLocation();
+  
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
 
-export const NavLinks: React.FC<NavLinksProps> = ({ isActive }) => {
   return (
-    <nav className="hidden md:flex items-center gap-6">
-      <Link 
-        to="/dashboard" 
-        className={`text-sm font-medium ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-      >
-        Dashboard
-      </Link>
-      <Link 
-        to="/courses" 
-        className={`text-sm font-medium ${isActive('/courses') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-      >
-        Courses
-      </Link>
-      <Link 
-        to="/flashcards" 
-        className={`text-sm font-medium ${isActive('/flashcards') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-      >
-        Flashcards
-      </Link>
-      <Link 
-        to="/tutor" 
-        className={`text-sm font-medium ${isActive('/tutor') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-      >
-        AI Tutor
-      </Link>
-      <Link 
-        to="/arena" 
-        className={`text-sm font-medium ${isActive('/arena') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-      >
+    <div className="hidden md:flex items-center space-x-6">
+      <LearnMenu />
+      
+      <MenuLink to="/arena" active={isActive('/arena')}>
         Arena
-      </Link>
-    </nav>
+      </MenuLink>
+      
+      <MenuLink to="/flashcards" active={isActive('/flashcards')}>
+        Flashcards
+      </MenuLink>
+      
+      <MenuLink to="/graph-tutor" active={isActive('/graph-tutor')}>
+        AI Tutor
+      </MenuLink>
+      
+      <MenuLink to="/adaptive-quiz" active={isActive('/adaptive-quiz')}>
+        Adaptive Quiz
+      </MenuLink>
+      
+      <MenuLink to="/analytics" active={isActive('/analytics')}>
+        Analytics
+      </MenuLink>
+    </div>
   );
 };
+
+export default NavLinks;

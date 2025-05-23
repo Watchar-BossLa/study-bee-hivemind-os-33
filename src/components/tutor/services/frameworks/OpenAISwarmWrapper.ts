@@ -1,118 +1,137 @@
 
+import { LLMRouter } from '../LLMRouter';
+
 /**
- * OpenAI-Swarm parallel execution wrapper
- * Implements the swarm-wrapper feature from QuorumForge OS spec
+ * OpenAISwarmWrapper - Implements the swarm-wrapper feature from QuorumForge OS spec
+ * Provides parallel execution functionality for OpenAI tasks
  */
 export class OpenAISwarmWrapper {
-  private concurrencyLimit: number;
-  private tokenLimit: number;
+  private llmRouter: LLMRouter;
+  private concurrencyLimit: number = 5;
   
-  constructor(concurrencyLimit: number = 3, tokenLimit: number = 4000) {
-    this.concurrencyLimit = concurrencyLimit;
-    this.tokenLimit = tokenLimit;
-    
-    console.log(`OpenAI Swarm Wrapper initialized with concurrency limit: ${concurrencyLimit}`);
+  constructor(llmRouter: LLMRouter) {
+    this.llmRouter = llmRouter;
   }
   
   /**
-   * Run multiple tasks in parallel using OpenAI's Swarm execution model
-   * @param tasks Array of tasks to be executed in parallel
-   * @param context Optional context to be provided to each task
-   * @returns Array of results corresponding to each task
+   * Execute multiple tasks in parallel using a fan-out pattern
+   * @param tasks Array of tasks to execute
+   * @param context Additional context for execution
+   * @returns Array of results
    */
-  public async runSwarm(tasks: string[] | Record<string, any>[], context?: Record<string, any>): Promise<string[]> {
-    console.log(`Running ${tasks.length} tasks in parallel with swarm execution`);
+  public async executeTasks(tasks: any[], context: Record<string, any> = {}): Promise<any[]> {
+    console.log(`Executing ${tasks.length} tasks in parallel with OpenAI Swarm`);
     
-    // Calculate how many batches we need based on concurrency limit
-    const batchCount = Math.ceil(tasks.length / this.concurrencyLimit);
-    const batches: (string | Record<string, any>)[][] = [];
+    // Implement batching to respect concurrency limits
+    const results: any[] = [];
+    const batches = this.createBatches(tasks, this.concurrencyLimit);
     
-    // Create batches
-    for (let i = 0; i < batchCount; i++) {
-      const start = i * this.concurrencyLimit;
-      const end = Math.min(start + this.concurrencyLimit, tasks.length);
-      batches.push(tasks.slice(start, end));
-    }
-    
-    // Run batches sequentially, with tasks in each batch running in parallel
-    const allResults: string[] = [];
-    
-    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-      const batch = batches[batchIndex];
-      console.log(`Processing batch ${batchIndex + 1}/${batches.length} with ${batch.length} tasks`);
-      
-      // Process all tasks in this batch in parallel
-      const batchPromises = batch.map(task => this.processTask(task, context));
+    for (const batch of batches) {
+      const batchPromises = batch.map(task => this.executeTask(task, context));
       const batchResults = await Promise.all(batchPromises);
-      
-      // Add results to the overall results array
-      allResults.push(...batchResults);
+      results.push(...batchResults);
     }
     
-    return allResults;
+    console.log(`Completed ${results.length} tasks with OpenAI Swarm`);
+    
+    // Record metrics if available
+    this.recordSwarmMetrics(tasks.length, results);
+    
+    return results;
   }
   
   /**
-   * Process a single task with the simulated OpenAI API
-   * In a real implementation, this would call the OpenAI API
+   * Alias for executeTasks to maintain compatibility with previous code
    */
-  private async processTask(task: string | Record<string, any>, context?: Record<string, any>): Promise<string> {
-    // Simulate processing delay
-    const processingTime = 300 + Math.random() * 700; // 300-1000ms
-    await new Promise(resolve => setTimeout(resolve, processingTime));
+  public async runTasks(tasks: any[], context: Record<string, any> = {}): Promise<any[]> {
+    return this.executeTasks(tasks, context);
+  }
+  
+  /**
+   * Execute a single task using the appropriate model
+   */
+  private async executeTask(task: any, context: Record<string, any>): Promise<any> {
+    // Create a router request for this task
+    const routerRequest = {
+      query: task.prompt || task.query || JSON.stringify(task),
+      task: task.type || 'default',
+      complexity: task.complexity || 'medium',
+      urgency: task.urgency || 'medium',
+      costSensitivity: task.costSensitivity || 'medium'
+    };
     
-    // Generate a response based on the task
-    const taskDescription = typeof task === 'string' ? task : JSON.stringify(task);
+    // Get the model selection
+    const model = this.llmRouter.selectModel(routerRequest);
     
-    try {
-      return `Result for task: ${taskDescription.substring(0, 50)}${taskDescription.length > 50 ? '...' : ''}`;
-    } catch (error) {
-      console.error('Error processing task:', error);
-      return `Error processing task: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    // Simulate executing the task with the selected model
+    // In a real implementation, this would call the model's API
+    const startTime = Date.now();
+    
+    // Simulate processing time based on model latency
+    let delay = 500;
+    if (model.latency === 'medium') delay = 1000;
+    if (model.latency === 'high') delay = 2000;
+    
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    // Simulate a response
+    const response = {
+      taskId: task.id || `task-${Math.random().toString(36).substring(2, 11)}`,
+      result: `Result for task: ${JSON.stringify(task).substring(0, 50)}...`,
+      model: model.id,
+      processingTimeMs: Date.now() - startTime
+    };
+    
+    // Log the completion
+    console.log(`Completed task ${response.taskId} using model ${model.id} in ${response.processingTimeMs}ms`);
+    
+    return response;
+  }
+  
+  /**
+   * Split tasks into batches to respect concurrency limits
+   */
+  private createBatches(tasks: any[], batchSize: number): any[][] {
+    const batches: any[][] = [];
+    for (let i = 0; i < tasks.length; i += batchSize) {
+      batches.push(tasks.slice(i, i + batchSize));
     }
+    return batches;
   }
   
   /**
-   * Process tasks in parallel with advanced batching strategy
-   * This is an alternative implementation that can be used based on context
+   * Get the current concurrency limit
    */
-  public async processParallel(
-    tasks: string[] | Record<string, any>[],
-    maxConcurrency?: number,
-    context?: Record<string, any>
-  ): Promise<string[]> {
-    const actualConcurrency = maxConcurrency || this.concurrencyLimit;
-    
-    console.log(`Processing ${tasks.length} tasks with max concurrency: ${actualConcurrency}`);
-    
-    // Here we would implement a more sophisticated batching strategy
-    // For now, just call the standard runSwarm method
-    return this.runSwarm(tasks, context);
+  public getConcurrencyLimit(): number {
+    return this.concurrencyLimit;
   }
   
   /**
-   * Update the concurrency limit
+   * Set the concurrency limit
    */
   public setConcurrencyLimit(limit: number): void {
     if (limit < 1) {
-      console.warn(`Invalid concurrency limit: ${limit}. Setting to 1.`);
-      this.concurrencyLimit = 1;
-    } else {
-      this.concurrencyLimit = limit;
-      console.log(`Concurrency limit updated to: ${limit}`);
+      throw new Error("Concurrency limit must be at least 1");
     }
+    this.concurrencyLimit = limit;
   }
   
   /**
-   * Update the token limit
+   * Record metrics about the swarm execution
    */
-  public setTokenLimit(limit: number): void {
-    if (limit < 100) {
-      console.warn(`Invalid token limit: ${limit}. Setting to 100.`);
-      this.tokenLimit = 100;
-    } else {
-      this.tokenLimit = limit;
-      console.log(`Token limit updated to: ${limit}`);
-    }
+  private recordSwarmMetrics(tasksCount: number, results: any[]): void {
+    // Calculate completion time statistics
+    const completionTimes = results
+      .filter(r => r.processingTimeMs)
+      .map(r => r.processingTimeMs);
+    
+    if (completionTimes.length === 0) return;
+    
+    const avgCompletionTime = completionTimes.reduce((a, b) => a + b, 0) / completionTimes.length;
+    const minCompletionTime = Math.min(...completionTimes);
+    const maxCompletionTime = Math.max(...completionTimes);
+    
+    // Log metrics
+    console.log(`Swarm metrics - Tasks: ${tasksCount}, Avg time: ${avgCompletionTime.toFixed(2)}ms, Min: ${minCompletionTime}ms, Max: ${maxCompletionTime}ms`);
   }
 }

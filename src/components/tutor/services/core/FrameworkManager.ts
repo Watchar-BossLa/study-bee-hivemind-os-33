@@ -7,6 +7,7 @@ import { OpenAISwarmWrapper } from '../frameworks/OpenAISwarmWrapper';
 import { CrewAIPlanner } from '../frameworks/CrewAIPlanner';
 import { LangChainQuotaGuard } from '../frameworks/LangChainQuotaGuard';
 import { MCPCore } from './MCPCore';
+import { AutogenTurnGuard } from '../frameworks/AutogenTurnGuard';
 
 /**
  * FrameworkManager - Manages all AI framework integrations (Autogen, LangChain, OpenAI Swarm)
@@ -18,12 +19,14 @@ export class FrameworkManager {
   private swarmWrapper: OpenAISwarmWrapper;
   private crewAIPlanner: CrewAIPlanner;
   private langChainQuotaGuard: LangChainQuotaGuard;
+  private autogenTurnGuard: AutogenTurnGuard;
   
   constructor(councilService: CouncilService, llmRouter: LLMRouter, mcpCore?: MCPCore) {
     this.langChainQuotaGuard = new LangChainQuotaGuard();
+    this.autogenTurnGuard = new AutogenTurnGuard();
     
     if (mcpCore) {
-      this.autogenIntegration = new AutogenIntegration(mcpCore);
+      this.autogenIntegration = new AutogenIntegration(mcpCore, this.autogenTurnGuard);
     } else {
       console.warn('MCPCore not provided to FrameworkManager, limited functionality available');
       // Create a mock MCPCore for testing purposes
@@ -35,7 +38,7 @@ export class FrameworkManager {
         getAgent: () => null,
         removeAgent: () => false
       } as any;
-      this.autogenIntegration = new AutogenIntegration(mockMCPCore);
+      this.autogenIntegration = new AutogenIntegration(mockMCPCore, this.autogenTurnGuard);
     }
     
     this.langChainIntegration = new LangChainIntegration(llmRouter, this.langChainQuotaGuard);
@@ -91,7 +94,7 @@ export class FrameworkManager {
    * Run parallel tasks using OpenAI Swarm
    */
   public async runSwarmTasks(tasks: any[], context: Record<string, any> = {}): Promise<any[]> {
-    return this.swarmWrapper.runTasks(tasks, context);
+    return this.swarmWrapper.executeTasks(tasks, context);
   }
   
   /**
@@ -113,5 +116,12 @@ export class FrameworkManager {
    */
   public getLangChainQuotaGuard(): LangChainQuotaGuard {
     return this.langChainQuotaGuard;
+  }
+  
+  /**
+   * Get the Autogen turn guard
+   */
+  public getAutogenTurnGuard(): AutogenTurnGuard {
+    return this.autogenTurnGuard;
   }
 }
