@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from '@/lib/uuid';
 import { RedisEventBus, redisEventBus } from './RedisEventBus';
 
@@ -360,6 +359,14 @@ export class MCPCore {
    */
   public getEventBus(): RedisEventBus {
     return this.eventBus;
+  }
+  
+  /**
+   * Gets the list of registered agents
+   * @returns Array of registered agents
+   */
+  public getAgents(): any[] {
+    return Array.from(this.agents.values());
   }
 }
 

@@ -17,14 +17,8 @@ const SwarmMetricsTab: React.FC = () => {
   const { data: recentMetrics, isLoading: loadingRecent } = useQuery({
     queryKey: ['swarm-metrics', 'recent'],
     queryFn: () => {
-      const councilService = quorumForge.getMCPCore()?.getAgents().length > 0 
-        ? quorumForge.getCouncils()
-        : undefined;
-      
-      if (councilService) {
-        return councilService.getSwarmMetrics().slice(-20); // Get the last 20 records
-      }
-      return [];
+      const swarmMetricsService = quorumForge.getSwarmMetricsService();
+      return swarmMetricsService ? swarmMetricsService.getRecentMetrics(20) : [];
     },
     refetchInterval: 5000 // Refresh every 5 seconds
   });
@@ -33,14 +27,8 @@ const SwarmMetricsTab: React.FC = () => {
   const { data: aggregatedMetrics, isLoading: loadingAggregated } = useQuery({
     queryKey: ['swarm-metrics', 'aggregated', period, limit],
     queryFn: () => {
-      const councilService = quorumForge.getMCPCore()?.getAgents().length > 0 
-        ? quorumForge.getCouncils()
-        : undefined;
-      
-      if (councilService) {
-        return councilService.getAggregatedSwarmMetrics(period, limit);
-      }
-      return [];
+      const swarmMetricsService = quorumForge.getSwarmMetricsService();
+      return swarmMetricsService ? swarmMetricsService.getAggregatedMetrics(period, limit) : [];
     },
     refetchInterval: 30000 // Refresh every 30 seconds
   });

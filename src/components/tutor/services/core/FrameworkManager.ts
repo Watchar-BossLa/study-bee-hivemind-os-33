@@ -1,120 +1,117 @@
 
-import { OpenAISwarmWrapper } from '../frameworks/OpenAISwarmWrapper';
-import { PydanticValidator } from '../frameworks/PydanticValidator';
-import { LangChainIntegration } from '../frameworks/LangChainIntegration';
-import { AutogenIntegration } from '../frameworks/AutogenIntegration';
-import { CrewAIPlanner } from '../frameworks/CrewAIPlanner';
 import { CouncilService } from '../CouncilService';
 import { LLMRouter } from '../LLMRouter';
+import { AutogenIntegration } from '../frameworks/AutogenIntegration';
+import { LangChainIntegration } from '../frameworks/LangChainIntegration';
+import { OpenAISwarmWrapper } from '../frameworks/OpenAISwarmWrapper';
+import { CrewAIPlanner } from '../frameworks/CrewAIPlanner';
 import { LangChainQuotaGuard } from '../frameworks/LangChainQuotaGuard';
-import { AutogenTurnGuard } from '../frameworks/AutogenTurnGuard';
-import { A2AOAuthHandler } from '../frameworks/A2AOAuthHandler';
-import { SwarmMetricsService } from '../metrics/SwarmMetricsService';
-import { A2AHub, createA2AHub } from '../frameworks/A2AHub';
 import { MCPCore } from './MCPCore';
 
+/**
+ * FrameworkManager - Manages all AI framework integrations (Autogen, LangChain, OpenAI Swarm)
+ * from the QuorumForge OS spec
+ */
 export class FrameworkManager {
-  private openAISwarm: OpenAISwarmWrapper;
-  private pydanticValidator: PydanticValidator;
-  private langChainIntegration: LangChainIntegration;
   private autogenIntegration: AutogenIntegration;
+  private langChainIntegration: LangChainIntegration;
+  private swarmWrapper: OpenAISwarmWrapper;
   private crewAIPlanner: CrewAIPlanner;
-  private a2aHub: A2AHub;
-  
-  // New services from QuorumForge OS commit matrix
   private langChainQuotaGuard: LangChainQuotaGuard;
-  private autogenTurnGuard: AutogenTurnGuard;
-  private a2aOAuthHandler: A2AOAuthHandler;
-  private swarmMetricsService: SwarmMetricsService;
-  private mcpCore?: MCPCore;
   
-  constructor(councilService: CouncilService, router: LLMRouter, mcpCore?: MCPCore) {
-    this.mcpCore = mcpCore;
-    
-    // Initialize metrics and monitoring services
-    this.swarmMetricsService = new SwarmMetricsService();
+  constructor(councilService: CouncilService, llmRouter: LLMRouter, mcpCore?: MCPCore) {
     this.langChainQuotaGuard = new LangChainQuotaGuard();
-    this.autogenTurnGuard = new AutogenTurnGuard();
-    this.a2aOAuthHandler = new A2AOAuthHandler();
     
-    // Initialize framework integrations
-    this.openAISwarm = new OpenAISwarmWrapper();
-    this.pydanticValidator = new PydanticValidator();
-    this.langChainIntegration = new LangChainIntegration(router);
-    this.autogenIntegration = new AutogenIntegration(router);
-    this.crewAIPlanner = new CrewAIPlanner(councilService);
+    if (mcpCore) {
+      this.autogenIntegration = new AutogenIntegration(mcpCore);
+    } else {
+      console.warn('MCPCore not provided to FrameworkManager, limited functionality available');
+      // Create a mock MCPCore for testing purposes
+      const mockMCPCore = {
+        submitTask: () => Promise.resolve('mock-task-id'),
+        waitForTaskCompletion: () => Promise.resolve({ result: 'mock-result' }),
+        getTaskStatus: () => ({ status: 'completed', result: 'mock-result' }),
+        registerAgent: () => {},
+        getAgent: () => null,
+        removeAgent: () => false
+      } as any;
+      this.autogenIntegration = new AutogenIntegration(mockMCPCore);
+    }
     
-    // Initialize A2A Hub with OAuth support and MCP-Core integration
-    this.a2aHub = createA2AHub(this.a2aOAuthHandler, this.mcpCore);
+    this.langChainIntegration = new LangChainIntegration(llmRouter, this.langChainQuotaGuard);
+    this.swarmWrapper = new OpenAISwarmWrapper(llmRouter);
+    this.crewAIPlanner = new CrewAIPlanner(councilService, llmRouter);
     
-    // Initialize A2A Hub
-    this.initializeA2AHub();
-    
-    console.log('FrameworkManager initialized with MCP-Core integration');
-  }
-
-  private initializeA2AHub(): void {
-    this.a2aHub.registerCapabilities([
-      'tutor', 'assessment', 'knowledge-validation', 'learning-path-design',
-      'adaptive-tutoring', 'progress-tracking', 'skill-assessment'
-    ]);
-    
-    console.log('A2A Hub initialized on secondary port with OAuth-PKCE security');
+    console.log('Framework Manager initialized with Autogen, LangChain, and OpenAI Swarm');
   }
   
-  public getOpenAISwarm(): OpenAISwarmWrapper {
-    return this.openAISwarm;
-  }
-  
-  public getPydanticValidator(): PydanticValidator {
-    return this.pydanticValidator;
-  }
-  
-  public getLangChainIntegration(): LangChainIntegration {
-    return this.langChainIntegration;
-  }
-  
+  /**
+   * Get the Autogen integration
+   */
   public getAutogenIntegration(): AutogenIntegration {
     return this.autogenIntegration;
   }
   
+  /**
+   * Get the LangChain integration
+   */
+  public getLangChainIntegration(): LangChainIntegration {
+    return this.langChainIntegration;
+  }
+  
+  /**
+   * Get the OpenAI Swarm wrapper
+   */
+  public getSwarmWrapper(): OpenAISwarmWrapper {
+    return this.swarmWrapper;
+  }
+  
+  /**
+   * Get the CrewAI planner
+   */
   public getCrewAIPlanner(): CrewAIPlanner {
     return this.crewAIPlanner;
   }
   
-  public getA2AHub(): A2AHub {
-    return this.a2aHub;
+  /**
+   * Run a security review using Autogen
+   */
+  public async runSecurityReview(codeSnippet: string, securityContext: Record<string, any> = {}): Promise<any> {
+    return this.autogenIntegration.runSecurityReview(codeSnippet, securityContext);
   }
   
+  /**
+   * Run a LangChain for a specific use case
+   */
+  public async runLangChain(chainId: string, input: Record<string, unknown>): Promise<any> {
+    return this.langChainIntegration.runChain(chainId, input);
+  }
+  
+  /**
+   * Run parallel tasks using OpenAI Swarm
+   */
+  public async runSwarmTasks(tasks: any[], context: Record<string, any> = {}): Promise<any[]> {
+    return this.swarmWrapper.runTasks(tasks, context);
+  }
+  
+  /**
+   * Create a plan using CrewAI
+   */
+  public async createPlan(topic: string, councilId: string, context: Record<string, any> = {}): Promise<any> {
+    return this.crewAIPlanner.createPlan(topic, councilId, context);
+  }
+  
+  /**
+   * Execute a plan using CrewAI
+   */
+  public async executePlan(plan: any, context: Record<string, any> = {}): Promise<any> {
+    return this.crewAIPlanner.executePlan(plan, context);
+  }
+  
+  /**
+   * Get the Lang Chain quota guard
+   */
   public getLangChainQuotaGuard(): LangChainQuotaGuard {
     return this.langChainQuotaGuard;
-  }
-  
-  public getAutogenTurnGuard(): AutogenTurnGuard {
-    return this.autogenTurnGuard;
-  }
-  
-  public getSwarmMetricsService(): SwarmMetricsService {
-    return this.swarmMetricsService;
-  }
-  
-  public getMCPCore(): MCPCore | undefined {
-    return this.mcpCore;
-  }
-  
-  public async communicateWithExternalAgent(
-    agentId: string, 
-    message: string, 
-    capabilities: string[]
-  ): Promise<any> {
-    try {
-      const response = await this.a2aHub.sendMessage(agentId, message, {
-        requiredCapabilities: capabilities
-      });
-      return response.body.content;
-    } catch (error) {
-      console.error("External agent communication failed:", error);
-      throw new Error(`Failed to communicate with external agent: ${(error as Error).message}`);
-    }
   }
 }

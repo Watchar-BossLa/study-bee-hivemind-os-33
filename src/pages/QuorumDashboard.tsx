@@ -3,11 +3,12 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SwarmMetricsTab from '@/components/tutor/components/dashboard/SwarmMetricsTab';
+import LLMRouterTab from '@/components/tutor/components/dashboard/LLMRouterTab';
 import { SwarmVisualization } from '@/components/tutor/components/dashboard/SwarmVisualization';
 import { quorumForge } from '@/components/tutor/services/QuorumForge';
 
 const QuorumDashboard = () => {
-  const [activeTab, setActiveTab] = useState('swarm');
+  const [activeTab, setActiveTab] = useState('llm-router');
   
   // Example swarm metrics data
   const exampleSwarmMetrics = [
@@ -94,11 +95,16 @@ const QuorumDashboard = () => {
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList className="mb-4">
+          <TabsTrigger value="llm-router">Smart LLM Router</TabsTrigger>
           <TabsTrigger value="swarm">Swarm Performance</TabsTrigger>
           <TabsTrigger value="councils">Council Activity</TabsTrigger>
           <TabsTrigger value="a2a">A2A Network</TabsTrigger>
           <TabsTrigger value="plans">Plans & Execution</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="llm-router">
+          <LLMRouterTab />
+        </TabsContent>
         
         <TabsContent value="swarm">
           <SwarmMetricsTab />
@@ -304,6 +310,12 @@ const QuorumDashboard = () => {
                 <span>Autogen TurnGuard:</span>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
                   Active
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Smart LLM Router:</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                  Online
                 </span>
               </div>
               <div className="flex items-center justify-between">

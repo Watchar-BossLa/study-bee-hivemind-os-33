@@ -2,6 +2,7 @@
 import { LLMModel } from '../../types/agents';
 import { RouterRequest, ModelSelectionResult } from '../../types/router';
 import { modelPerformanceTracker } from './modelPerformanceTracker';
+import { routerChain } from './RouterChain';
 
 export class ModelSelector {
   private models: LLMModel[];
@@ -30,6 +31,20 @@ export class ModelSelector {
       }
     }
     
+    // Use RouterChain for model selection
+    try {
+      const result = routerChain.selectModel(this.models, request);
+      const selectedModel = this.models.find(m => m.id === result.modelId);
+      
+      if (selectedModel) {
+        modelPerformanceTracker.addSelection(selectedModel.id, requestHash);
+        return selectedModel;
+      }
+    } catch (error) {
+      console.error('RouterChain error, falling back to basic selection:', error);
+    }
+    
+    // Fallback to basic selection method
     let eligibleModels = this.models.filter(model => 
       model.isAvailable && model.capabilities.includes(request.task)
     );
@@ -103,6 +118,34 @@ export class ModelSelector {
   }
 
   public getDetailedSelection(request: RouterRequest): ModelSelectionResult {
+    try {
+      // Use RouterChain for detailed selection
+      const result = routerChain.selectModel(this.models, request);
+      const selectedModel = this.models.find(m => m.id === result.modelId);
+      
+      if (selectedModel) {
+        // Get fallback options
+        const scoredModels = routerChain.scoreModels(
+          this.models.filter(model => model.isAvailable && model.capabilities.includes(request.task)),
+          request
+        );
+        
+        const fallbackOptions = scoredModels
+          .slice(1, 3)
+          .map(item => item.model.id);
+        
+        return {
+          modelId: selectedModel.id,
+          confidence: result.confidence,
+          fallbackOptions,
+          reasoningTrace: result.reasoningTrace
+        };
+      }
+    } catch (error) {
+      console.error('RouterChain error in detailed selection, falling back:', error);
+    }
+    
+    // Fall back to original implementation
     const scoredModels = this.scoreModels(
       this.models.filter(model => model.isAvailable && model.capabilities.includes(request.task)),
       request
