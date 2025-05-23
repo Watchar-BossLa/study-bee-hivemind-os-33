@@ -1,82 +1,89 @@
 
 /**
- * Provides turn limits and monitoring for Autogen thread execution
- * Implements the 'feat/autogen-turnguard' feature from QuorumForge OS
+ * Autogen Turn Guard - Caps the number of turns in Autogen threads
+ * Implements the autogen-turnguard feature from QuorumForge OS spec
  */
 export class AutogenTurnGuard {
-  private defaultMaxTurns: number = 6;
-  private turnCounters: Map<string, number> = new Map();
-  private activeSessions: Set<string> = new Set();
+  private defaultMaxTurns: number;
+  private threadLimits: Map<string, number>;
+  private threadTurnCounts: Map<string, number>;
   
-  /**
-   * Start tracking a new Autogen thread session
-   */
-  public startSession(sessionId: string, maxTurns?: number): { sessionId: string, maxTurns: number } {
-    const actualMaxTurns = maxTurns || this.defaultMaxTurns;
-    this.turnCounters.set(sessionId, 0);
-    this.activeSessions.add(sessionId);
+  constructor(defaultMaxTurns: number = 6) {
+    this.defaultMaxTurns = defaultMaxTurns;
+    this.threadLimits = new Map();
+    this.threadTurnCounts = new Map();
     
-    console.log(`Starting Autogen session ${sessionId} with max turns: ${actualMaxTurns}`);
-    
-    return {
-      sessionId,
-      maxTurns: actualMaxTurns
-    };
+    console.log(`Autogen Turn Guard initialized with default max turns: ${defaultMaxTurns}`);
   }
   
   /**
-   * Record a turn in an Autogen thread
-   * Returns false if max turns reached
+   * Register a new thread with optional custom turn limit
    */
-  public recordTurn(sessionId: string, maxTurns?: number): boolean {
-    if (!this.activeSessions.has(sessionId)) {
-      console.warn(`Attempt to record turn for unknown session: ${sessionId}`);
-      return false;
+  public registerThread(threadId: string, maxTurns?: number): void {
+    this.threadLimits.set(threadId, maxTurns || this.defaultMaxTurns);
+    this.threadTurnCounts.set(threadId, 0);
+    
+    console.log(`Registered thread ${threadId} with max turns: ${maxTurns || this.defaultMaxTurns}`);
+  }
+  
+  /**
+   * Record a turn in a thread and check if the limit is reached
+   */
+  public recordTurn(threadId: string): boolean {
+    // If thread doesn't exist, register it with default limits
+    if (!this.threadLimits.has(threadId)) {
+      this.registerThread(threadId);
     }
     
-    const currentTurns = this.turnCounters.get(sessionId) || 0;
-    const actualMaxTurns = maxTurns || this.defaultMaxTurns;
+    // Get current turn count
+    const currentTurns = this.threadTurnCounts.get(threadId) || 0;
+    const maxTurns = this.threadLimits.get(threadId) || this.defaultMaxTurns;
     
-    // Increment counter
-    this.turnCounters.set(sessionId, currentTurns + 1);
+    // Increment turn count
+    this.threadTurnCounts.set(threadId, currentTurns + 1);
     
-    // Check if max turns reached
-    if (currentTurns + 1 >= actualMaxTurns) {
-      console.log(`Autogen session ${sessionId} reached max turns: ${actualMaxTurns}`);
-      this.endSession(sessionId);
-      return false;
+    // Check if we've reached the limit
+    const isLimitReached = (currentTurns + 1) >= maxTurns;
+    
+    if (isLimitReached) {
+      console.log(`Thread ${threadId} has reached turn limit (${maxTurns})`);
     }
     
-    return true;
+    return isLimitReached;
   }
   
   /**
-   * End an Autogen thread session
+   * Get current turn count for a thread
    */
-  public endSession(sessionId: string): void {
-    this.turnCounters.delete(sessionId);
-    this.activeSessions.delete(sessionId);
-    console.log(`Ended Autogen session: ${sessionId}`);
+  public getTurnCount(threadId: string): number {
+    return this.threadTurnCounts.get(threadId) || 0;
   }
   
   /**
-   * Get all active sessions
+   * Get max turn limit for a thread
    */
-  public getActiveSessions(): string[] {
-    return Array.from(this.activeSessions);
+  public getTurnLimit(threadId: string): number {
+    return this.threadLimits.get(threadId) || this.defaultMaxTurns;
   }
   
   /**
-   * Get current turn count for a session
+   * Reset turn count for a thread
    */
-  public getTurnCount(sessionId: string): number | undefined {
-    return this.turnCounters.get(sessionId);
+  public resetTurnCount(threadId: string): void {
+    this.threadTurnCounts.set(threadId, 0);
   }
   
   /**
-   * Set default max turns for new sessions
+   * Update max turn limit for a thread
    */
-  public setDefaultMaxTurns(maxTurns: number): void {
-    this.defaultMaxTurns = maxTurns;
+  public updateTurnLimit(threadId: string, maxTurns: number): void {
+    this.threadLimits.set(threadId, maxTurns);
+  }
+  
+  /**
+   * Get all active thread IDs
+   */
+  public getActiveThreads(): string[] {
+    return Array.from(this.threadLimits.keys());
   }
 }

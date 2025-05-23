@@ -1,118 +1,111 @@
 
 /**
- * Provides rate limiting and quota management for LangChain operations
- * Implements the 'feat/langchain-quota' feature from QuorumForge OS
+ * LangChain Quota Guard - Implements rate limiting for LangChain chains
+ * Implements the langchain-quota feature from QuorumForge OS spec
  */
 export class LangChainQuotaGuard {
-  private quotaLimits: Map<string, number> = new Map();
-  private usageCounters: Map<string, number> = new Map();
-  private lastResetTime: Date = new Date();
-  private resetIntervalMs: number = 3600000; // 1 hour by default
+  private quotaLimits: Map<string, { limit: number; current: number; resetAt: Date }>;
   
-  constructor(resetIntervalMs?: number) {
-    if (resetIntervalMs) {
-      this.resetIntervalMs = resetIntervalMs;
-    }
+  constructor() {
+    this.quotaLimits = new Map();
+    this.initializeDefaultQuotas();
     
-    // Set default quotas
-    this.setDefaultQuotas();
+    console.log('LangChain Quota Guard initialized');
   }
   
-  /**
-   * Sets default quota limits for different chain types
-   */
-  private setDefaultQuotas(): void {
-    this.quotaLimits.set('default', 100);
-    this.quotaLimits.set('tutor-chain', 150);
-    this.quotaLimits.set('assessment-chain', 75);
-    this.quotaLimits.set('cot-reasoning', 50);
-    this.quotaLimits.set('knowledge-validation', 200);
-  }
-  
-  /**
-   * Set a custom quota limit for a specific chain
-   */
-  public setQuota(chainId: string, limit: number): void {
-    this.quotaLimits.set(chainId, limit);
-  }
-  
-  /**
-   * Check if a chain has exceeded its quota
-   */
-  public hasExceededQuota(chainId: string): boolean {
-    this.checkAndResetCounters();
+  private initializeDefaultQuotas() {
+    // Default quotas for common chain types
+    const defaultQuotas: [string, number][] = [
+      ['tutor-chain', 150],
+      ['assessment-chain', 75],
+      ['cot-reasoning', 50],
+      ['summarization', 100],
+      ['knowledge-retrieval', 200]
+    ];
     
-    const usage = this.usageCounters.get(chainId) || 0;
-    const limit = this.quotaLimits.get(chainId) || this.quotaLimits.get('default') || 100;
-    
-    return usage >= limit;
-  }
-  
-  /**
-   * Increment usage counter for a chain
-   */
-  public incrementUsage(chainId: string): void {
-    this.checkAndResetCounters();
-    
-    const currentUsage = this.usageCounters.get(chainId) || 0;
-    this.usageCounters.set(chainId, currentUsage + 1);
-    
-    // Log if approaching limit
-    const limit = this.quotaLimits.get(chainId) || this.quotaLimits.get('default') || 100;
-    if (currentUsage + 1 >= limit * 0.8) {
-      console.warn(`LangChain quota warning: Chain ${chainId} is at ${currentUsage + 1}/${limit} (${Math.round((currentUsage + 1) / limit * 100)}%)`);
-    }
-  }
-  
-  /**
-   * Get current usage statistics
-   */
-  public getUsageStats(): Record<string, { current: number, limit: number, percentage: number }> {
-    const stats: Record<string, { current: number, limit: number, percentage: number }> = {};
-    
-    this.usageCounters.forEach((usage, chainId) => {
-      const limit = this.quotaLimits.get(chainId) || this.quotaLimits.get('default') || 100;
-      stats[chainId] = {
-        current: usage,
-        limit,
-        percentage: usage / limit
-      };
-    });
-    
-    return stats;
-  }
-  
-  /**
-   * Reset counters if interval has passed
-   */
-  private checkAndResetCounters(): void {
+    // Initialize quota trackers
     const now = new Date();
-    if (now.getTime() - this.lastResetTime.getTime() > this.resetIntervalMs) {
-      console.log('Resetting LangChain quota counters');
-      this.usageCounters.clear();
-      this.lastResetTime = now;
+    // Set reset time to the next hour
+    const resetAt = new Date(now);
+    resetAt.setHours(resetAt.getHours() + 1);
+    resetAt.setMinutes(0, 0, 0);
+    
+    for (const [chainName, limit] of defaultQuotas) {
+      this.quotaLimits.set(chainName, { limit, current: 0, resetAt });
     }
   }
   
   /**
-   * Guard wrapper for LangChain execution
-   * Used as decorator pattern implementation
+   * Guard a chain call by enforcing quota limits
    */
-  public async guardedExecute<T>(
-    chainId: string, 
-    executeFn: () => Promise<T>,
-    fallbackFn?: () => Promise<T>
-  ): Promise<T> {
-    if (this.hasExceededQuota(chainId)) {
-      console.warn(`LangChain quota exceeded for chain: ${chainId}`);
-      if (fallbackFn) {
-        console.log('Using fallback function for quota-exceeded chain');
-        return fallbackFn();
-      }
-      throw new Error(`Quota exceeded for chain: ${chainId}`);
+  public guardChain(chainName: string): boolean {
+    // Get the quota for this chain, or create a default one
+    let quota = this.quotaLimits.get(chainName);
+    if (!quota) {
+      const now = new Date();
+      const resetAt = new Date(now);
+      resetAt.setHours(resetAt.getHours() + 1);
+      resetAt.setMinutes(0, 0, 0);
+      
+      quota = { limit: 50, current: 0, resetAt };
+      this.quotaLimits.set(chainName, quota);
     }
     
-    this.incrementUsage(chainId);
-    return executeFn();
+    // Check if we need to reset the quota
+    const now = new Date();
+    if (now >= quota.resetAt) {
+      const newResetAt = new Date(now);
+      newResetAt.setHours(newResetAt.getHours() + 1);
+      newResetAt.setMinutes(0, 0, 0);
+      
+      quota = { limit: quota.limit, current: 0, resetAt: newResetAt };
+      this.quotaLimits.set(chainName, quota);
+    }
+    
+    // Check if the chain is over quota
+    if (quota.current >= quota.limit) {
+      console.warn(`Chain ${chainName} is over quota (${quota.current}/${quota.limit})`);
+      return false;
+    }
+    
+    // Increment usage
+    quota.current++;
+    this.quotaLimits.set(chainName, quota);
+    return true;
+  }
+  
+  /**
+   * Get current quota usage for all chains
+   */
+  public getQuotaUsage(): Record<string, { current: number; limit: number; percentage: number }> {
+    const usage: Record<string, { current: number; limit: number; percentage: number }> = {};
+    
+    for (const [chainName, quota] of this.quotaLimits.entries()) {
+      usage[chainName] = {
+        current: quota.current,
+        limit: quota.limit,
+        percentage: quota.current / quota.limit
+      };
+    }
+    
+    return usage;
+  }
+  
+  /**
+   * Set a custom quota limit for a chain
+   */
+  public setQuotaLimit(chainName: string, limit: number): void {
+    const quota = this.quotaLimits.get(chainName);
+    if (quota) {
+      quota.limit = limit;
+      this.quotaLimits.set(chainName, quota);
+    } else {
+      const now = new Date();
+      const resetAt = new Date(now);
+      resetAt.setHours(resetAt.getHours() + 1);
+      resetAt.setMinutes(0, 0, 0);
+      
+      this.quotaLimits.set(chainName, { limit, current: 0, resetAt });
+    }
   }
 }

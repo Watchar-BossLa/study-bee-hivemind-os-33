@@ -1,107 +1,100 @@
 
 /**
- * Handles OAuth authentication for Agent-to-Agent (A2A) communications
- * Implements the 'feat/a2a-auth0' feature from QuorumForge OS
+ * A2A OAuth Handler - Manages OAuth authentication for the A2A Protocol
+ * Implements the a2a-auth0 feature from QuorumForge OS spec
  */
 export class A2AOAuthHandler {
-  private authConfig: A2AAuthConfig;
-  private accessTokenCache: Map<string, TokenCacheEntry> = new Map();
+  private clientId: string;
+  private domain: string;
+  private audience: string;
+  private accessToken: string | null;
+  private tokenExpiry: Date | null;
   
-  constructor(config?: Partial<A2AAuthConfig>) {
-    this.authConfig = {
-      domain: config?.domain || "studybee-dev.us.auth0.com",
-      audience: config?.audience || "a2a-api",
-      clientId: config?.clientId || "agent-to-agent-client",
-      scope: config?.scope || "read:messages write:messages",
-      tokenEndpoint: config?.tokenEndpoint || "/oauth/token",
-      grantType: config?.grantType || "client_credentials"
-    };
+  constructor() {
+    // In a real implementation, these would come from environment variables
+    this.clientId = 'agent-to-agent-client';
+    this.domain = 'studybee-dev.us.auth0.com';
+    this.audience = 'a2a-api';
+    this.accessToken = null;
+    this.tokenExpiry = null;
+    
+    console.log('A2A OAuth Handler initialized');
   }
   
   /**
-   * Get an access token for A2A API communication
-   * Uses cached token if available and not expired
-   */
-  public async getAccessToken(): Promise<string> {
-    const cacheKey = `${this.authConfig.clientId}:${this.authConfig.audience}`;
-    const cachedToken = this.accessTokenCache.get(cacheKey);
-    
-    if (cachedToken && Date.now() < cachedToken.expiresAt) {
-      console.log("Using cached A2A access token");
-      return cachedToken.token;
-    }
-    
-    try {
-      const token = await this.fetchNewToken();
-      return token;
-    } catch (error) {
-      console.error("Error obtaining A2A access token:", error);
-      throw new Error("Failed to obtain A2A access token");
-    }
-  }
-  
-  /**
-   * Fetch a new access token from the auth server
-   */
-  private async fetchNewToken(): Promise<string> {
-    console.log("Fetching new A2A access token");
-    
-    // In a real implementation, this would make an actual OAuth request
-    // For demo purposes, we simulate a successful token response
-    const tokenResponse = {
-      access_token: `a2a_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      expires_in: 3600,
-      token_type: "Bearer"
-    };
-    
-    // Cache the token
-    this.accessTokenCache.set(
-      `${this.authConfig.clientId}:${this.authConfig.audience}`, 
-      {
-        token: tokenResponse.access_token,
-        expiresAt: Date.now() + (tokenResponse.expires_in * 1000)
-      }
-    );
-    
-    return tokenResponse.access_token;
-  }
-  
-  /**
-   * Clear the token cache
-   */
-  public clearTokenCache(): void {
-    this.accessTokenCache.clear();
-  }
-  
-  /**
-   * Create HTTP headers with auth token
+   * Get valid authentication headers for API requests
    */
   public async createAuthHeaders(): Promise<Record<string, string>> {
-    const token = await this.getAccessToken();
+    const token = await this.getValidAccessToken();
     
     return {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json"
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
     };
   }
-}
-
-/**
- * Configuration for A2A OAuth
- */
-export interface A2AAuthConfig {
-  domain: string;
-  audience: string;
-  clientId: string;
-  scope: string;
-  tokenEndpoint: string;
-  grantType: string;
-}
-
-/**
- * Cache entry for token storage
- */
-interface TokenCacheEntry {
-  token: string;
-  expiresAt: number;
+  
+  /**
+   * Get a valid access token, refreshing if necessary
+   */
+  public async getValidAccessToken(): Promise<string> {
+    // Check if current token is still valid
+    if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
+      return this.accessToken;
+    }
+    
+    // Need to get a new token
+    try {
+      // Simulate token acquisition - in a real implementation,
+      // this would make an API call to Auth0 to get a new token
+      const simulatedToken = `eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlNpbXVsYXRlZEtleSJ9.${btoa(JSON.stringify({
+        iss: this.domain,
+        sub: this.clientId,
+        aud: this.audience,
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        iat: Math.floor(Date.now() / 1000)
+      }))}.SiMuLaTeD-SiGnAtUrE`;
+      
+      // Set the token and expiry (1 hour from now)
+      this.accessToken = simulatedToken;
+      this.tokenExpiry = new Date(Date.now() + 3600 * 1000);
+      
+      return simulatedToken;
+    } catch (error) {
+      console.error('Error getting access token:', error);
+      throw new Error('Failed to acquire OAuth token');
+    }
+  }
+  
+  /**
+   * Check if we have a valid token
+   */
+  public isAuthenticated(): boolean {
+    return !!(this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry);
+  }
+  
+  /**
+   * Clear current token
+   */
+  public clearToken(): void {
+    this.accessToken = null;
+    this.tokenExpiry = null;
+  }
+  
+  /**
+   * Get domain URL
+   */
+  public getDomainUrl(): string {
+    return `https://${this.domain}`;
+  }
+  
+  /**
+   * Get OAuth configuration
+   */
+  public getConfig(): Record<string, string> {
+    return {
+      clientId: this.clientId,
+      domain: this.domain,
+      audience: this.audience
+    };
+  }
 }

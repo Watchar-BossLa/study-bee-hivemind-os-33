@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { v4 as uuidv4 } from '@/lib/uuid';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,33 +16,24 @@ export const useMatchCreation = () => {
         console.error('Error checking arena_matches schema:', columnsError);
       }
 
-      // Build the query step by step with explicit typing to avoid deep type instantiation
-      const query = supabase
-        .from('arena_matches')
-        .select('id');
-        
-      // Add where clause for status
-      query.eq('status', 'waiting');
-      
-      // Add ordering
-      query.order('created_at', { ascending: false });
-      
-      // Add limit
-      query.limit(5);
+      let query = 'status=eq.waiting&order=created_at.desc&limit=5';
       
       // Apply subject focus filter if schema supports it and filter is provided
       if (!columnsError) {
         if (subjectFocus === null) {
           // Explicit null for random matches
-          query.is('subject_focus', null);
+          query += '&subject_focus=is.null';
         } else if (subjectFocus !== undefined) {
           // Specific subject focus
-          query.eq('subject_focus', subjectFocus);
+          query += `&subject_focus=eq.${encodeURIComponent(subjectFocus)}`;
         }
       }
       
-      // Execute the final query
-      const { data: waitingMatches, error } = await query;
+      // Execute the query using the URL parameter approach
+      const { data: waitingMatches, error } = await supabase
+        .from('arena_matches')
+        .select('id')
+        .or(query);
       
       if (error) {
         console.error('Error fetching waiting matches:', error);
