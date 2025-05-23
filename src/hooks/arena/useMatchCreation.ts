@@ -1,6 +1,8 @@
+
 import { useCallback } from 'react';
 import { v4 as uuidv4 } from '@/lib/uuid';
 import { supabase } from '@/integrations/supabase/client';
+import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
 
 export const useMatchCreation = () => {
   const findWaitingMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
@@ -16,27 +18,36 @@ export const useMatchCreation = () => {
         console.error('Error checking arena_matches schema:', columnsError);
       }
 
-      // Create the initial query
-      const query = supabase
+      // Define our type for the query to avoid excessive type instantiation
+      type ArenaMatchQuery = PostgrestFilterBuilder<any, any, {
+        id: string;
+      }[]>;
+      
+      // Create base query with common filters
+      const baseQuery: ArenaMatchQuery = supabase
         .from('arena_matches')
         .select('id')
         .eq('status', 'waiting')
         .order('created_at', { ascending: false })
         .limit(5);
       
-      // Only add subject focus filter if the column exists and we have a value
-      if (!columnsError) {
-        if (subjectFocus === null) {
-          // Handle explicit null case for random matches
-          return executeQuery(query.is('subject_focus', null));
-        } else if (subjectFocus !== undefined) {
-          // Handle specific subject focus
-          return executeQuery(query.eq('subject_focus', subjectFocus));
-        }
+      // Apply subject focus filter based on conditions
+      if (columnsError) {
+        // If there was an error checking columns, just use the base query
+        return executeQuery(baseQuery);
       }
       
-      // Execute without subject focus filter
-      return executeQuery(query);
+      // Add subject focus filter if provided
+      if (subjectFocus === null) {
+        // Explicit null for random matches
+        return executeQuery(baseQuery.is('subject_focus', null));
+      } else if (subjectFocus !== undefined) {
+        // Specific subject focus
+        return executeQuery(baseQuery.eq('subject_focus', subjectFocus));
+      }
+      
+      // Default case - no subject filter
+      return executeQuery(baseQuery);
       
     } catch (error) {
       console.error('Error finding waiting match:', error);
@@ -45,7 +56,7 @@ export const useMatchCreation = () => {
   }, []);
 
   // Helper function to execute the query and extract the first match ID
-  const executeQuery = async (query: any): Promise<string | null> => {
+  const executeQuery = async (query: PostgrestFilterBuilder<any, any, any>): Promise<string | null> => {
     const { data: waitingMatches, error } = await query;
     
     if (error) {
