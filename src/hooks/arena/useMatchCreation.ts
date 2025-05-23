@@ -17,22 +17,28 @@ export const useMatchCreation = () => {
         console.error('Error checking arena_matches schema:', columnsError);
       }
 
-      // Define and execute query based on conditions
-      let query = supabase
+      // Build the query step by step with explicit typing to avoid deep type instantiation
+      const query = supabase
         .from('arena_matches')
-        .select('id')
-        .eq('status', 'waiting')
-        .order('created_at', { ascending: false })
-        .limit(5);
+        .select('id');
+        
+      // Add where clause for status
+      query.eq('status', 'waiting');
+      
+      // Add ordering
+      query.order('created_at', { ascending: false });
+      
+      // Add limit
+      query.limit(5);
       
       // Apply subject focus filter if schema supports it and filter is provided
       if (!columnsError) {
         if (subjectFocus === null) {
           // Explicit null for random matches
-          query = query.is('subject_focus', null);
+          query.is('subject_focus', null);
         } else if (subjectFocus !== undefined) {
           // Specific subject focus
-          query = query.eq('subject_focus', subjectFocus);
+          query.eq('subject_focus', subjectFocus);
         }
       }
       
