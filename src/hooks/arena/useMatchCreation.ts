@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { v4 as uuidv4 } from '@/lib/uuid';
 import { supabase } from '@/integrations/supabase/client';
-import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
+import { PostgrestFilterBuilder } from '@supabase/supabase-js';
 
 export const useMatchCreation = () => {
   const findWaitingMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
