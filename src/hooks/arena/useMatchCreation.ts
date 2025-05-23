@@ -1,7 +1,7 @@
+
 import { useCallback } from 'react';
 import { v4 as uuidv4 } from '@/lib/uuid';
 import { supabase } from '@/integrations/supabase/client';
-import { PostgrestFilterBuilder } from '@supabase/supabase-js';
 
 export const useMatchCreation = () => {
   const findWaitingMatch = useCallback(async (subjectFocus?: string | null): Promise<string | null> => {
@@ -17,29 +17,23 @@ export const useMatchCreation = () => {
         console.error('Error checking arena_matches schema:', columnsError);
       }
 
-      // Define base query
-      const baseQuery = supabase
+      // Define and execute query based on conditions
+      let query = supabase
         .from('arena_matches')
         .select('id')
         .eq('status', 'waiting')
         .order('created_at', { ascending: false })
         .limit(5);
       
-      // Apply subject focus filter based on conditions
-      let query;
-      
-      if (columnsError) {
-        // If there was an error checking columns, just use the base query
-        query = baseQuery;
-      } else if (subjectFocus === null) {
-        // Explicit null for random matches
-        query = baseQuery.is('subject_focus', null);
-      } else if (subjectFocus !== undefined) {
-        // Specific subject focus
-        query = baseQuery.eq('subject_focus', subjectFocus);
-      } else {
-        // Default case - no subject filter
-        query = baseQuery;
+      // Apply subject focus filter if schema supports it and filter is provided
+      if (!columnsError) {
+        if (subjectFocus === null) {
+          // Explicit null for random matches
+          query = query.is('subject_focus', null);
+        } else if (subjectFocus !== undefined) {
+          // Specific subject focus
+          query = query.eq('subject_focus', subjectFocus);
+        }
       }
       
       // Execute the final query
