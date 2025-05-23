@@ -2,6 +2,8 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Brain } from 'lucide-react';
 
 interface QuestionViewProps {
   question: string;
@@ -9,6 +11,7 @@ interface QuestionViewProps {
   subjectArea?: string | null;
   difficulty?: string | null;
   isPreloaded?: boolean;
+  memoryStrength?: number | null;
 }
 
 const QuestionView: React.FC<QuestionViewProps> = ({ 
@@ -16,7 +19,8 @@ const QuestionView: React.FC<QuestionViewProps> = ({
   onShowAnswer, 
   subjectArea, 
   difficulty, 
-  isPreloaded 
+  isPreloaded,
+  memoryStrength
 }) => {
   return (
     <div className="space-y-4">
@@ -37,6 +41,18 @@ const QuestionView: React.FC<QuestionViewProps> = ({
               Preloaded
             </Badge>
           )}
+        </div>
+      )}
+
+      {memoryStrength !== null && (
+        <div className="mb-2">
+          <div className="flex items-center justify-between mb-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Brain className="h-3 w-3" /> Memory Strength
+            </span>
+            <span>{Math.round(memoryStrength)}%</span>
+          </div>
+          <Progress value={memoryStrength} className="h-1" />
         </div>
       )}
 

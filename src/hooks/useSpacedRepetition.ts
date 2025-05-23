@@ -1,13 +1,58 @@
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { calculateNextReview, UserPerformanceMetrics } from '@/utils/spacedRepetition';
 
 export const useSpacedRepetition = (flashcardId: string) => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [userMetrics, setUserMetrics] = useState<UserPerformanceMetrics | null>(null);
   const { toast } = useToast();
 
-  const submitReview = async (wasCorrect: boolean, responseTimeMs?: number) => {
+  // Fetch user performance metrics for RL fine-tuning
+  useEffect(() => {
+    const fetchUserMetrics = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        // Get user's flashcard statistics
+        const { data: stats } = await supabase
+          .from('flashcard_statistics')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (stats) {
+          // Calculate average response time from recent reviews
+          const { data: reviews } = await supabase
+            .from('flashcard_reviews')
+            .select('response_time_ms')
+            .eq('user_id', user.id)
+            .order('review_time', { ascending: false })
+            .limit(50);
+          
+          const validResponseTimes = reviews?.filter(r => r.response_time_ms) || [];
+          const avgResponseTime = validResponseTimes.length > 0 
+            ? validResponseTimes.reduce((sum, r) => sum + (r.response_time_ms || 0), 0) / validResponseTimes.length 
+            : 3000; // Default if no data
+          
+          setUserMetrics({
+            averageResponseTimeMs: avgResponseTime,
+            retentionRate: stats.retention_rate || 90,
+            totalReviews: stats.total_reviews || 0,
+            streakDays: stats.streak_days || 0
+          });
+        }
+      } catch (error) {
+        console.error('Error loading user metrics:', error);
+      }
+    };
+    
+    fetchUserMetrics();
+  }, []);
+
+  const submitReview = useCallback(async (wasCorrect: boolean, responseTimeMs?: number) => {
     setIsSubmitting(true);
 
     try {
@@ -36,52 +81,41 @@ export const useSpacedRepetition = (flashcardId: string) => {
       // 2. Get the current card data
       const { data: card, error: fetchError } = await supabase
         .from('flashcards')
-        .select('easiness_factor, consecutive_correct_answers')
+        .select('easiness_factor, consecutive_correct_answers, last_reviewed_at')
         .eq('id', flashcardId)
         .single();
 
       if (fetchError) throw fetchError;
 
-      // 3. Calculate new values based on the SM-2 algorithm
-      let easinessFactor = card.easiness_factor || 2.5;
-      let consecutiveCorrect = card.consecutive_correct_answers || 0;
-      let intervalDays = 1;
-
-      if (wasCorrect) {
-        consecutiveCorrect += 1;
-        
-        // Apply SM-2 algorithm
-        if (consecutiveCorrect === 1) {
-          intervalDays = 1;
-        } else if (consecutiveCorrect === 2) {
-          intervalDays = 6;
-        } else {
-          // For subsequent reviews, use the full algorithm
-          intervalDays = Math.round((card.consecutive_correct_answers || 0) * easinessFactor);
-          easinessFactor = Math.max(1.3, easinessFactor + (0.1 - (5 - 5) * (0.08 + (5 - 5) * 0.02)));
-        }
-      } else {
-        // If incorrect, reset the consecutive counter and reduce easiness
-        consecutiveCorrect = 0;
-        easinessFactor = Math.max(1.3, easinessFactor - 0.2);
-        intervalDays = 1; // Review tomorrow
-      }
+      // 3. Calculate new values based on the enhanced SM-2⁺ algorithm with RL policy
+      const result = calculateNextReview(
+        card.consecutive_correct_answers || 0,
+        card.easiness_factor || 2.5,
+        wasCorrect,
+        responseTimeMs,
+        userMetrics || undefined
+      );
 
       // 4. Update the flashcard with new values
-      const nextReviewDate = new Date();
-      nextReviewDate.setDate(nextReviewDate.getDate() + intervalDays);
-
       const { error: updateError } = await supabase
         .from('flashcards')
         .update({
           last_reviewed_at: new Date().toISOString(),
-          next_review_at: nextReviewDate.toISOString(),
-          easiness_factor: easinessFactor,
-          consecutive_correct_answers: consecutiveCorrect
+          next_review_at: result.nextReviewDate.toISOString(),
+          easiness_factor: result.easinessFactor,
+          consecutive_correct_answers: result.consecutiveCorrect
         })
         .eq('id', flashcardId);
 
       if (updateError) throw updateError;
+      
+      // 5. Run the function to update daily stats (this triggers the DB function)
+      try {
+        await supabase.rpc('update_daily_flashcard_stats', { user_id_param: user.id });
+      } catch (rpcError) {
+        // Non-critical error, just log it
+        console.error('Error updating daily stats:', rpcError);
+      }
 
       return true;
     } catch (error) {
@@ -95,7 +129,7 @@ export const useSpacedRepetition = (flashcardId: string) => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [flashcardId, toast, userMetrics]);
 
   return { submitReview, isSubmitting };
 };
