@@ -11,7 +11,9 @@ export class LLMRouter {
       costPerToken: 0.00003,
       maxTokens: 8192,
       capabilities: ['reasoning', 'coding', 'analysis'],
-      isActive: true
+      isActive: true,
+      isAvailable: true,
+      latency: 'medium'
     },
     {
       id: 'claude-3',
@@ -20,7 +22,9 @@ export class LLMRouter {
       costPerToken: 0.000015,
       maxTokens: 100000,
       capabilities: ['reasoning', 'analysis', 'creative'],
-      isActive: true
+      isActive: true,
+      isAvailable: true,
+      latency: 'low'
     },
     {
       id: 'llama-3',
@@ -29,19 +33,19 @@ export class LLMRouter {
       costPerToken: 0.000005,
       maxTokens: 4096,
       capabilities: ['general', 'coding'],
-      isActive: true
+      isActive: true,
+      isAvailable: true,
+      latency: 'high'
     }
   ];
 
   public async selectModel(request: RouterRequest): Promise<ModelSelectionResult> {
-    const availableModels = this.models.filter(model => model.isActive);
+    const availableModels = this.models.filter(model => model.isActive && model.isAvailable);
     
-    // Simple selection logic based on request parameters
-    let selectedModel = availableModels[0]; // Default
+    let selectedModel = availableModels[0];
     let confidence = 0.7;
     const reasoningTrace: string[] = [];
 
-    // Cost-sensitive routing
     if (request.costSensitivity === 'high') {
       selectedModel = availableModels.reduce((cheapest, current) => 
         current.costPerToken < cheapest.costPerToken ? current : cheapest
@@ -50,7 +54,6 @@ export class LLMRouter {
       reasoningTrace.push('Selected cheapest model due to high cost sensitivity');
     }
 
-    // Complexity-based routing
     if (request.complexity === 'high') {
       const highCapabilityModels = availableModels.filter(m => 
         m.capabilities.includes('reasoning') || m.capabilities.includes('analysis')
@@ -72,10 +75,37 @@ export class LLMRouter {
       confidence,
       fallbackOptions,
       reasoningTrace,
-      estimatedCost: selectedModel.costPerToken * 1000, // Estimate for 1000 tokens
-      estimatedLatency: 2000, // 2 seconds estimate
+      estimatedCost: selectedModel.costPerToken * 1000,
+      estimatedLatency: 2000,
       specializedCapabilities: selectedModel.capabilities
     };
+  }
+
+  public getDetailedSelection(request: RouterRequest): ModelSelectionResult {
+    return {
+      modelId: 'gpt-4',
+      confidence: 0.8,
+      fallbackOptions: ['claude-3'],
+      reasoningTrace: ['Default selection'],
+      estimatedCost: 0.03,
+      estimatedLatency: 2000,
+      specializedCapabilities: ['reasoning']
+    };
+  }
+
+  public logSelection(
+    modelId: string, 
+    request: RouterRequest, 
+    success: boolean, 
+    processingTime?: number, 
+    rating?: number
+  ): void {
+    console.log(`LLM Router: Model ${modelId} selection logged`, {
+      success,
+      processingTime,
+      rating,
+      request: request.query?.substring(0, 50)
+    });
   }
 
   public getAvailableModels(): LLMModel[] {
@@ -89,3 +119,6 @@ export class LLMRouter {
     }
   }
 }
+
+// Export singleton instance
+export const llmRouter = new LLMRouter();

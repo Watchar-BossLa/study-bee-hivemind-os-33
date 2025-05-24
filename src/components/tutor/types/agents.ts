@@ -24,6 +24,13 @@ export interface SpecializedAgent extends Agent {
   specializationDepth?: number;
   adaptability?: number;
   collaborationScore?: number;
+  performanceHistory?: {
+    lastInteractions: Array<{
+      timestamp: Date;
+      confidenceScore: number;
+      topicId: string;
+    }>;
+  };
 }
 
 export interface AgentPerformanceMetrics {
@@ -64,6 +71,20 @@ export interface UserInteraction {
   timestamp: Date;
   feedbackRating?: number;
   contextData?: Record<string, any>;
+  userFeedback?: {
+    rating: number;
+    comments?: string;
+    helpfulAgents?: string[];
+  };
+  context?: {
+    topicId?: string;
+    userSkillLevel?: string;
+    complexity?: string;
+    additionalContext?: string;
+    activePath?: string;
+    userId?: string;
+    preferredModality?: string;
+  };
 }
 
 export interface LLMModel {
@@ -74,6 +95,8 @@ export interface LLMModel {
   maxTokens: number;
   capabilities: string[];
   isActive: boolean;
+  isAvailable?: boolean;
+  latency?: 'low' | 'medium' | 'high';
 }
 
 export interface LearningPath {
@@ -107,6 +130,7 @@ export interface Plan {
   status: 'draft' | 'approved' | 'in-progress' | 'completed' | 'rejected';
   createdAt: Date;
   createdBy: string;
+  members?: string[];
 }
 
 export interface DeliberationResult {

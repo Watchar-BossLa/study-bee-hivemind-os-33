@@ -1,11 +1,10 @@
 
-import { SpecializedAgent } from './agents';
-
 export interface CouncilVote {
   agentId: string;
-  confidence: number;
-  suggestion: string;
+  vote: 'approve' | 'reject' | 'abstain';
   reasoning: string;
+  confidence?: number;
+  timestamp?: Date;
 }
 
 export interface CouncilDecision {
@@ -14,87 +13,35 @@ export interface CouncilDecision {
   consensus: string;
   confidenceScore: number;
   timestamp: Date;
+  securityAnalysis?: {
+    riskLevel: number;
+    recommendations: string[];
+    threadId?: string;
+  };
   plan?: {
     id: string;
     title: string;
     taskCount: number;
     memberCount: number;
   };
-  securityAnalysis?: {
-    riskLevel: number;
-    recommendations: string[];
-    threadId?: string;
-  };
 }
 
-export interface Council {
-  id: string;
-  agents: SpecializedAgent[];
-  description?: string;
-  capabilities?: string[];
-  externalIntegrations?: string[];
-}
-
-export interface AutogenThread {
-  id: string;
-  agents: string[];
-  messages: {
-    from: string;
-    content: string;
-    timestamp: Date;
-  }[];
-  status: 'active' | 'completed' | 'failed';
-  topic: string;
-  maxTurns?: number;
-  currentTurn?: number;
-  securityContext?: {
-    threatModel: string;
-    vulnerabilityChecklist: string[];
-    mitigations: string[];
-  };
-}
-
-export interface LangChainTemplate {
+export interface CouncilMember {
   id: string;
   name: string;
-  template: string;
-  inputVariables: string[];
-  outputParser?: string;
-  rateLimits?: {
-    maxRequestsPerMinute: number;
-    maxTokensPerRequest: number;
-    costPerToken: number;
-  };
+  role: string;
+  specialization: string[];
+  votingWeight: number;
+  isActive: boolean;
 }
 
-export interface AgentMessageExchange {
-  from: string;
-  to: string;
-  content: string;
-  timestamp: Date;
-  protocol: string;
-  metrics?: {
-    latencyMs: number;
-    tokenCount?: number;
-    success: boolean;
-  };
-}
-
-export interface SwarmTask {
+export interface CouncilSession {
   id: string;
-  description: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  assignedAgents: string[];
-  result?: any;
-  processingTimeMs?: number;
-  parentTaskId?: string;
-}
-
-export interface SwarmMetrics {
-  timestamp: Date;
-  tasksExecuted: number;
-  averageTaskTimeMs: number;
-  successRate: number;
-  fanoutFactor: number;
-  tokenUsage: number;
+  councilId: string;
+  topic: string;
+  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  startTime: Date;
+  endTime?: Date;
+  participants: string[];
+  decisions: CouncilDecision[];
 }

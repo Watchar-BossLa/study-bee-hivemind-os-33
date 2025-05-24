@@ -55,12 +55,18 @@ export class LearningPathService {
     return this.learningPaths.find(path => path.id === id);
   }
 
+  public getPathsByTopic(topicId: string): LearningPath[] {
+    return this.learningPaths.filter(path => 
+      path.name.toLowerCase().includes(topicId.toLowerCase()) ||
+      path.description.toLowerCase().includes(topicId.toLowerCase())
+    );
+  }
+
   public async createAdaptivePath(
     topic: string,
     userLevel: 'beginner' | 'intermediate' | 'advanced',
     goals: string[]
   ): Promise<LearningPath> {
-    // In a real implementation, this would use QuorumForge to generate a personalized path
     const pathId = `adaptive-${Date.now()}`;
     
     const adaptivePath: LearningPath = {
@@ -99,3 +105,6 @@ export class LearningPathService {
     return adaptivePath;
   }
 }
+
+// Export singleton instance  
+export const learningPathService = new LearningPathService(new QuorumForge());
