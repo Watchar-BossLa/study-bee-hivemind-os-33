@@ -1,128 +1,295 @@
 
 import { A2AOAuthHandler } from './A2AOAuthHandler';
 
-interface ExternalAgent {
+export interface AgentMessage {
+  id: string;
+  fromAgent: string;
+  toAgent: string;
+  type: 'request' | 'response' | 'notification';
+  payload: any;
+  timestamp: number;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+}
+
+export interface AgentEndpoint {
   id: string;
   name: string;
   capabilities: string[];
   url: string;
+  status: 'online' | 'offline' | 'busy';
+  lastSeen: number;
 }
 
-interface CapabilityAdvertisement {
-  capability: string;
-  description: string;
-  parameters?: Record<string, any>;
-}
-
+/**
+ * Agent-to-Agent Communication Hub using JSON-RPC and Server-Sent Events
+ */
 export class AgentToAgentHub {
-  private localCapabilities: CapabilityAdvertisement[] = [];
-  private externalAgents: ExternalAgent[] = [];
-  private activeConnections: Set<string> = new Set();
-  private oauthHandler?: A2AOAuthHandler;
+  private endpoints: Map<string, AgentEndpoint> = new Map();
+  private messageQueue: AgentMessage[] = [];
+  private subscribers: Map<string, EventSource[]> = new Map();
+  private oauthHandler: A2AOAuthHandler;
+  private isRunning = false;
   
-  constructor(oauthHandler?: A2AOAuthHandler) {
+  constructor(oauthHandler: A2AOAuthHandler) {
     this.oauthHandler = oauthHandler;
-    // Initialize with mock external agents
-    this.initializeMockAgents();
-    console.log('A2A Hub initialized with OAuth-PKCE security');
   }
   
-  private initializeMockAgents(): void {
-    this.externalAgents = [
-      {
-        id: 'math-expert-1',
-        name: 'External Math Tutor',
-        capabilities: ['advanced-mathematics', 'calculus-explanation', 'equation-solving'],
-        url: 'https://api.example.com/a2a/math-expert'
-      },
-      {
-        id: 'language-tutor-1',
-        name: 'Language Learning Assistant',
-        capabilities: ['language-translation', 'grammar-correction', 'vocabulary-building'],
-        url: 'https://api.example.com/a2a/language-tutor'
+  /**
+   * Start the A2A hub server
+   */
+  public async start(port: number = 8080): Promise<void> {
+    if (this.isRunning) {
+      console.warn('Agent-to-Agent Hub is already running');
+      return;
+    }
+    
+    console.log(`Starting Agent-to-Agent Hub on port ${port}`);
+    
+    // Initialize message processing
+    this.startMessageProcessing();
+    
+    // Start endpoint health monitoring
+    this.startHealthMonitoring();
+    
+    this.isRunning = true;
+    console.log('Agent-to-Agent Hub started successfully');
+  }
+  
+  /**
+   * Stop the A2A hub
+   */
+  public async stop(): Promise<void> {
+    if (!this.isRunning) {
+      return;
+    }
+    
+    console.log('Stopping Agent-to-Agent Hub');
+    
+    // Close all SSE connections
+    for (const [agentId, eventSources] of this.subscribers) {
+      eventSources.forEach(es => es.close());
+    }
+    this.subscribers.clear();
+    
+    this.isRunning = false;
+    console.log('Agent-to-Agent Hub stopped');
+  }
+  
+  /**
+   * Register an agent endpoint
+   */
+  public async registerAgent(endpoint: Omit<AgentEndpoint, 'lastSeen'>): Promise<boolean> {
+    try {
+      // Verify authentication
+      const isAuthorized = await this.oauthHandler.verifyToken('dummy-token');
+      if (!isAuthorized) {
+        console.error(`Authentication failed for agent: ${endpoint.id}`);
+        return false;
       }
-    ];
+      
+      const fullEndpoint: AgentEndpoint = {
+        ...endpoint,
+        lastSeen: Date.now()
+      };
+      
+      this.endpoints.set(endpoint.id, fullEndpoint);
+      
+      console.log(`Agent registered: ${endpoint.id}`);
+      
+      // Notify other agents about the new endpoint
+      await this.broadcastAgentUpdate('agent_registered', fullEndpoint);
+      
+      return true;
+    } catch (error) {
+      console.error(`Failed to register agent ${endpoint.id}:`, error);
+      return false;
+    }
   }
   
-  public registerCapabilities(capabilities: string[]): void {
-    this.localCapabilities = capabilities.map(cap => ({
-      capability: cap,
-      description: `Provider of ${cap} services`
-    }));
-    
-    console.log(`Registered ${capabilities.length} capabilities with A2A Hub`);
-  }
-  
-  public async discoverCapabilities(): Promise<CapabilityAdvertisement[]> {
-    // In a real implementation, this would discover capabilities from other agents
-    const externalCapabilities = this.externalAgents.flatMap(agent => 
-      agent.capabilities.map(cap => ({
-        capability: cap,
-        description: `Provided by ${agent.name}`,
-        provider: agent.id
-      }))
-    );
-    
-    return [...this.localCapabilities, ...externalCapabilities];
-  }
-  
-  public async sendMessage(
-    agentId: string,
-    message: string,
-    requiredCapabilities: string[] = []
-  ): Promise<any> {
-    // Find the external agent
-    const agent = this.externalAgents.find(a => a.id === agentId);
-    if (!agent) {
-      throw new Error(`Agent ${agentId} not found`);
+  /**
+   * Unregister an agent endpoint
+   */
+  public async unregisterAgent(agentId: string): Promise<boolean> {
+    const endpoint = this.endpoints.get(agentId);
+    if (!endpoint) {
+      return false;
     }
     
-    // Check if the agent has the required capabilities
-    const hasRequiredCapabilities = requiredCapabilities.every(cap => 
-      agent.capabilities.includes(cap)
-    );
+    this.endpoints.delete(agentId);
     
-    if (requiredCapabilities.length > 0 && !hasRequiredCapabilities) {
-      throw new Error(`Agent ${agentId} does not have all required capabilities`);
+    // Close SSE connections for this agent
+    const eventSources = this.subscribers.get(agentId);
+    if (eventSources) {
+      eventSources.forEach(es => es.close());
+      this.subscribers.delete(agentId);
     }
     
-    // Get authentication headers if OAuth handler exists
-    let headers: Record<string, string> = {
-      'Content-Type': 'application/json'
+    console.log(`Agent unregistered: ${agentId}`);
+    
+    // Notify other agents
+    await this.broadcastAgentUpdate('agent_unregistered', endpoint);
+    
+    return true;
+  }
+  
+  /**
+   * Send a message between agents
+   */
+  public async sendMessage(message: Omit<AgentMessage, 'id' | 'timestamp'>): Promise<boolean> {
+    const fullMessage: AgentMessage = {
+      ...message,
+      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      timestamp: Date.now()
     };
     
-    if (this.oauthHandler) {
-      headers = await this.oauthHandler.createAuthHeaders();
+    // Verify sender and receiver exist
+    const fromEndpoint = this.endpoints.get(message.fromAgent);
+    const toEndpoint = this.endpoints.get(message.toAgent);
+    
+    if (!fromEndpoint) {
+      console.error(`Sender agent not found: ${message.fromAgent}`);
+      return false;
     }
     
-    // Track the connection
-    this.activeConnections.add(agentId);
+    if (!toEndpoint) {
+      console.error(`Receiver agent not found: ${message.toAgent}`);
+      return false;
+    }
     
-    // Simulate message exchange
-    console.log(`Sending message to external agent ${agentId}: ${message}`);
+    // Add to message queue
+    this.messageQueue.push(fullMessage);
     
-    // In a real implementation, this would make an actual API call
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Send immediately if receiver is online
+    if (toEndpoint.status === 'online') {
+      await this.deliverMessage(fullMessage);
+    }
     
-    // Simulate response
-    const response = {
-      agentId,
-      message: `Response from ${agent.name} regarding: ${message.substring(0, 30)}...`,
-      timestamp: new Date(),
-      capabilities: agent.capabilities
+    console.log(`Message queued: ${fullMessage.id} from ${message.fromAgent} to ${message.toAgent}`);
+    return true;
+  }
+  
+  /**
+   * Subscribe to messages for an agent
+   */
+  public subscribe(agentId: string): EventSource {
+    const eventSource = new EventSource(`/a2a/stream/${agentId}`);
+    
+    if (!this.subscribers.has(agentId)) {
+      this.subscribers.set(agentId, []);
+    }
+    this.subscribers.get(agentId)!.push(eventSource);
+    
+    console.log(`Agent ${agentId} subscribed to message stream`);
+    
+    return eventSource;
+  }
+  
+  /**
+   * Get all registered agents
+   */
+  public getAgents(): AgentEndpoint[] {
+    return Array.from(this.endpoints.values());
+  }
+  
+  /**
+   * Get agent by ID
+   */
+  public getAgent(agentId: string): AgentEndpoint | undefined {
+    return this.endpoints.get(agentId);
+  }
+  
+  /**
+   * Get pending messages for an agent
+   */
+  public getPendingMessages(agentId: string): AgentMessage[] {
+    return this.messageQueue.filter(msg => 
+      msg.toAgent === agentId && this.endpoints.get(agentId)?.status !== 'online'
+    );
+  }
+  
+  /**
+   * Process the message queue
+   */
+  private startMessageProcessing(): void {
+    setInterval(async () => {
+      const pendingMessages = [...this.messageQueue];
+      this.messageQueue = [];
+      
+      for (const message of pendingMessages) {
+        const toEndpoint = this.endpoints.get(message.toAgent);
+        if (toEndpoint && toEndpoint.status === 'online') {
+          await this.deliverMessage(message);
+        } else {
+          // Re-queue if recipient is still offline
+          this.messageQueue.push(message);
+        }
+      }
+    }, 1000);
+  }
+  
+  /**
+   * Deliver a message to an agent
+   */
+  private async deliverMessage(message: AgentMessage): Promise<void> {
+    const eventSources = this.subscribers.get(message.toAgent);
+    if (!eventSources || eventSources.length === 0) {
+      console.warn(`No subscribers for agent: ${message.toAgent}`);
+      return;
+    }
+    
+    const data = JSON.stringify(message);
+    
+    // Send to all event sources for this agent
+    eventSources.forEach(es => {
+      try {
+        // In a real implementation, this would send via SSE
+        console.log(`Delivering message to ${message.toAgent}:`, message);
+      } catch (error) {
+        console.error(`Failed to deliver message to ${message.toAgent}:`, error);
+      }
+    });
+  }
+  
+  /**
+   * Broadcast agent status updates
+   */
+  private async broadcastAgentUpdate(type: string, endpoint: AgentEndpoint): Promise<void> {
+    const notification: Omit<AgentMessage, 'id' | 'timestamp'> = {
+      fromAgent: 'hub',
+      toAgent: 'broadcast',
+      type: 'notification',
+      payload: {
+        type,
+        endpoint
+      },
+      priority: 'medium'
     };
     
-    // End the connection
-    this.activeConnections.delete(agentId);
-    
-    return response;
+    // Send to all agents except the one being updated
+    for (const [agentId] of this.endpoints) {
+      if (agentId !== endpoint.id) {
+        await this.sendMessage({
+          ...notification,
+          toAgent: agentId
+        });
+      }
+    }
   }
   
-  public getActiveConnections(): string[] {
-    return Array.from(this.activeConnections);
-  }
-  
-  public getExternalAgents(): ExternalAgent[] {
-    return this.externalAgents;
+  /**
+   * Monitor endpoint health
+   */
+  private startHealthMonitoring(): void {
+    setInterval(() => {
+      const now = Date.now();
+      const healthTimeout = 60000; // 1 minute
+      
+      for (const [agentId, endpoint] of this.endpoints) {
+        if (now - endpoint.lastSeen > healthTimeout) {
+          console.warn(`Agent ${agentId} appears to be offline`);
+          endpoint.status = 'offline';
+        }
+      }
+    }, 30000); // Check every 30 seconds
   }
 }

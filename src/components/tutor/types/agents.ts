@@ -1,108 +1,65 @@
 
-export interface BaseAgent {
+export interface Agent {
   id: string;
   name: string;
-  role: string;
+  type: string;
   capabilities: string[];
-  status: 'idle' | 'busy' | 'error';
+  status: 'active' | 'inactive' | 'busy';
+  createdAt: Date;
 }
 
-export interface LLMModel {
-  id: string;
-  name: string;
-  provider: 'openai' | 'anthropic' | 'mistral' | 'llama' | 'local';
-  capabilities: string[];
-  costPerToken: number;
-  latency: 'low' | 'medium' | 'high';
-  maxTokens: number;
-  isAvailable: boolean;
-}
-
-export interface SpecializedAgent extends BaseAgent {
-  domain: string;
+export interface SpecializedAgent extends Agent {
+  specialization: string;
   expertise: string[];
-  performance: {
-    accuracy: number;
-    responseTime: number;
-    userFeedback: number;
-  };
-  adaptability?: number; // 0-1 score for how well the agent adapts to new domains
-  specializationDepth?: number; // 0-1 score for depth of specialization
-  collaborationScore?: number; // 0-1 score for agent collaboration effectiveness
-  performanceHistory?: {
-    lastInteractions: Array<{
-      timestamp: Date;
-      confidenceScore: number;
-      successRating?: number; // User rating if available
-      topicId: string;
-    }>;
-  };
+  confidenceLevel: number;
+  lastActive: Date;
 }
 
-export interface CouncilVote {
-  agentId: string;
-  confidence: number;
-  suggestion: string;
-  reasoning: string;
-}
-
-export interface CouncilDecision {
-  topic: string;
-  votes: CouncilVote[];
-  consensus: string;
-  confidenceScore: number;
-  timestamp: Date;
-}
-
-export interface LearningPath {
+export interface Council {
   id: string;
   name: string;
-  description: string;
-  topics: string[];
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  estimatedTimeHours: number;
-  prerequisites: string[];
-  recommendedAgents: string[];
+  topic: string;
+  agents: SpecializedAgent[];
+  createdAt: Date;
+  isActive: boolean;
 }
 
-export interface UserInteraction {
+export interface Message {
   id: string;
-  userId: string;
+  content: string;
+  role: 'user' | 'assistant';
   timestamp: Date;
-  message: string;
-  context: Record<string, any>;
-  agentResponses: {
+  metadata?: Record<string, any>;
+}
+
+export interface Plan {
+  id: string;
+  title: string;
+  description: string;
+  tasks: Array<{
+    id: string;
+    title: string;
+    description: string;
+    priority: number;
+    status: 'pending' | 'in-progress' | 'completed' | 'failed';
+    estimatedTime: number;
+  }>;
+  status: 'draft' | 'approved' | 'in-progress' | 'completed' | 'rejected';
+  createdAt: Date;
+  createdBy: string;
+}
+
+export interface DeliberationResult {
+  id: string;
+  topic: string;
+  consensusResponse: string;
+  confidence: number;
+  participatingAgents: string[];
+  votes: Array<{
     agentId: string;
-    response: string;
-    modelUsed: string;
-    confidenceScore: number;
-    processingTimeMs: number;
-  }[];
-  securityAnalysis?: {
-    riskLevel: number;
-    recommendations: string[];
-    threadId?: string;
-  };
-  userFeedback?: {
-    rating: number;
-    comments?: string;
-    helpfulAgents?: string[];
-  };
-}
-
-export interface AgentPerformanceMetrics {
-  overallAccuracy: number;
-  userFeedbackAverage: number;
-  responseTimeAverage: number;
-  domainSpecificPerformance: Record<string, number>;
-  topicPerformance: Record<string, number>;
-  improvementRate: number;
-  lastUpdated: Date;
-}
-
-export interface AgentCollaboration {
-  primaryAgentId: string;
-  secondaryAgentIds: string[];
-  synergisticTopics: string[];
-  collaborativeScore: number;
+    vote: 'approve' | 'reject' | 'abstain';
+    reasoning: string;
+  }>;
+  recommendations: string[];
+  timestamp: Date;
 }

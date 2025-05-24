@@ -1,243 +1,335 @@
 
-import { CouncilService } from '../CouncilService';
-import { Plan } from './PydanticSchemaModels';
-import { v4 as uuidv4 } from '@/lib/uuid';
-import { Agent } from '../../types/agents';
 import { LLMRouter } from '../LLMRouter';
 
+export interface Agent {
+  id: string;
+  name: string;
+  role: string;
+  goal: string;
+  backstory: string;
+  capabilities: string[];
+  llmModel: string;
+}
+
+export interface Task {
+  id: string;
+  description: string;
+  agent: Agent;
+  dependencies: string[];
+  expectedOutput: string;
+  tools: string[];
+}
+
+export interface Crew {
+  id: string;
+  name: string;
+  agents: Agent[];
+  tasks: Task[];
+  process: 'sequential' | 'hierarchical';
+  manager?: Agent;
+}
+
 /**
- * CrewAI - Advanced planning framework with role-based agents
- * Implements the crewai-senior feature from QuorumForge OS spec
+ * CrewAI Integration for multi-agent coordination and task execution
  */
 export class CrewAI {
-  private councilService: CouncilService;
-  private router: LLMRouter;
-  private activeCrews: Map<string, CrewInstance> = new Map();
+  private llmRouter: LLMRouter;
+  private crews: Map<string, Crew> = new Map();
+  private activeExecutions: Map<string, any> = new Map();
   
-  constructor(councilService: CouncilService, router: LLMRouter) {
-    this.councilService = councilService;
-    this.router = router;
-    
-    console.log('CrewAI framework initialized for plan generation');
+  constructor(llmRouter: LLMRouter) {
+    this.llmRouter = llmRouter;
   }
   
   /**
-   * Create a crew with specific roles and goals
+   * Create a new agent
    */
-  public async createCrew(
-    name: string,
-    councilId: string,
-    goal: string,
-    context: Record<string, any> = {}
-  ): Promise<CrewInstance> {
-    const council = this.councilService.getCouncil(councilId);
-    if (!council) {
-      throw new Error(`Council ${councilId} not found`);
-    }
-    
-    const crewId = uuidv4();
-    const crew: CrewInstance = {
-      id: crewId,
-      name,
-      goal,
-      agents: council.map(agent => this.convertToCrewAgent(agent)),
-      tasks: [],
-      workflow: 'sequential', // default workflow
-      planId: null,
-      context,
-      status: 'created',
-      createdAt: new Date(),
+  public createAgent(config: Omit<Agent, 'id'>): Agent {
+    const agent: Agent = {
+      id: `agent-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      ...config
     };
     
-    this.activeCrews.set(crewId, crew);
-    console.log(`Crew "${name}" created with ${council.length} agents`);
+    console.log(`Created CrewAI agent: ${agent.id} (${agent.role})`);
+    return agent;
+  }
+  
+  /**
+   * Create a new task
+   */
+  public createTask(config: Omit<Task, 'id'>): Task {
+    const task: Task = {
+      id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      ...config
+    };
     
+    console.log(`Created CrewAI task: ${task.id}`);
+    return task;
+  }
+  
+  /**
+   * Create a new crew
+   */
+  public createCrew(config: Omit<Crew, 'id'>): Crew {
+    const crew: Crew = {
+      id: `crew-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      ...config
+    };
+    
+    this.crews.set(crew.id, crew);
+    
+    console.log(`Created CrewAI crew: ${crew.id} with ${crew.agents.length} agents and ${crew.tasks.length} tasks`);
     return crew;
   }
   
   /**
-   * Add roles and goals to agents in the crew
+   * Execute a crew's tasks
    */
-  public async assignRolesAndGoals(
-    crewId: string, 
-    assignments: Array<{
+  public async kickoff(crewId: string, inputs?: Record<string, any>): Promise<{
+    success: boolean;
+    results: Array<{
+      taskId: string;
+      result: string;
       agentId: string;
-      role: string;
-      goals: string[];
-    }>
-  ): Promise<CrewInstance> {
-    const crew = this.activeCrews.get(crewId);
+      executionTime: number;
+    }>;
+    totalTime: number;
+    errors?: string[];
+  }> {
+    const crew = this.crews.get(crewId);
     if (!crew) {
-      throw new Error(`Crew ${crewId} not found`);
+      throw new Error(`Crew not found: ${crewId}`);
     }
     
-    // Assign roles and goals to agents
-    assignments.forEach(assignment => {
-      const agent = crew.agents.find(a => a.id === assignment.agentId);
-      if (agent) {
-        agent.role = assignment.role;
-        agent.goals = assignment.goals;
-      }
+    console.log(`Starting CrewAI execution for crew: ${crewId}`);
+    
+    const startTime = Date.now();
+    const results: any[] = [];
+    const errors: string[] = [];
+    
+    this.activeExecutions.set(crewId, {
+      startTime,
+      status: 'running'
     });
     
-    this.activeCrews.set(crewId, crew);
-    return crew;
-  }
-  
-  /**
-   * Generate a plan using the crew
-   */
-  public async generatePlan(crewId: string): Promise<Plan> {
-    const crew = this.activeCrews.get(crewId);
-    if (!crew) {
-      throw new Error(`Crew ${crewId} not found`);
-    }
-    
-    console.log(`Generating plan for crew: ${crew.name}`);
-    
-    // Use the first agent with a "planner" role, or the first agent as fallback
-    const plannerAgent = crew.agents.find(agent => agent.role === 'planner') || crew.agents[0];
-    
-    // In a real implementation, this would call a specific LLM to generate the plan
-    // Here we'll simulate it with a basic plan structure
-    const planId = `plan_${uuidv4()}`;
-    const plan: Plan = {
-      id: planId,
-      title: `Plan for ${crew.goal}`,
-      type: 'action',
-      summary: `This plan addresses the goal: ${crew.goal}`,
-      tasks: [
-        {
-          id: `task_${planId}_1`,
-          description: `Analyze the requirements for ${crew.goal}`,
-          title: 'Requirements Analysis'
-        },
-        {
-          id: `task_${planId}_2`,
-          description: `Develop initial solution for ${crew.goal}`,
-          title: 'Solution Development'
-        },
-        {
-          id: `task_${planId}_3`,
-          description: `Test and validate the solution for ${crew.goal}`,
-          title: 'Testing & Validation'
-        },
-        {
-          id: `task_${planId}_4`,
-          description: `Implement final solution for ${crew.goal}`,
-          title: 'Implementation'
+    try {
+      if (crew.process === 'sequential') {
+        // Execute tasks sequentially
+        for (const task of crew.tasks) {
+          const taskResult = await this.executeTask(task, inputs);
+          results.push(taskResult);
+          
+          if (!taskResult.success) {
+            errors.push(`Task ${task.id} failed: ${taskResult.error}`);
+          }
         }
-      ],
-      members: crew.agents.map(agent => agent.id)
-    };
-    
-    // Update crew with plan ID
-    crew.planId = planId;
-    crew.status = 'planned';
-    this.activeCrews.set(crewId, crew);
-    
-    return plan;
-  }
-  
-  /**
-   * Execute the plan using the crew
-   */
-  public async executePlan(crewId: string): Promise<Record<string, any>> {
-    const crew = this.activeCrews.get(crewId);
-    if (!crew) {
-      throw new Error(`Crew ${crewId} not found`);
-    }
-    
-    if (!crew.planId) {
-      throw new Error(`Crew ${crewId} has no plan to execute`);
-    }
-    
-    console.log(`Executing plan for crew: ${crew.name}`);
-    
-    // In a real implementation, this would assign tasks to agents and execute them
-    // Here we'll simulate execution with task statuses
-    const results: Record<string, any> = {
-      planId: crew.planId,
-      executionStart: new Date(),
-      executionComplete: false,
-      taskResults: []
-    };
-    
-    // Assign tasks to agents and "execute" them
-    for (let i = 0; i < crew.agents.length && i < 4; i++) {
-      const taskId = `task_${crew.planId}_${i + 1}`;
+      } else if (crew.process === 'hierarchical') {
+        // Execute tasks with hierarchical coordination
+        const taskResults = await this.executeHierarchicalTasks(crew, inputs);
+        results.push(...taskResults);
+      }
       
-      // Simulate task execution by the agent
-      const taskResult = {
-        taskId,
-        agentId: crew.agents[i].id,
+      const totalTime = Date.now() - startTime;
+      
+      this.activeExecutions.set(crewId, {
+        startTime,
         status: 'completed',
-        result: `Task completed successfully by ${crew.agents[i].name}`,
-        startTime: new Date(),
-        endTime: new Date(Date.now() + 5000), // Simulated 5-second execution
+        totalTime
+      });
+      
+      return {
+        success: errors.length === 0,
+        results,
+        totalTime,
+        errors: errors.length > 0 ? errors : undefined
       };
       
-      results.taskResults.push(taskResult);
+    } catch (error) {
+      const totalTime = Date.now() - startTime;
+      
+      this.activeExecutions.set(crewId, {
+        startTime,
+        status: 'failed',
+        totalTime,
+        error: (error as Error).message
+      });
+      
+      throw error;
+    }
+  }
+  
+  /**
+   * Execute a single task
+   */
+  private async executeTask(task: Task, inputs?: Record<string, any>): Promise<{
+    taskId: string;
+    result: string;
+    agentId: string;
+    executionTime: number;
+    success: boolean;
+    error?: string;
+  }> {
+    const startTime = Date.now();
+    
+    try {
+      console.log(`Executing task ${task.id} with agent ${task.agent.id}`);
+      
+      // Prepare context for the agent
+      const context = {
+        task: task.description,
+        role: task.agent.role,
+        goal: task.agent.goal,
+        backstory: task.agent.backstory,
+        expectedOutput: task.expectedOutput,
+        inputs: inputs || {}
+      };
+      
+      // Use LLM Router to get response
+      const model = this.llmRouter.selectModel({
+        promptTokens: 500,
+        maxTokens: 1000,
+        priority: 'medium',
+        useCase: 'agent_task'
+      });
+      
+      // Simulate task execution
+      const prompt = `
+        You are ${task.agent.name}, a ${task.agent.role}.
+        
+        Background: ${task.agent.backstory}
+        Goal: ${task.agent.goal}
+        
+        Task: ${task.description}
+        Expected Output: ${task.expectedOutput}
+        
+        Additional Context: ${JSON.stringify(context.inputs)}
+        
+        Please complete this task according to your role and goal.
+      `;
+      
+      // In a real implementation, this would call the actual LLM
+      const result = `Task completed by ${task.agent.name}: ${task.description}`;
+      
+      const executionTime = Date.now() - startTime;
+      
+      return {
+        taskId: task.id,
+        result,
+        agentId: task.agent.id,
+        executionTime,
+        success: true
+      };
+      
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      
+      return {
+        taskId: task.id,
+        result: '',
+        agentId: task.agent.id,
+        executionTime,
+        success: false,
+        error: (error as Error).message
+      };
+    }
+  }
+  
+  /**
+   * Execute tasks in hierarchical mode
+   */
+  private async executeHierarchicalTasks(crew: Crew, inputs?: Record<string, any>): Promise<any[]> {
+    if (!crew.manager) {
+      throw new Error('Hierarchical process requires a manager agent');
     }
     
-    // Update execution status
-    results.executionComplete = true;
-    results.executionEnd = new Date();
+    console.log(`Executing hierarchical tasks with manager: ${crew.manager.id}`);
     
-    // Update crew status
-    crew.status = 'executed';
-    this.activeCrews.set(crewId, crew);
+    // Manager coordinates task execution
+    const results: any[] = [];
+    
+    // Sort tasks by dependencies
+    const sortedTasks = this.sortTasksByDependencies(crew.tasks);
+    
+    for (const task of sortedTasks) {
+      // Manager assigns task to appropriate agent
+      const assignedAgent = this.assignTaskToAgent(task, crew.agents);
+      
+      const taskWithAgent = { ...task, agent: assignedAgent };
+      const result = await this.executeTask(taskWithAgent, inputs);
+      
+      results.push(result);
+      
+      // Update inputs with task results for dependent tasks
+      if (inputs) {
+        inputs[`task_${task.id}_result`] = result.result;
+      }
+    }
     
     return results;
   }
   
   /**
-   * Convert a regular agent to a CrewAI agent
+   * Sort tasks by their dependencies
    */
-  private convertToCrewAgent(agent: Agent): CrewAgent {
-    return {
-      id: agent.id,
-      name: agent.name,
-      role: '',
-      goals: [],
-      backstory: agent.description || '',
-      capabilities: agent.capabilities || [],
+  private sortTasksByDependencies(tasks: Task[]): Task[] {
+    const sorted: Task[] = [];
+    const visited = new Set<string>();
+    
+    const visit = (task: Task) => {
+      if (visited.has(task.id)) {
+        return;
+      }
+      
+      // Visit dependencies first
+      for (const depId of task.dependencies) {
+        const depTask = tasks.find(t => t.id === depId);
+        if (depTask && !visited.has(depId)) {
+          visit(depTask);
+        }
+      }
+      
+      visited.add(task.id);
+      sorted.push(task);
     };
+    
+    for (const task of tasks) {
+      visit(task);
+    }
+    
+    return sorted;
   }
   
   /**
-   * Get all active crews
+   * Assign task to the most suitable agent
    */
-  public getActiveCrews(): CrewInstance[] {
-    return Array.from(this.activeCrews.values());
+  private assignTaskToAgent(task: Task, agents: Agent[]): Agent {
+    // Simple assignment based on capabilities
+    for (const agent of agents) {
+      if (agent.capabilities.some(cap => task.tools.includes(cap))) {
+        return agent;
+      }
+    }
+    
+    // Default to first agent if no specific match
+    return agents[0];
   }
   
   /**
-   * Get a specific crew by ID
+   * Get crew execution status
    */
-  public getCrew(crewId: string): CrewInstance | undefined {
-    return this.activeCrews.get(crewId);
+  public getExecutionStatus(crewId: string): any {
+    return this.activeExecutions.get(crewId);
   }
-}
-
-export interface CrewAgent {
-  id: string;
-  name: string;
-  role: string;
-  goals: string[];
-  backstory: string;
-  capabilities: string[];
-}
-
-export interface CrewInstance {
-  id: string;
-  name: string;
-  goal: string;
-  agents: CrewAgent[];
-  tasks: string[];
-  workflow: 'sequential' | 'hierarchical' | 'parallel';
-  planId: string | null;
-  context: Record<string, any>;
-  status: 'created' | 'planned' | 'executing' | 'executed' | 'failed';
-  createdAt: Date;
+  
+  /**
+   * Stop crew execution
+   */
+  public stopExecution(crewId: string): boolean {
+    const execution = this.activeExecutions.get(crewId);
+    if (execution && execution.status === 'running') {
+      execution.status = 'stopped';
+      return true;
+    }
+    return false;
+  }
 }

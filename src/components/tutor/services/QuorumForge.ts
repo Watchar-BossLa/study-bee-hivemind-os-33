@@ -1,391 +1,145 @@
 
-import { SpecializedAgent } from '../types/agents';
-import { LLMRouter } from './LLMRouter';
-import { CouncilService } from './CouncilService';
-import { DeliberationService } from './DeliberationService';
-import { InteractionService } from './InteractionService';
+import { SpecializedAgent, Council, Plan, DeliberationResult } from '../types/agents';
 import { AgentService } from './AgentService';
-import { allSpecializedAgents } from './SpecializedAgents';
-import { FrameworkManager } from './core/FrameworkManager';
-import { DeliberationManager } from './core/DeliberationManager';
-import { InteractionManager } from './core/InteractionManager';
-import { mcpCore, MCPCore } from './core/MCPCore';
-import { RedisEventBus, redisEventBus } from './core/RedisEventBus';
-import { createSeniorManagerGPT, SeniorManagerGPT } from './core/SeniorManagerGPT';
-import { createA2AHub, A2AHub } from './frameworks/A2AHub';
-import { createP2PHub, A2AP2PHub } from './frameworks/A2AP2PHub';
-import { A2AOAuthHandler } from './frameworks/A2AOAuthHandler';
-import { AgentCommunication } from './quorum-forge/AgentCommunication';
-import { AgentTaskManager } from './quorum-forge/AgentTaskManager';
-import { CouncilDeliberation } from './quorum-forge/CouncilDeliberation';
-import { UserInteractionManager } from './quorum-forge/UserInteractionManager';
-import { AgentRegistry } from './quorum-forge/AgentRegistry';
-import { SeniorManager } from './quorum-forge/SeniorManager';
-import { CrewAIPlanner } from './frameworks/CrewAIPlanner';
-import { SwarmMetricsService } from './metrics/SwarmMetricsService';
+import { LLMRouter } from './LLMRouter';
+import { DeliberationService } from './DeliberationService';
 
+/**
+ * QuorumForge - The main orchestrator for agent-based deliberation
+ */
 export class QuorumForge {
-  // Core services
-  private mcpCore: MCPCore;
-  private seniorManagerGPT: SeniorManagerGPT;
-  private a2aHub: A2AHub;
-  private a2aP2PHub: A2AP2PHub;
-  private eventBus: RedisEventBus;
-  private crewAIPlanner: CrewAIPlanner;
-  private swarmMetricsService: SwarmMetricsService;
-  
-  // Refactored modules
-  private agentCommunication: AgentCommunication;
-  private agentTaskManager: AgentTaskManager;
-  private councilDeliberation: CouncilDeliberation;
-  private userInteractionManager: UserInteractionManager;
-  private agentRegistry: AgentRegistry;
-  private seniorManager: SeniorManager;
-  
-  // Original services (kept for compatibility)
   private agentService: AgentService;
-  private councilService: CouncilService;
-  private frameworkManager: FrameworkManager;
-  private deliberationManager: DeliberationManager;
-  private interactionManager: InteractionManager;
+  private llmRouter: LLMRouter;
+  private deliberationService: DeliberationService;
   
-  constructor(
-    agents: SpecializedAgent[] = allSpecializedAgents, 
-    router: LLMRouter = new LLMRouter()
-  ) {
-    // Initialize services
-    this.agentService = new AgentService(agents);
-    this.councilService = new CouncilService(agents);
+  constructor(llmRouter: LLMRouter) {
+    this.llmRouter = llmRouter;
+    this.agentService = new AgentService(llmRouter);
+    this.deliberationService = new DeliberationService();
+  }
+  
+  /**
+   * Create a specialized council for a given topic
+   */
+  public async createCouncil(topic: string, agentTypes: string[]): Promise<Council> {
+    const agents: SpecializedAgent[] = [];
     
-    const deliberationService = new DeliberationService();
-    const interactionService = new InteractionService(router);
+    for (const agentType of agentTypes) {
+      const agent = await this.agentService.createAgent(agentType, topic);
+      if (agent) {
+        agents.push(agent);
+      }
+    }
     
-    // Initialize Redis EventBus
-    this.eventBus = redisEventBus;
+    const council: Council = {
+      id: `council-${Date.now()}`,
+      name: `${topic} Council`,
+      topic,
+      agents,
+      createdAt: new Date(),
+      isActive: true
+    };
     
-    // Initialize MCP-Core and related components
-    this.mcpCore = mcpCore;
-    const a2aOAuthHandler = new A2AOAuthHandler(this.eventBus);
-    this.a2aHub = createA2AHub(a2aOAuthHandler, this.mcpCore);
-    this.a2aP2PHub = createP2PHub(a2aOAuthHandler, this.eventBus, this.mcpCore);
-    this.seniorManagerGPT = createSeniorManagerGPT(this.mcpCore, this.councilService, router);
-    this.crewAIPlanner = new CrewAIPlanner(this.councilService, router);
-    this.swarmMetricsService = new SwarmMetricsService(this.eventBus);
+    return council;
+  }
+  
+  /**
+   * Run a deliberation process with a council
+   */
+  public async deliberate(council: Council, query: string): Promise<DeliberationResult> {
+    console.log(`Starting deliberation for council ${council.id} on query: ${query}`);
     
-    // Register all agents with MCP-Core
-    agents.forEach(agent => {
-      this.mcpCore.registerAgent(agent);
-    });
-    
-    // Initialize framework manager with A2A integration
-    this.frameworkManager = new FrameworkManager(this.councilService, router);
-    
-    // Initialize managers
-    this.deliberationManager = new DeliberationManager(
-      deliberationService,
-      this.councilService,
-      this.frameworkManager
+    // Generate initial responses from all agents
+    const agentResponses = await Promise.all(
+      council.agents.map(async (agent) => {
+        try {
+          const response = await this.agentService.getAgentResponse(agent, query);
+          return {
+            agentId: agent.id,
+            response,
+            confidence: Math.random() * 0.4 + 0.6 // Random confidence between 0.6-1.0
+          };
+        } catch (error) {
+          console.error(`Error getting response from agent ${agent.id}:`, error);
+          return {
+            agentId: agent.id,
+            response: 'I was unable to provide a response at this time.',
+            confidence: 0.1
+          };
+        }
+      })
     );
     
-    this.interactionManager = new InteractionManager(
-      interactionService,
-      this.councilService,
-      this.frameworkManager,
-      this.mcpCore
+    // Run deliberation process
+    const deliberationResult = await this.deliberationService.processDeliberation(
+      agentResponses,
+      query,
+      council.id
     );
     
-    // Integrate A2A Hub with MCP-Core
-    this.a2aHub.integrateMCPCore(this.mcpCore);
+    return deliberationResult;
+  }
+  
+  /**
+   * Create a plan based on deliberation results
+   */
+  public async createPlan(deliberationResult: DeliberationResult): Promise<Plan> {
+    const plan: Plan = {
+      id: `plan-${Date.now()}`,
+      title: `Action Plan for ${deliberationResult.topic}`,
+      description: deliberationResult.consensusResponse,
+      tasks: deliberationResult.recommendations.map((rec, index) => ({
+        id: `task-${index + 1}`,
+        title: `Task ${index + 1}`,
+        description: rec,
+        priority: index + 1,
+        status: 'pending' as const,
+        estimatedTime: 30
+      })),
+      status: 'draft' as const,
+      createdAt: new Date(),
+      createdBy: 'quorum-forge'
+    };
     
-    // Register local capabilities with A2A Hub
-    this.a2aHub.registerCapabilities([
-      'quorum-deliberation',
-      'agent-coordination',
-      'learning-path-design',
-      'adaptive-assessment',
-      'personalized-tutoring'
-    ]);
+    return plan;
+  }
+  
+  /**
+   * Execute a plan with the appropriate agents
+   */
+  public async executePlan(plan: Plan, council: Council): Promise<{
+    success: boolean;
+    results: Array<{ taskId: string; result: string; success: boolean }>;
+  }> {
+    console.log(`Executing plan ${plan.id} with council ${council.id}`);
     
-    // Initialize refactored modules
-    this.agentCommunication = new AgentCommunication(this.mcpCore, this.a2aHub);
-    this.agentTaskManager = new AgentTaskManager(this.mcpCore);
-    this.councilDeliberation = new CouncilDeliberation(this.deliberationManager);
-    this.userInteractionManager = new UserInteractionManager(this.interactionManager);
-    this.agentRegistry = new AgentRegistry(this.agentService, this.councilService);
-    this.seniorManager = new SeniorManager(this.seniorManagerGPT);
-    
-    console.log('QuorumForge initialized with MCP-Core and A2A Protocol');
-  }
-  
-  // ==========================================
-  // Agent Task Management via MCP-Core
-  // ==========================================
-  
-  /**
-   * Submit a task to be processed by a specific agent
-   */
-  public async submitAgentTask(
-    agentId: string,
-    taskType: string,
-    content: any,
-    priority: 'low' | 'normal' | 'high' | 'critical' = 'normal'
-  ): Promise<string> {
-    return this.agentTaskManager.submitAgentTask(agentId, taskType, content, priority);
-  }
-  
-  /**
-   * Get the status of a task
-   */
-  public getTaskStatus(taskId: string): { status: string; result?: any } {
-    return this.agentTaskManager.getTaskStatus(taskId);
-  }
-  
-  // ==========================================
-  // Agent-to-Agent Communication
-  // ==========================================
-  
-  /**
-   * Send a message from one agent to another
-   */
-  public async sendAgentMessage(
-    fromAgentId: string,
-    toAgentId: string,
-    message: any
-  ): Promise<string> {
-    return this.agentCommunication.sendAgentMessage(fromAgentId, toAgentId, message);
-  }
-  
-  // ==========================================
-  // External Agent Communication via A2A Hub
-  // ==========================================
-  
-  /**
-   * Communicate with an external agent through A2A protocol
-   */
-  public async communicateWithExternalAgent(
-    agentId: string, 
-    message: string, 
-    capabilities: string[]
-  ): Promise<any> {
-    return this.agentCommunication.communicateWithExternalAgent(agentId, message, capabilities);
-  }
-  
-  /**
-   * Route a message to any agent with the required capability
-   */
-  public async routeMessageByCapability(
-    capability: string,
-    message: any
-  ): Promise<any> {
-    return this.agentCommunication.routeMessageByCapability(capability, message);
-  }
-  
-  /**
-   * Discover available capabilities across all agents
-   */
-  public async discoverCapabilities(): Promise<string[]> {
-    return this.agentCommunication.discoverCapabilities();
-  }
-  
-  // ==========================================
-  // CrewAI Plan Management via SeniorManagerGPT
-  // ==========================================
-  
-  /**
-   * Create a plan for a topic using CrewAI
-   */
-  public async createPlan(
-    topic: string,
-    councilId: string,
-    context: Record<string, any> = {}
-  ): Promise<any> {
-    return this.seniorManagerGPT.createPlan(topic, councilId, context);
-  }
-  
-  /**
-   * Review a plan using SeniorManagerGPT
-   */
-  public async reviewPlan(plan: any, context: Record<string, any> = {}): Promise<any> {
-    return this.seniorManager.reviewPlan(plan, context);
-  }
-  
-  /**
-   * Execute a plan using CrewAI
-   */
-  public async executePlan(plan: any, context: Record<string, any> = {}): Promise<any> {
-    return this.seniorManagerGPT.executePlan(plan, context);
-  }
-  
-  // ==========================================
-  // Council Deliberation
-  // ==========================================
-  
-  /**
-   * Deliberate on a topic using a council
-   */
-  public async deliberate(
-    councilId: string, 
-    topic: string, 
-    context: Record<string, any>,
-    maxTurns: number = 3, 
-    consensusThreshold: number = 0.8
-  ): Promise<any> {
-    return this.councilDeliberation.deliberate(
-      councilId, 
-      topic, 
-      context, 
-      maxTurns, 
-      consensusThreshold
+    const results = await Promise.all(
+      plan.tasks.map(async (task) => {
+        try {
+          // Select appropriate agent for the task
+          const agent = council.agents[0]; // Simplified selection
+          const result = await this.agentService.getAgentResponse(agent, 
+            `Execute this task: ${task.description}`
+          );
+          
+          return {
+            taskId: task.id,
+            result,
+            success: true
+          };
+        } catch (error) {
+          console.error(`Error executing task ${task.id}:`, error);
+          return {
+            taskId: task.id,
+            result: 'Task execution failed',
+            success: false
+          };
+        }
+      })
     );
-  }
-
-  // ==========================================
-  // User Interaction
-  // ==========================================
-  
-  /**
-   * Process a user interaction
-   */
-  public async processInteraction(
-    message: string,
-    userId: string,
-    context: Record<string, any>
-  ): Promise<any> {
-    return this.userInteractionManager.processInteraction(message, userId, context);
-  }
-
-  // ==========================================
-  // Agent & Council Registry
-  // ==========================================
-  
-  /**
-   * Get all agents
-   */
-  public getAgents(): SpecializedAgent[] {
-    return this.agentRegistry.getAgents();
-  }
-
-  /**
-   * Get all councils
-   */
-  public getCouncils(): Map<string, SpecializedAgent[]> {
-    return this.agentRegistry.getCouncils();
-  }
-
-  /**
-   * Get recent decisions
-   */
-  public getRecentDecisions(limit: number = 10): any[] {
-    return this.councilDeliberation.getRecentDecisions(limit);
-  }
-
-  /**
-   * Get recent interactions
-   */
-  public getRecentInteractions(limit: number = 10): any[] {
-    return this.userInteractionManager.getRecentInteractions(limit);
-  }
-  
-  /**
-   * Get agent performance metrics
-   */
-  public getAgentPerformanceMetrics(agentId: string) {
-    return this.userInteractionManager.getAgentPerformanceMetrics(agentId);
-  }
-  
-  /**
-   * Get all agent performance metrics
-   */
-  public getAllAgentPerformanceMetrics() {
-    return this.userInteractionManager.getAllAgentPerformanceMetrics();
-  }
-  
-  /**
-   * Record feedback
-   */
-  public recordFeedback(
-    interactionId: string, 
-    userId: string, 
-    rating: number, 
-    agentFeedback?: Record<string, number>,
-    comments?: string
-  ) {
-    this.userInteractionManager.recordFeedback(
-      interactionId,
-      userId,
-      rating,
-      agentFeedback,
-      comments
-    );
-  }
-  
-  /**
-   * Get user top interests
-   */
-  public getUserTopInterests(userId: string, limit: number = 5) {
-    return this.userInteractionManager.getUserTopInterests(userId, limit);
-  }
-  
-  // ==========================================
-  // Core Services Access
-  // ==========================================
-  
-  /**
-   * Get LangChain orchestrator
-   */
-  public getLangChainOrchestrator() {
-    return this.frameworkManager.getLangChainIntegration();
-  }
-  
-  /**
-   * Get MCP-Core instance
-   */
-  public getMCP() {
-    return this.mcpCore;
-  }
-  
-  /**
-   * Get MCP-Core instance (alias for getMCP)
-   */
-  public getMCPCore() {
-    return this.mcpCore;
-  }
-  
-  /**
-   * Get A2A Hub instance
-   */
-  public getA2AHub() {
-    return this.a2aHub;
-  }
-  
-  /**
-   * Get A2A P2P Hub instance
-   */
-  public getA2AP2PHub() {
-    return this.a2aP2PHub;
-  }
-  
-  /**
-   * Get Redis EventBus instance
-   */
-  public getEventBus() {
-    return this.eventBus;
-  }
-  
-  /**
-   * Get CrewAI Planner instance
-   */
-  public getCrewAIPlanner() {
-    return this.crewAIPlanner;
-  }
-  
-  /**
-   * Get Swarm Metrics Service instance
-   */
-  public getSwarmMetricsService() {
-    return this.swarmMetricsService;
+    
+    const success = results.every(r => r.success);
+    
+    return { success, results };
   }
 }
-
-// Export a singleton instance
-export const quorumForge = new QuorumForge();

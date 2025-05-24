@@ -1,28 +1,28 @@
 
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { LucideIcon } from 'lucide-react';
 
 interface MenuLinkProps {
   to: string;
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  isActive: (path: string) => boolean;
+  active?: boolean;
+  children: React.ReactNode;
+  onClick?: () => void;
 }
 
-export const MenuLink = ({ to, icon: Icon, title, description, isActive }: MenuLinkProps) => (
-  <Link 
-    to={to}
-    className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${
-      isActive(to) ? 'bg-accent' : ''
-    }`}
-  >
-    <div className="flex items-center gap-2">
-      <Icon className="h-4 w-4" />
-      <span className="text-sm font-medium">{title}</span>
-    </div>
-    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-      {description}
-    </p>
-  </Link>
-);
+const MenuLink = ({ to, active = false, children, onClick }: MenuLinkProps) => {
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={`text-sm font-medium transition-colors hover:text-primary ${
+        active
+          ? 'text-primary border-b-2 border-primary'
+          : 'text-muted-foreground'
+      }`}
+    >
+      {children}
+    </Link>
+  );
+};
+
+export default MenuLink;

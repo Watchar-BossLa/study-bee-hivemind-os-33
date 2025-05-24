@@ -87,7 +87,7 @@ export const AdaptiveQuizContainer = () => {
     toast({
       title: result.passed ? 'Quiz Passed!' : 'Quiz Completed',
       description: `Your score: ${result.finalScore}/${result.maxScore}`,
-      variant: result.passed ? 'default' : 'secondary',
+      variant: result.passed ? 'default' : 'destructive',
     });
   };
 

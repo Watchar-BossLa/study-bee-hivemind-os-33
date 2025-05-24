@@ -1,242 +1,241 @@
 
-import { MCPCore } from './MCPCore';
-import { CouncilService } from '../CouncilService';
-import { Plan } from '../frameworks/CrewAIPlanner';
-import { PlanReviewer, createPlanReviewer } from './senior-manager/PlanReviewer';
-import { ResourceAllocator, createResourceAllocator } from './senior-manager/ResourceAllocator';
-import { ContingencyHandler, createContingencyHandler } from './senior-manager/ContingencyHandler';
-import { BudgetManager, createBudgetManager } from './senior-manager/BudgetManager';
-import { CrewAIPlanner } from '../frameworks/CrewAIPlanner';
 import { LLMRouter } from '../LLMRouter';
+import { MCPCore } from './MCPCore';
+import { BudgetManager } from './senior-manager/BudgetManager';
+import { ContingencyHandler } from './senior-manager/ContingencyHandler';
+import { PlanReviewer } from './senior-manager/PlanReviewer';
+import { ResourceAllocator } from './senior-manager/ResourceAllocator';
+
+interface Plan {
+  id: string;
+  title: string;
+  description: string;
+  tasks: Array<{
+    id: string;
+    title: string;
+    description: string;
+    priority: number;
+    status: 'pending' | 'in-progress' | 'completed' | 'failed';
+    estimatedTime: number;
+  }>;
+  status: 'draft' | 'approved' | 'in-progress' | 'completed' | 'rejected';
+  createdAt: Date;
+  createdBy: string;
+}
+
+interface ExecutionResult {
+  planId: string;
+  success: boolean;
+  executedTasks: Array<{
+    taskId: string;
+    result: string;
+    success: boolean;
+    executionTime: number;
+  }>;
+  totalTime: number;
+  failureReason?: string;
+}
 
 /**
- * SeniorManagerGPT - Executive decision maker in the QuorumForge OS
- * Implements the crewai-senior feature from QuorumForge OS spec
+ * SeniorManagerGPT - Meta-agent executive for approving plans and managing resources
  */
 export class SeniorManagerGPT {
+  private llmRouter: LLMRouter;
   private mcpCore: MCPCore;
+  private budgetManager: BudgetManager;
+  private contingencyHandler: ContingencyHandler;
   private planReviewer: PlanReviewer;
   private resourceAllocator: ResourceAllocator;
-  private contingencyHandler: ContingencyHandler;
-  private budgetManager: BudgetManager;
-  private crewAIPlanner: CrewAIPlanner;
   
-  constructor(
-    mcpCore: MCPCore,
-    councilService: CouncilService,
-    router: LLMRouter
-  ) {
+  constructor(llmRouter: LLMRouter, mcpCore: MCPCore) {
+    this.llmRouter = llmRouter;
     this.mcpCore = mcpCore;
-    
-    // Initialize subcomponents
-    this.resourceAllocator = createResourceAllocator(mcpCore);
-    this.contingencyHandler = createContingencyHandler(this.resourceAllocator);
-    this.planReviewer = createPlanReviewer(councilService);
-    this.budgetManager = createBudgetManager();
-    this.crewAIPlanner = new CrewAIPlanner(councilService, router);
-    
-    console.log('SeniorManagerGPT initialized');
+    this.budgetManager = new BudgetManager();
+    this.contingencyHandler = new ContingencyHandler();
+    this.planReviewer = new PlanReviewer();
+    this.resourceAllocator = new ResourceAllocator();
   }
   
   /**
-   * Create a plan for a topic using CrewAI
-   * @param topic The topic to create a plan for
-   * @param councilId The council to use for planning
-   * @param context Additional context
+   * Review and approve/reject a plan
    */
-  public async createPlan(
-    topic: string,
-    councilId: string,
-    context: Record<string, any> = {}
-  ): Promise<Plan> {
-    console.log(`SeniorManagerGPT creating plan for topic: ${topic} using council: ${councilId}`);
-    
-    // Use CrewAI to create the plan
-    const plan = await this.crewAIPlanner.createPlan(topic, councilId, context);
-    
-    // Review the plan
-    const reviewResult = await this.reviewPlan(plan, context);
-    
-    if (!reviewResult.approved) {
-      console.log(`Plan rejected: ${reviewResult.reason}`);
-      // Try again with modifications based on review feedback
-      const modifiedContext = {
-        ...context,
-        previousReview: reviewResult,
-        iteration: (context.iteration || 0) + 1
-      };
-      
-      if (modifiedContext.iteration <= 3) {
-        return this.createPlan(topic, councilId, modifiedContext);
-      } else {
-        throw new Error(`Failed to create an acceptable plan after 3 iterations: ${reviewResult.reason}`);
-      }
-    }
-    
-    return plan;
-  }
-  
-  /**
-   * Review a plan created by CrewAI
-   * @param plan The plan to review
-   * @param context Additional context for the review
-   */
-  public async reviewPlan(plan: Plan, context: Record<string, any> = {}): Promise<any> {
-    console.log(`SeniorManagerGPT reviewing plan: ${plan.title || 'Untitled'}`);
+  public async reviewPlan(plan: Plan): Promise<{
+    approved: boolean;
+    feedback: string;
+    modifications?: Partial<Plan>;
+    budgetAllocation?: Record<string, number>;
+  }> {
+    console.log(`SeniorManagerGPT reviewing plan: ${plan.id}`);
     
     // Check budget constraints
-    const estimatedCost = this.estimatePlanCost(plan);
-    if (!this.budgetManager.isWithinBudget(estimatedCost, 'medium')) {
-      console.log(`Plan rejected due to budget constraints (est. cost: $${estimatedCost})`);
+    const budgetAnalysis = this.budgetManager.analyzePlan(plan);
+    if (!budgetAnalysis.withinBudget) {
       return {
         approved: false,
-        reason: "Budget constraints exceeded",
-        estimatedCost,
-        availableBudget: this.budgetManager.getAvailableBudget('medium')
+        feedback: `Plan exceeds budget constraints. Required: ${budgetAnalysis.estimatedCost}, Available: ${budgetAnalysis.availableBudget}`
       };
     }
     
-    // Review plan for technical feasibility and security
-    const reviewResult = await this.planReviewer.reviewPlan(plan, context);
-    
-    if (reviewResult.review?.status !== 'approved') {
-      console.log(`Plan rejected: ${reviewResult.review?.technicalIssues?.join(', ')}`);
+    // Review plan quality and feasibility
+    const reviewResult = this.planReviewer.reviewPlan(plan);
+    if (!reviewResult.approved) {
       return {
         approved: false,
-        reason: "Technical or security issues",
-        issues: reviewResult.review?.technicalIssues,
-        securityConcerns: reviewResult.review?.securityConcerns
+        feedback: reviewResult.feedback,
+        modifications: reviewResult.suggestedModifications
       };
     }
     
-    // Create resource allocation plan
-    const allocationPlan = this.resourceAllocator.createResourceAllocationPlan(plan);
-    
-    // Record budget allocation
-    this.budgetManager.recordUsage(
-      (plan.tasks?.length || 1) * 1000, // Simulated token usage
-      estimatedCost
-    );
+    // Allocate resources
+    const resourceAllocation = this.resourceAllocator.allocateResources(plan);
     
     return {
       approved: true,
-      allocationPlan,
-      estimatedCompletion: allocationPlan.estimatedCompletion,
-      plan: reviewResult
+      feedback: 'Plan approved with resource allocation',
+      budgetAllocation: resourceAllocation.budgetAllocation
     };
   }
   
   /**
-   * Execute a plan using CrewAI
-   * @param plan The plan to execute
-   * @param context Additional context
+   * Execute an approved plan
    */
-  public async executePlan(plan: Plan, context: Record<string, any> = {}): Promise<any> {
-    console.log(`SeniorManagerGPT executing plan: ${plan.title || 'Untitled'}`);
+  public async executePlan(plan: Plan): Promise<ExecutionResult> {
+    console.log(`SeniorManagerGPT executing plan: ${plan.id}`);
     
-    // Get allocation plan
-    const allocationPlan = this.resourceAllocator.createResourceAllocationPlan(plan);
+    const startTime = Date.now();
+    const executedTasks: ExecutionResult['executedTasks'] = [];
+    let success = true;
+    let failureReason: string | undefined;
     
     try {
-      // Execute the plan using CrewAI
-      const results = await this.crewAIPlanner.executePlan(plan, context);
+      // Execute tasks in priority order
+      const sortedTasks = [...plan.tasks].sort((a, b) => a.priority - b.priority);
       
-      // Record successful execution
-      this.budgetManager.recordTaskCompletion(plan.id, true);
-      
-      return {
-        success: true,
-        results,
-        executionTime: new Date()
-      };
-    } catch (error) {
-      console.error(`Error executing plan: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      
-      // Handle contingency
-      const contingencyPlan = this.contingencyHandler.handleContingency(
-        {
-          type: 'plan_execution_failed',
-          severity: 'high',
-          timestamp: new Date(),
-          data: {
-            error: error instanceof Error ? error.message : 'Unknown error',
-            plan
+      for (const task of sortedTasks) {
+        const taskStartTime = Date.now();
+        
+        try {
+          // Submit task to MCP Core for execution
+          const taskId = await this.mcpCore.submitTask({
+            type: 'execute_task',
+            payload: {
+              taskId: task.id,
+              description: task.description,
+              priority: task.priority
+            }
+          });
+          
+          // Wait for task completion
+          const result = await this.mcpCore.waitForTaskCompletion(taskId);
+          
+          const executionTime = Date.now() - taskStartTime;
+          
+          executedTasks.push({
+            taskId: task.id,
+            result: result.result || 'Task completed successfully',
+            success: true,
+            executionTime
+          });
+          
+          // Record task completion for budget tracking
+          this.budgetManager.recordTaskCompletion?.(task.id, executionTime);
+          
+        } catch (error) {
+          const executionTime = Date.now() - taskStartTime;
+          
+          // Handle task failure
+          const contingencyResult = this.contingencyHandler.handleContingency?.(task, error as Error);
+          
+          executedTasks.push({
+            taskId: task.id,
+            result: contingencyResult?.message || `Task failed: ${(error as Error).message}`,
+            success: false,
+            executionTime
+          });
+          
+          if (!contingencyResult?.canContinue) {
+            success = false;
+            failureReason = `Critical task ${task.id} failed: ${(error as Error).message}`;
+            break;
           }
-        },
-        plan
-      );
+        }
+        
+        // Record task completion for budget tracking
+        this.budgetManager.recordTaskCompletion?.(task.id, Date.now() - taskStartTime);
+      }
       
-      // Record failed execution
-      this.budgetManager.recordTaskCompletion(plan.id, false);
-      
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        contingencyPlan
-      };
+    } catch (error) {
+      success = false;
+      failureReason = `Plan execution failed: ${(error as Error).message}`;
     }
-  }
-  
-  /**
-   * Handle an unexpected event during plan execution
-   * @param event The event to handle
-   * @param currentPlan The current plan being executed
-   */
-  public handleContingency(
-    event: {
-      type: string;
-      severity: 'low' | 'medium' | 'high';
-      timestamp: Date;
-      data: any;
-    },
-    currentPlan: Plan
-  ): any {
-    console.log(`SeniorManagerGPT handling contingency: ${event.type}`);
     
-    // Delegate to contingency handler
-    const newAllocationPlan = this.contingencyHandler.handleEvent(event, currentPlan);
-    
-    if (newAllocationPlan) {
-      return {
-        action: "reallocation",
-        plan: newAllocationPlan
-      };
-    }
+    const totalTime = Date.now() - startTime;
     
     return {
-      action: "continue",
-      message: "Continue with current plan"
+      planId: plan.id,
+      success,
+      executedTasks,
+      totalTime,
+      failureReason
     };
   }
   
   /**
-   * Get current budget and usage metrics
+   * Get execution status and metrics
    */
-  public getBudgetMetrics(): Record<string, any> {
-    return this.budgetManager.getUsageMetrics();
+  public getExecutionMetrics(): {
+    totalPlansReviewed: number;
+    totalPlansApproved: number;
+    totalPlansExecuted: number;
+    averageExecutionTime: number;
+    budgetUtilization: number;
+  } {
+    return {
+      totalPlansReviewed: this.planReviewer.getTotalReviewed(),
+      totalPlansApproved: this.planReviewer.getTotalApproved(),
+      totalPlansExecuted: this.budgetManager.getTotalExecuted(),
+      averageExecutionTime: this.budgetManager.getAverageExecutionTime(),
+      budgetUtilization: this.budgetManager.getBudgetUtilization()
+    };
   }
   
   /**
-   * Estimate the cost of executing a plan
-   * @param plan The plan to estimate
+   * Handle emergency situations and contingencies
    */
-  private estimatePlanCost(plan: Plan): number {
-    // Simple cost estimation based on task count
-    const baseTaskCost = 0.01; // $0.01 per task
-    const taskCount = plan.tasks?.length || 1;
+  public async handleEmergency(emergency: {
+    type: 'budget_exceeded' | 'task_failure' | 'resource_shortage' | 'security_breach';
+    details: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+  }): Promise<{
+    action: string;
+    success: boolean;
+    details: string;
+  }> {
+    console.log(`SeniorManagerGPT handling emergency: ${emergency.type}`);
     
-    // Add complexity factor based on types of tasks
-    const complexityFactor = 1.2;
-    
-    return baseTaskCost * taskCount * complexityFactor;
+    switch (emergency.type) {
+      case 'budget_exceeded':
+        return this.budgetManager.handleBudgetOverrun(emergency.details);
+      
+      case 'task_failure':
+        return this.contingencyHandler.handleTaskFailure(emergency.details);
+      
+      case 'resource_shortage':
+        return this.resourceAllocator.handleResourceShortage(emergency.details);
+      
+      case 'security_breach':
+        return {
+          action: 'security_lockdown',
+          success: true,
+          details: 'Emergency security protocols activated'
+        };
+      
+      default:
+        return {
+          action: 'unknown_emergency',
+          success: false,
+          details: 'Unknown emergency type, manual intervention required'
+        };
+    }
   }
-}
-
-// Export factory function
-export function createSeniorManagerGPT(
-  mcpCore: MCPCore,
-  councilService: CouncilService,
-  router: LLMRouter
-): SeniorManagerGPT {
-  return new SeniorManagerGPT(mcpCore, councilService, router);
 }

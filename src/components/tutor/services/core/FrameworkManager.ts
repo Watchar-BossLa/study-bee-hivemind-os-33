@@ -26,7 +26,7 @@ export class FrameworkManager {
     this.autogenTurnGuard = new AutogenTurnGuard();
     
     if (mcpCore) {
-      this.autogenIntegration = new AutogenIntegration(mcpCore, this.autogenTurnGuard);
+      this.autogenIntegration = new AutogenIntegration(mcpCore);
     } else {
       console.warn('MCPCore not provided to FrameworkManager, limited functionality available');
       // Create a mock MCPCore for testing purposes
@@ -38,12 +38,12 @@ export class FrameworkManager {
         getAgent: () => null,
         removeAgent: () => false
       } as any;
-      this.autogenIntegration = new AutogenIntegration(mockMCPCore, this.autogenTurnGuard);
+      this.autogenIntegration = new AutogenIntegration(mockMCPCore);
     }
     
-    this.langChainIntegration = new LangChainIntegration(llmRouter, this.langChainQuotaGuard);
+    this.langChainIntegration = new LangChainIntegration(llmRouter);
     this.swarmWrapper = new OpenAISwarmWrapper(llmRouter);
-    this.crewAIPlanner = new CrewAIPlanner(councilService, llmRouter);
+    this.crewAIPlanner = new CrewAIPlanner(councilService);
     
     console.log('Framework Manager initialized with Autogen, LangChain, and OpenAI Swarm');
   }

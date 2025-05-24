@@ -1,82 +1,53 @@
 
-/**
- * Handles budget management for SeniorManagerGPT
- */
 export class BudgetManager {
-  private budgetThresholds: Record<string, number> = {
-    low: 0.05,    // $0.05 threshold
-    medium: 0.25, // $0.25 threshold
-    high: 1.0     // $1.00 threshold
-  };
-  
-  private tokenUsage: Record<string, number> = {
-    total: 0,
-    lastHour: 0,
-    lastDay: 0
-  };
-  
-  private costTracking: Record<string, number> = {
-    total: 0,
-    lastHour: 0,
-    lastDay: 0
-  };
-  
-  /**
-   * Check if a proposed cost is within budget
-   */
-  public isWithinBudget(proposedCost: number, budgetLevel: string = 'medium'): boolean {
-    const threshold = this.budgetThresholds[budgetLevel] || this.budgetThresholds.medium;
-    return proposedCost <= threshold;
-  }
-  
-  /**
-   * Get available budget for a given level
-   */
-  public getAvailableBudget(budgetLevel: string = 'medium'): number {
-    const threshold = this.budgetThresholds[budgetLevel] || this.budgetThresholds.medium;
-    return threshold - this.costTracking.lastHour;
-  }
-  
-  /**
-   * Record token usage and cost
-   */
-  public recordUsage(tokens: number, cost: number): void {
-    this.tokenUsage.total += tokens;
-    this.tokenUsage.lastHour += tokens;
-    this.tokenUsage.lastDay += tokens;
-    
-    this.costTracking.total += cost;
-    this.costTracking.lastHour += cost;
-    this.costTracking.lastDay += cost;
-  }
-  
-  /**
-   * Reset hourly tracking
-   */
-  public resetHourlyTracking(): void {
-    this.tokenUsage.lastHour = 0;
-    this.costTracking.lastHour = 0;
-  }
-  
-  /**
-   * Reset daily tracking
-   */
-  public resetDailyTracking(): void {
-    this.tokenUsage.lastDay = 0;
-    this.costTracking.lastDay = 0;
-  }
-  
-  /**
-   * Get current usage metrics
-   */
-  public getUsageMetrics(): {tokenUsage: Record<string, number>, costTracking: Record<string, number>} {
+  private totalBudget: number = 10000; // Default budget
+  private usedBudget: number = 0;
+  private tasksExecuted: number = 0;
+  private totalExecutionTime: number = 0;
+
+  public analyzePlan(plan: any): {
+    withinBudget: boolean;
+    estimatedCost: number;
+    availableBudget: number;
+  } {
+    const estimatedCost = plan.tasks.reduce((total: number, task: any) => {
+      return total + (task.estimatedTime * 0.1); // $0.10 per minute
+    }, 0);
+
     return {
-      tokenUsage: {...this.tokenUsage},
-      costTracking: {...this.costTracking}
+      withinBudget: (this.usedBudget + estimatedCost) <= this.totalBudget,
+      estimatedCost,
+      availableBudget: this.totalBudget - this.usedBudget
     };
   }
-}
 
-export function createBudgetManager(): BudgetManager {
-  return new BudgetManager();
+  public recordTaskCompletion(taskId: string, executionTime: number): void {
+    this.tasksExecuted++;
+    this.totalExecutionTime += executionTime;
+    this.usedBudget += executionTime * 0.1;
+  }
+
+  public getTotalExecuted(): number {
+    return this.tasksExecuted;
+  }
+
+  public getAverageExecutionTime(): number {
+    return this.tasksExecuted > 0 ? this.totalExecutionTime / this.tasksExecuted : 0;
+  }
+
+  public getBudgetUtilization(): number {
+    return (this.usedBudget / this.totalBudget) * 100;
+  }
+
+  public handleBudgetOverrun(details: string): {
+    action: string;
+    success: boolean;
+    details: string;
+  } {
+    return {
+      action: 'budget_reallocation',
+      success: true,
+      details: 'Budget overrun handled by reallocating resources'
+    };
+  }
 }

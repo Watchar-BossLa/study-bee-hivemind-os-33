@@ -1,103 +1,97 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { quorumForge } from '../services/QuorumForge';
-import { llmRouter } from '../services/LLMRouter';
-import { useSkillLevelAssessment } from './useSkillLevelAssessment';
-import { useChatMetadata } from './useChatMetadata';
-import { useMessages } from './useMessages';
-import { useProcessingSimulation } from './useProcessingSimulation';
-import { useFeedbackHandler } from './useFeedbackHandler';
-import { useCompletion } from './useCompletion';
+import { useState, useCallback, useRef } from 'react';
+import { Message } from '../types/agents';
 
 export const useTutorChat = () => {
-  const [activePath, setActivePath] = useState<string | null>(null);
-  const [modelPerformance, setModelPerformance] = useState<Map<string, any>>(new Map());
-  const [agentPerformance, setAgentPerformance] = useState<Map<string, any>>(new Map());
-  
-  const { skillLevel, assessSkillLevel } = useSkillLevelAssessment();
-  const { metadata, updateMetadata, addTopic, updateModelUse } = useChatMetadata();
-  const { 
-    messages, 
-    input, 
-    isLoading, 
-    processingProgress,
-    setInput,
-    setIsLoading,
-    setProcessingProgress,
-    addMessage,
-    updateMessage,
-    setMessages
-  } = useMessages();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [swarmMetrics, setSwarmMetrics] = useState<Map<string, any>>(new Map());
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const { completeResponse } = useCompletion(
-    messages,
-    updateMessage,
-    updateMetadata,
-    addTopic,
-    updateModelUse,
-    setIsLoading,
-    setProcessingProgress,
-    activePath,
-    metadata
-  );
-
-  const { simulateProcessing } = useProcessingSimulation(setProcessingProgress, completeResponse);
-  const { handleResponseFeedback } = useFeedbackHandler(messages, setMessages);
-
-  useEffect(() => {
-    const updateModelPerformance = () => {
-      setModelPerformance(llmRouter.getPerformanceMetrics());
-      setAgentPerformance(quorumForge.getAllAgentPerformanceMetrics());
-    };
-    
-    updateModelPerformance();
-    const intervalId = setInterval(updateModelPerformance, 60000);
-    return () => clearInterval(intervalId);
+  const addMessage = useCallback((message: Message) => {
+    setMessages(prev => [...prev, message]);
   }, []);
 
-  useEffect(() => {
-    if (messages.length > 6) {
-      assessSkillLevel(messages);
-    }
-  }, [messages, assessSkillLevel]);
+  const updateMessage = useCallback((id: string, updates: Partial<Message>) => {
+    setMessages(prev => 
+      prev.map(msg => msg.id === id ? { ...msg, ...updates } : msg)
+    );
+  }, []);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    
-    const userMessage = {
-      id: Date.now().toString(),
-      content: input.trim(),
-      role: 'user' as const,
+  const sendMessage = useCallback(async (content: string, metadata?: Record<string, any>) => {
+    // Create user message
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      content,
+      role: 'user',
       timestamp: new Date(),
+      metadata
     };
-    
-    const loadingMessage = {
-      id: (Date.now() + 1).toString(),
-      content: '',
-      role: 'assistant' as const,
-      timestamp: new Date(),
-      loading: true,
-    };
-    
+
     addMessage(userMessage);
-    addMessage(loadingMessage);
-    setInput('');
     setIsLoading(true);
-    simulateProcessing();
-  };
+
+    try {
+      // Abort any existing request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      abortControllerRef.current = new AbortController();
+
+      // Simulate AI response
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const aiMessage: Message = {
+        id: `ai-${Date.now()}`,
+        content: `I understand your question: "${content}". Let me help you with that.`,
+        role: 'assistant',
+        timestamp: new Date(),
+        metadata: {
+          council: 'tutor',
+          confidence: 0.9
+        }
+      };
+
+      addMessage(aiMessage);
+
+      // Update swarm metrics with new data
+      setSwarmMetrics(prev => {
+        const newMetrics = new Map(prev);
+        newMetrics.set('lastUpdate', Date.now());
+        newMetrics.set('totalMessages', messages.length + 2);
+        return newMetrics;
+      });
+
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('Error sending message:', error);
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          content: 'Sorry, I encountered an error while processing your message.',
+          role: 'assistant',
+          timestamp: new Date(),
+          metadata: { error: true }
+        };
+        addMessage(errorMessage);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [addMessage, messages.length]);
+
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    setSwarmMetrics(new Map());
+  }, []);
 
   return {
     messages,
-    input,
     isLoading,
-    processingProgress,
-    activePath,
-    chatMetadata: metadata,
-    modelPerformance,
-    agentPerformance,
-    setInput,
-    handleSend,
-    setActivePath,
-    handleResponseFeedback
+    swarmMetrics,
+    sendMessage,
+    addMessage,
+    updateMessage,
+    clearMessages
   };
 };

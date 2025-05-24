@@ -1,90 +1,102 @@
 
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AutogenIntegration } from '../AutogenIntegration';
-import { AutogenTurnGuard } from '../AutogenTurnGuard';
-import { LLMRouter } from '../../LLMRouter';
+import { MCPCore } from '../../core/MCPCore';
 
-// Mock dependencies
-jest.mock('../../LLMRouter');
-jest.mock('../AutogenTurnGuard');
+// Mock MCPCore
+const mockMCPCore = {
+  submitTask: vi.fn(),
+  waitForTaskCompletion: vi.fn(),
+  getTaskStatus: vi.fn(),
+  registerAgent: vi.fn(),
+  getAgent: vi.fn(),
+  removeAgent: vi.fn(),
+  tasks: new Map(),
+  agents: new Map(),
+  eventBus: {
+    emit: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn()
+  },
+  taskHandlers: new Map(),
+  initialize: vi.fn(),
+  shutdown: vi.fn(),
+  getMetrics: vi.fn(),
+  pauseTask: vi.fn(),
+  resumeTask: vi.fn(),
+  cancelTask: vi.fn(),
+  listTasks: vi.fn(),
+  listAgents: vi.fn(),
+  getTaskHistory: vi.fn(),
+  updateTaskPriority: vi.fn(),
+  updateTaskPayload: vi.fn(),
+  registerTaskHandler: vi.fn(),
+  unregisterTaskHandler: vi.fn()
+} as MCPCore;
 
 describe('AutogenIntegration', () => {
-  let mockRouter: jest.Mocked<LLMRouter>;
-  let mockTurnGuard: jest.Mocked<AutogenTurnGuard>;
   let autogenIntegration: AutogenIntegration;
 
   beforeEach(() => {
-    mockRouter = new LLMRouter() as jest.Mocked<LLMRouter>;
-    mockTurnGuard = new AutogenTurnGuard() as jest.Mocked<AutogenTurnGuard>;
-    
-    mockTurnGuard.startSession = jest.fn().mockReturnValue({ 
-      maxTurns: 5,
-      currentTurn: 0
-    });
-    
-    mockTurnGuard.recordTurn = jest.fn().mockReturnValue(true);
-    
-    autogenIntegration = new AutogenIntegration(mockRouter, mockTurnGuard);
+    vi.clearAllMocks();
+    autogenIntegration = new AutogenIntegration(mockMCPCore);
   });
 
-  describe('createThread', () => {
-    it('should create a thread with given agents and topic', () => {
-      const result = autogenIntegration.createThread(['agent1', 'agent2'], 'test-topic');
-      
-      expect(result.threadId).toBeDefined();
-      expect(result.maxTurns).toBe(5);
-      expect(mockTurnGuard.startSession).toHaveBeenCalledWith(expect.any(String));
-    });
-    
-    it('should not set maxTurns when turnGuard is not provided', () => {
-      const autogenWithoutGuard = new AutogenIntegration(mockRouter);
-      const result = autogenWithoutGuard.createThread(['agent1'], 'topic');
-      
-      expect(result.threadId).toBeDefined();
-      expect(result.maxTurns).toBeUndefined();
-    });
+  it('should create AutogenIntegration instance', () => {
+    expect(autogenIntegration).toBeInstanceOf(AutogenIntegration);
   });
 
-  describe('processTurn', () => {
-    it('should process a turn and return a response', async () => {
-      const response = await autogenIntegration.processTurn('thread-1', 'user', 'Hello');
-      
-      expect(response.toAgent).toBe('assistant');
-      expect(response.response).toContain('Response from assistant');
-      expect(response.isFinalTurn).toBe(false);
-      expect(mockTurnGuard.recordTurn).toHaveBeenCalledWith('thread-1');
+  it('should run security review', async () => {
+    const mockResult = {
+      vulnerabilitiesFound: 2,
+      severityLevels: ['medium', 'low'],
+      recommendations: ['Fix input validation', 'Update dependencies'],
+      patchedCode: 'secure code here',
+      conversationSummary: 'Security review completed'
+    };
+
+    mockMCPCore.submitTask.mockResolvedValue('task-123');
+    mockMCPCore.waitForTaskCompletion.mockResolvedValue({ result: mockResult });
+
+    const result = await autogenIntegration.runSecurityReview('const x = 1;', {});
+
+    expect(mockMCPCore.submitTask).toHaveBeenCalledWith({
+      type: 'security_review',
+      payload: {
+        codeSnippet: 'const x = 1;',
+        context: {}
+      }
     });
-    
-    it('should mark as final turn when turn guard indicates no continuation', async () => {
-      mockTurnGuard.recordTurn = jest.fn().mockReturnValueOnce(false);
-      
-      const response = await autogenIntegration.processTurn('thread-1', 'user', 'Hello');
-      
-      expect(response.isFinalTurn).toBe(true);
-    });
+    expect(result).toEqual(mockResult);
   });
 
-  describe('runRedTeamAnalysis', () => {
-    it('should create a thread and process security analysis turns', async () => {
-      const spy = jest.spyOn(autogenIntegration, 'createThread');
-      const processTurnSpy = jest.spyOn(autogenIntegration, 'processTurn');
-      const endThreadSpy = jest.spyOn(autogenIntegration, 'endThread');
-      
-      spy.mockReturnValue({ threadId: 'security-thread', maxTurns: 5 });
-      
-      const result = await autogenIntegration.runRedTeamAnalysis('test message', {});
-      
-      expect(result.riskLevel).toBeGreaterThanOrEqual(1);
-      expect(result.riskLevel).toBeLessThanOrEqual(10);
-      expect(result.recommendations).toHaveLength(3);
-      expect(result.threadId).toBe('security-thread');
-      
-      expect(spy).toHaveBeenCalledWith(
-        ['attacker', 'defender', 'patcher'],
-        'security-analysis'
-      );
-      
-      expect(processTurnSpy).toHaveBeenCalledTimes(3);
-      expect(endThreadSpy).toHaveBeenCalledWith('security-thread');
+  it('should handle security review failure', async () => {
+    mockMCPCore.submitTask.mockRejectedValue(new Error('Task submission failed'));
+
+    await expect(
+      autogenIntegration.runSecurityReview('const x = 1;', {})
+    ).rejects.toThrow('Task submission failed');
+  });
+
+  it('should run collaborative analysis', async () => {
+    const mockResult = {
+      analysis: 'Collaborative analysis completed',
+      insights: ['Insight 1', 'Insight 2'],
+      recommendations: ['Recommendation 1']
+    };
+
+    mockMCPCore.submitTask.mockResolvedValue('task-456');
+    mockMCPCore.waitForTaskCompletion.mockResolvedValue({ result: mockResult });
+
+    const result = await autogenIntegration.runCollaborativeAnalysis(['agent1', 'agent2'], 'test prompt');
+
+    expect(mockMCPCore.submitTask).toHaveBeenCalledWith({
+      type: 'collaborative_analysis',
+      payload: {
+        agents: ['agent1', 'agent2'],
+        prompt: 'test prompt'
+      }
     });
+    expect(result).toEqual(mockResult);
   });
 });

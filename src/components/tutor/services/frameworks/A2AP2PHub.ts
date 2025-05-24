@@ -1,425 +1,372 @@
 
-import { 
-  A2AP2PProtocol, 
-  P2PNodeInfo, 
-  P2PMessage, 
-  P2PCapabilityInfo,
-  P2PEncryptionLevel,
-  P2PConnectionType,
-  P2PDiscoveryMethod
-} from '../protocols/A2AP2PProtocol';
-import { RedisEventBus, redisEventBus } from '../core/RedisEventBus';
-import { A2AMessageType, A2AErrorCode } from '../protocols/A2AProtocol';
-import { v4 as uuidv4 } from '@/lib/uuid';
 import { A2AOAuthHandler } from './A2AOAuthHandler';
-import { MCPCore } from '../core/MCPCore';
+import { FrameworkManager } from '../core/FrameworkManager';
 
-export interface P2PRegistrationOptions {
-  capabilities?: P2PCapabilityInfo[];
-  discoveryMethods?: P2PDiscoveryMethod[];
-  connectionTypes?: P2PConnectionType[];
-  encryptionLevel?: P2PEncryptionLevel;
-  metadata?: Record<string, any>;
+export type P2PConnectionType = 'webrtc' | 'websocket' | 'http';
+export type P2PDiscoveryMethod = 'manual' | 'broadcast' | 'registry';
+export type P2PEncryptionLevel = 'none' | 'tls' | 'e2e';
+
+export interface P2PNodeInfo {
+  id: string;
+  name: string;
+  capabilities: string[];
+  connectionTypes: P2PConnectionType[];
+  discoveryMethods: P2PDiscoveryMethod[];
+  encryptionLevel: P2PEncryptionLevel;
+  status: 'online' | 'offline' | 'connecting' | 'error';
+}
+
+export interface P2PMessage {
+  id: string;
+  fromNodeId: string;
+  toNodeId: string;
+  type: 'agent_request' | 'agent_response' | 'discovery' | 'heartbeat';
+  payload: any;
+  timestamp: number;
+  signature?: string;
 }
 
 /**
- * A2A P2P Hub - Manages peer-to-peer connections between agents
- * Implements the a2a-p2p-hub and a2a-auth0 features from QuorumForge OS spec
+ * A2A P2P Hub - Advanced peering capabilities for Agent-to-Agent communication
  */
 export class A2AP2PHub {
-  private protocol: A2AP2PProtocol;
-  private eventBus: RedisEventBus;
-  private oauthHandler: A2AOAuthHandler;
-  private mcpCore?: MCPCore;
+  private nodes: Map<string, P2PNodeInfo> = new Map();
+  private connections: Map<string, WebSocket | RTCPeerConnection> = new Map();
   private messageHandlers: Map<string, (message: P2PMessage) => void> = new Map();
-  private capabilities: Map<string, P2PCapabilityInfo[]> = new Map();
-  private pendingRequests: Map<string, {
-    resolve: (value: any) => void;
-    reject: (reason: any) => void;
-    timer: NodeJS.Timeout;
-  }> = new Map();
+  private oauthHandler: A2AOAuthHandler;
+  private frameworkManager?: FrameworkManager;
+  private isRunning = false;
   
-  constructor(
-    hubId: string = uuidv4(),
-    hubName: string = `P2PHub-${hubId.substring(0, 8)}`,
-    oauthHandler: A2AOAuthHandler,
-    eventBus?: RedisEventBus,
-    mcpCore?: MCPCore
-  ) {
-    this.protocol = new A2AP2PProtocol(hubId, hubName, P2PEncryptionLevel.FULL);
-    this.eventBus = eventBus || redisEventBus;
+  constructor(oauthHandler: A2AOAuthHandler, frameworkManager?: FrameworkManager) {
     this.oauthHandler = oauthHandler;
-    this.mcpCore = mcpCore;
-    
-    this.setupEventListeners();
-    this.setupDefaultCapabilities();
-    
-    console.log(`A2A P2P Hub initialized on secondary port with OAuth-PKCE security`);
+    this.frameworkManager = frameworkManager;
   }
   
   /**
-   * Set up event listeners for Redis events
+   * Start the P2P hub
    */
-  private setupEventListeners(): void {
-    // Listen for peer registrations
-    this.eventBus.subscribe('p2p:peer:register', (peerInfo: P2PNodeInfo) => {
-      // Add peer to our protocol
-      this.protocol.registerPeer(peerInfo);
-    });
+  public async start(port: number = 9090): Promise<void> {
+    if (this.isRunning) {
+      console.warn('A2A P2P Hub is already running');
+      return;
+    }
     
-    // Listen for P2P messages
-    this.eventBus.subscribe('p2p:message', (message: P2PMessage) => {
-      // Handle the message
-      const response = this.protocol.handleIncomingMessage(message);
-      
-      // If there's a response, publish it
-      if (response) {
-        this.eventBus.publish('p2p:message', response).catch(err => {
-          console.error('Error publishing P2P message response:', err);
-        });
-      }
-      
-      // If this message has a correlation ID and is a response, resolve the pending request
-      if (message.header.correlationId && 
-          (message.header.messageType === A2AMessageType.RESPONSE || 
-           message.header.messageType === A2AMessageType.ERROR)) {
-        const pending = this.pendingRequests.get(message.header.correlationId);
-        if (pending) {
-          if (message.header.messageType === A2AMessageType.ERROR) {
-            pending.reject(message.body.content?.error || 'Unknown error');
-          } else {
-            pending.resolve(message);
-          }
-          
-          clearTimeout(pending.timer);
-          this.pendingRequests.delete(message.header.correlationId);
-        }
-      }
-    });
+    console.log(`Starting A2A P2P Hub on port ${port}`);
     
-    // Listen for capability updates
-    this.eventBus.subscribe('p2p:capabilities', (data: {
-      peerId: string;
-      capabilities: P2PCapabilityInfo[];
-    }) => {
-      this.capabilities.set(data.peerId, data.capabilities);
-    });
+    // Initialize discovery service
+    await this.initializeDiscovery();
     
-    // Set up message handlers
-    this.protocol.onMessage(A2AMessageType.REQUEST, (message) => {
-      const handler = this.messageHandlers.get(message.header.recipientId) || 
-                      this.messageHandlers.get('*');
-                      
-      if (handler) {
-        handler(message);
-      }
-    });
+    // Start heartbeat mechanism
+    this.startHeartbeat();
+    
+    this.isRunning = true;
+    console.log('A2A P2P Hub started successfully');
   }
   
   /**
-   * Set up default capabilities for the hub
+   * Stop the P2P hub
    */
-  private setupDefaultCapabilities(): void {
-    this.protocol.registerCapabilities([
-      {
-        capability: 'p2p.discovery',
-        version: '1.0',
-        provider: this.protocol.getNodeId(),
-        description: 'Peer discovery service'
-      },
-      {
-        capability: 'p2p.relay',
-        version: '1.0',
-        provider: this.protocol.getNodeId(),
-        description: 'Message relay service'
-      },
-      {
-        capability: 'p2p.registry',
-        version: '1.0',
-        provider: this.protocol.getNodeId(),
-        description: 'Capability registry service'
+  public async stop(): Promise<void> {
+    if (!this.isRunning) {
+      return;
+    }
+    
+    console.log('Stopping A2A P2P Hub');
+    
+    // Close all connections
+    for (const [nodeId, connection] of this.connections) {
+      if (connection instanceof WebSocket) {
+        connection.close();
+      } else if (connection instanceof RTCPeerConnection) {
+        connection.close();
       }
-    ]);
+    }
+    
+    this.connections.clear();
+    this.nodes.clear();
+    this.isRunning = false;
+    
+    console.log('A2A P2P Hub stopped');
   }
   
   /**
-   * Register a new peer
+   * Register a new P2P node
    */
-  public async registerPeer(peerInfo: Omit<P2PNodeInfo, 'id'> & { id?: string }): Promise<P2PNodeInfo> {
-    // Generate ID if not provided
-    const peerId = peerInfo.id || uuidv4();
+  public async registerNode(nodeInfo: Omit<P2PNodeInfo, 'id'> & { id?: string }): Promise<string> {
+    const nodeId = nodeInfo.id || `node-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     
-    const peerRecord: P2PNodeInfo = {
-      id: peerId,
-      name: peerInfo.name,
-      capabilities: peerInfo.capabilities,
-      url: peerInfo.url,
-      connectionTypes: peerInfo.connectionTypes || [P2PConnectionType.DIRECT],
-      discoveryMethods: peerInfo.discoveryMethods || [P2PDiscoveryMethod.REGISTRY],
-      encryptionLevel: peerInfo.encryptionLevel || P2PEncryptionLevel.BASIC,
-      status: 'online',
-      lastSeen: new Date()
+    const fullNodeInfo: P2PNodeInfo = {
+      id: nodeId,
+      name: nodeInfo.name,
+      capabilities: nodeInfo.capabilities,
+      connectionTypes: nodeInfo.connectionTypes,
+      discoveryMethods: nodeInfo.discoveryMethods,
+      encryptionLevel: nodeInfo.encryptionLevel,
+      status: 'online'
     };
     
-    // Register peer in our protocol
-    this.protocol.registerPeer(peerRecord);
+    this.nodes.set(nodeId, fullNodeInfo);
     
-    // Publish peer registration
-    await this.eventBus.publish('p2p:peer:register', peerRecord);
+    console.log(`Registered P2P node: ${nodeId}`);
     
-    return peerRecord;
+    // Broadcast node discovery to other nodes
+    await this.broadcastDiscovery(fullNodeInfo);
+    
+    return nodeId;
   }
   
   /**
-   * Register an agent with the P2P network
+   * Unregister a P2P node
    */
-  public async registerAgent(
-    agent: {
-      id: string;
-      name: string;
-      capabilities?: any[];
-    },
-    options?: P2PRegistrationOptions
-  ): Promise<P2PNodeInfo> {
-    // Convert capabilities to P2P capability format
-    const capabilities = options?.capabilities || 
-      (agent.capabilities || []).map(cap => ({
-        capability: typeof cap === 'string' ? cap : cap.capability,
-        version: '1.0',
-        provider: agent.id,
-        description: `Capability provided by ${agent.name}`
-      }));
+  public async unregisterNode(nodeId: string): Promise<boolean> {
+    const node = this.nodes.get(nodeId);
+    if (!node) {
+      return false;
+    }
     
-    // Register peer
-    const peerInfo = await this.registerPeer({
-      id: agent.id,
-      name: agent.name,
-      capabilities: capabilities.map(c => c.capability),
-      connectionTypes: options?.connectionTypes || [P2PConnectionType.DIRECT],
-      discoveryMethods: options?.discoveryMethods || [P2PDiscoveryMethod.REGISTRY],
-      encryptionLevel: options?.encryptionLevel || P2PEncryptionLevel.BASIC
-    });
+    // Close connection if exists
+    const connection = this.connections.get(nodeId);
+    if (connection) {
+      if (connection instanceof WebSocket) {
+        connection.close();
+      } else if (connection instanceof RTCPeerConnection) {
+        connection.close();
+      }
+      this.connections.delete(nodeId);
+    }
     
-    // Store detailed capabilities
-    this.capabilities.set(agent.id, capabilities);
-    await this.eventBus.publish('p2p:capabilities', {
-      peerId: agent.id,
-      capabilities
-    });
+    this.nodes.delete(nodeId);
     
-    return peerInfo;
+    console.log(`Unregistered P2P node: ${nodeId}`);
+    
+    return true;
   }
   
   /**
-   * Send a message to a peer
+   * Connect to a peer node
    */
-  public async sendMessage(
-    recipientId: string,
-    content: any,
-    options: {
-      messageType?: A2AMessageType;
-      correlationId?: string;
-      ttl?: number;
-      metadata?: Record<string, any>;
-      requireCapabilities?: string[];
-      timeout?: number;
-    } = {}
-  ): Promise<P2PMessage> {
-    // Check if recipient is registered
-    const peer = this.protocol.getPeer(recipientId);
-    if (!peer) {
-      throw new Error(`Peer ${recipientId} not found`);
+  public async connectToPeer(nodeId: string, connectionType: P2PConnectionType = 'websocket'): Promise<boolean> {
+    const node = this.nodes.get(nodeId);
+    if (!node) {
+      console.error(`Node ${nodeId} not found`);
+      return false;
     }
     
-    // Check capabilities if required
-    if (options.requireCapabilities && options.requireCapabilities.length > 0) {
-      const peerCapabilities = this.capabilities.get(recipientId) || [];
-      const hasAllCapabilities = options.requireCapabilities.every(
-        required => peerCapabilities.some(cap => cap.capability === required)
-      );
-      
-      if (!hasAllCapabilities) {
-        throw new Error(`Peer ${recipientId} does not have all required capabilities`);
+    if (this.connections.has(nodeId)) {
+      console.warn(`Already connected to node ${nodeId}`);
+      return true;
+    }
+    
+    try {
+      switch (connectionType) {
+        case 'websocket':
+          await this.connectWebSocket(nodeId, node);
+          break;
+        case 'webrtc':
+          await this.connectWebRTC(nodeId, node);
+          break;
+        case 'http':
+          // HTTP connections are stateless, no persistent connection needed
+          console.log(`HTTP connection type selected for node ${nodeId}`);
+          break;
+        default:
+          console.error(`Unsupported connection type: ${connectionType}`);
+          return false;
       }
-    }
-    
-    // Check authorization with OAuth handler
-    if (this.oauthHandler) {
-      try {
-        await this.oauthHandler.validateAccess(this.protocol.getNodeId(), recipientId);
-      } catch (error) {
-        throw new Error(`Authorization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    }
-    
-    // Create message
-    const message = this.protocol.createMessage(
-      recipientId,
-      options.messageType || A2AMessageType.REQUEST,
-      content,
-      {
-        recipientName: peer.name,
-        correlationId: options.correlationId,
-        ttl: options.ttl,
-        metadata: options.metadata
-      }
-    );
-    
-    // Encrypt the message
-    const encryptedMessage = this.protocol.encryptMessage(message);
-    
-    // Publish message to event bus
-    await this.eventBus.publish('p2p:message', encryptedMessage);
-    
-    // If this is not a request or no timeout is specified, return the sent message
-    if (options.messageType !== A2AMessageType.REQUEST && options.messageType !== undefined || !options.timeout) {
-      return message;
-    }
-    
-    // For requests, wait for a response
-    return new Promise((resolve, reject) => {
-      const timeout = options.timeout || 30000; // Default 30 seconds
       
-      const timer = setTimeout(() => {
-        this.pendingRequests.delete(message.header.messageId);
-        reject(new Error(`Request to ${peer.name} (${recipientId}) timed out after ${timeout}ms`));
-      }, timeout);
+      node.status = 'online';
+      console.log(`Connected to peer node: ${nodeId}`);
+      return true;
       
-      this.pendingRequests.set(message.header.messageId, {
-        resolve,
-        reject,
-        timer
-      });
-    });
+    } catch (error) {
+      console.error(`Failed to connect to peer node ${nodeId}:`, error);
+      node.status = 'error';
+      return false;
+    }
+  }
+  
+  /**
+   * Send a message to a peer node
+   */
+  public async sendMessage(message: Omit<P2PMessage, 'id' | 'timestamp'>): Promise<boolean> {
+    const fullMessage: P2PMessage = {
+      ...message,
+      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      timestamp: Date.now()
+    };
+    
+    // Add signature if required
+    if (this.nodes.get(message.toNodeId)?.encryptionLevel !== 'none') {
+      fullMessage.signature = await this.signMessage(fullMessage);
+    }
+    
+    const connection = this.connections.get(message.toNodeId);
+    if (!connection) {
+      console.error(`No connection to node ${message.toNodeId}`);
+      return false;
+    }
+    
+    try {
+      if (connection instanceof WebSocket) {
+        connection.send(JSON.stringify(fullMessage));
+      } else {
+        // Handle WebRTC data channel
+        const dataChannel = (connection as any).dataChannel;
+        if (dataChannel && dataChannel.readyState === 'open') {
+          dataChannel.send(JSON.stringify(fullMessage));
+        } else {
+          throw new Error('WebRTC data channel not ready');
+        }
+      }
+      
+      console.log(`Sent message ${fullMessage.id} to node ${message.toNodeId}`);
+      return true;
+      
+    } catch (error) {
+      console.error(`Failed to send message to node ${message.toNodeId}:`, error);
+      return false;
+    }
   }
   
   /**
    * Register a message handler
    */
-  public registerMessageHandler(
-    agentId: string | '*',
-    handler: (message: P2PMessage) => void
-  ): void {
-    this.messageHandlers.set(agentId, handler);
+  public onMessage(type: string, handler: (message: P2PMessage) => void): void {
+    this.messageHandlers.set(type, handler);
   }
   
   /**
-   * Discover peers by capability
+   * Get all connected nodes
    */
-  public async discoverPeersByCapability(capability: string): Promise<P2PNodeInfo[]> {
-    const allPeers = this.protocol.getAllPeers();
-    
-    // Filter peers by capability
-    return allPeers.filter(peer => 
-      peer.capabilities.includes(capability)
-    );
+  public getConnectedNodes(): P2PNodeInfo[] {
+    return Array.from(this.nodes.values()).filter(node => node.status === 'online');
   }
   
   /**
-   * Discover all capabilities in the network
+   * Get node information
    */
-  public async discoverCapabilities(): Promise<P2PCapabilityInfo[]> {
-    const allCapabilities: P2PCapabilityInfo[] = [];
-    
-    // Add capabilities from our protocol
-    allCapabilities.push(...this.protocol.getCapabilities());
-    
-    // Add capabilities from other peers
-    for (const [peerId, capabilities] of this.capabilities.entries()) {
-      allCapabilities.push(...capabilities);
-    }
-    
-    return allCapabilities;
+  public getNodeInfo(nodeId: string): P2PNodeInfo | undefined {
+    return this.nodes.get(nodeId);
   }
   
   /**
-   * Integrate with MCP Core
+   * Initialize discovery service
    */
-  public integrateMCPCore(mcpCore: MCPCore): void {
-    this.mcpCore = mcpCore;
+  private async initializeDiscovery(): Promise<void> {
+    console.log('Initializing P2P discovery service');
     
-    // Register message handler to forward P2P messages to MCP
-    this.registerMessageHandler('*', (message) => {
-      if (this.mcpCore && message.header.messageType === A2AMessageType.REQUEST) {
-        // Convert P2P message to MCP message
-        const mcpMessage = {
-          id: message.header.messageId,
-          fromAgentId: message.header.senderId,
-          toAgentId: message.header.recipientId,
-          content: message.body.content,
-          type: 'p2p_message',
-          metadata: {
-            ...message.body.metadata,
-            p2p: {
-              correlationId: message.header.correlationId,
-              ttl: message.header.ttl,
-              hops: message.header.hops
-            }
-          }
-        };
-        
-        this.mcpCore.sendMessage(mcpMessage).catch(err => {
-          console.error('Error forwarding P2P message to MCP:', err);
-        });
+    // Set up discovery message handler
+    this.onMessage('discovery', (message) => {
+      const nodeInfo = message.payload as P2PNodeInfo;
+      if (!this.nodes.has(nodeInfo.id)) {
+        this.nodes.set(nodeInfo.id, nodeInfo);
+        console.log(`Discovered new node: ${nodeInfo.id}`);
       }
     });
+  }
+  
+  /**
+   * Broadcast node discovery
+   */
+  private async broadcastDiscovery(nodeInfo: P2PNodeInfo): Promise<void> {
+    const discoveryMessage: Omit<P2PMessage, 'id' | 'timestamp'> = {
+      fromNodeId: nodeInfo.id,
+      toNodeId: 'broadcast',
+      type: 'discovery',
+      payload: nodeInfo
+    };
     
-    // Register MCP message handler to forward MCP messages to P2P
-    if (this.mcpCore) {
-      this.mcpCore.registerMessageHandler('*', (mcpMessage) => {
-        if (mcpMessage.type === 'p2p_response') {
-          // Convert MCP message to P2P response
-          const p2pMessageId = mcpMessage.metadata?.p2p?.correlationId;
-          
-          if (p2pMessageId) {
-            // Find the pending request
-            const pending = this.pendingRequests.get(p2pMessageId);
-            if (pending) {
-              // Create a P2P response
-              const responseMessage = this.protocol.createMessage(
-                mcpMessage.fromAgentId,
-                A2AMessageType.RESPONSE,
-                mcpMessage.content,
-                {
-                  correlationId: p2pMessageId,
-                  metadata: mcpMessage.metadata
-                }
-              );
-              
-              // Resolve the pending request
-              pending.resolve(responseMessage);
-              clearTimeout(pending.timer);
-              this.pendingRequests.delete(p2pMessageId);
-            }
-          }
-        }
-      });
+    // Send to all connected nodes
+    for (const [connectedNodeId] of this.connections) {
+      if (connectedNodeId !== nodeInfo.id) {
+        await this.sendMessage({
+          ...discoveryMessage,
+          toNodeId: connectedNodeId
+        });
+      }
     }
+  }
+  
+  /**
+   * Start heartbeat mechanism
+   */
+  private startHeartbeat(): void {
+    setInterval(() => {
+      for (const [nodeId] of this.connections) {
+        this.sendMessage({
+          fromNodeId: 'hub',
+          toNodeId: nodeId,
+          type: 'heartbeat',
+          payload: { timestamp: Date.now() }
+        });
+      }
+    }, 30000); // 30 seconds
+  }
+  
+  /**
+   * Connect via WebSocket
+   */
+  private async connectWebSocket(nodeId: string, node: P2PNodeInfo): Promise<void> {
+    // In a real implementation, this would connect to the node's WebSocket server
+    // For now, we simulate the connection
+    console.log(`Establishing WebSocket connection to node ${nodeId}`);
     
-    console.log('MCP Core integrated with A2A P2P Hub');
+    // Simulate WebSocket connection
+    const mockWebSocket = {
+      send: (data: string) => console.log(`WebSocket send to ${nodeId}:`, data),
+      close: () => console.log(`WebSocket closed for ${nodeId}`),
+      readyState: 1 // OPEN
+    } as WebSocket;
+    
+    this.connections.set(nodeId, mockWebSocket);
   }
   
   /**
-   * Get the protocol instance
+   * Connect via WebRTC
    */
-  public getProtocol(): A2AP2PProtocol {
-    return this.protocol;
+  private async connectWebRTC(nodeId: string, node: P2PNodeInfo): Promise<void> {
+    console.log(`Establishing WebRTC connection to node ${nodeId}`);
+    
+    // In a real implementation, this would set up WebRTC peer connection
+    // For now, we simulate the connection
+    const mockPeerConnection = {
+      dataChannel: {
+        send: (data: string) => console.log(`WebRTC send to ${nodeId}:`, data),
+        readyState: 'open'
+      },
+      close: () => console.log(`WebRTC closed for ${nodeId}`)
+    } as RTCPeerConnection;
+    
+    this.connections.set(nodeId, mockPeerConnection);
   }
   
   /**
-   * Get the OAuth handler
+   * Sign a message for authentication
    */
-  public getOAuthHandler(): A2AOAuthHandler {
-    return this.oauthHandler;
+  private async signMessage(message: P2PMessage): Promise<string> {
+    // In a real implementation, this would use cryptographic signing
+    // For now, we return a simple hash
+    const messageString = JSON.stringify({
+      id: message.id,
+      fromNodeId: message.fromNodeId,
+      toNodeId: message.toNodeId,
+      type: message.type,
+      payload: message.payload,
+      timestamp: message.timestamp
+    });
+    
+    return btoa(messageString).substring(0, 32);
   }
-}
-
-// Factory function to create a P2P Hub
-export function createP2PHub(
-  oauthHandler: A2AOAuthHandler,
-  eventBus?: RedisEventBus,
-  mcpCore?: MCPCore
-): A2AP2PHub {
-  const hubId = uuidv4();
-  return new A2AP2PHub(hubId, `P2PHub-${hubId.substring(0, 8)}`, oauthHandler, eventBus, mcpCore);
+  
+  /**
+   * Handle incoming message
+   */
+  private handleMessage(message: P2PMessage): void {
+    const handler = this.messageHandlers.get(message.type);
+    if (handler) {
+      handler(message);
+    } else {
+      console.warn(`No handler for message type: ${message.type}`);
+    }
+  }
 }
