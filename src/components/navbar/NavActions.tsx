@@ -5,10 +5,10 @@ import { ThemeToggle } from '../theme/ThemeToggle';
 import { Link } from "react-router-dom";
 
 interface NavActionsProps {
-  setCommandOpen: (open: boolean) => void;
+  setCommandOpen?: (open: boolean) => void;
 }
 
-export const NavActions = ({ setCommandOpen }: NavActionsProps) => {
+const NavActions = ({ setCommandOpen = () => {} }: NavActionsProps) => {
   return (
     <div className="flex items-center gap-2">
       <ThemeToggle />
@@ -39,3 +39,5 @@ export const NavActions = ({ setCommandOpen }: NavActionsProps) => {
     </div>
   );
 };
+
+export default NavActions;

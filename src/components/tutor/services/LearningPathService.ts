@@ -1,163 +1,101 @@
 
 import { LearningPath } from '../types/agents';
-import { quorumForge } from './QuorumForge';
-
-// Sample learning paths based on the Study Bee spec
-export const predefinedLearningPaths: LearningPath[] = [
-  {
-    id: 'biology-basics',
-    name: 'Cell Biology Track',
-    description: 'Learn the fundamentals of cell biology, from structure to function.',
-    topics: ['Cell Biology', 'Mitochondria', 'ATP', 'Cellular Respiration'],
-    difficulty: 'beginner',
-    estimatedTimeHours: 8,
-    prerequisites: [],
-    recommendedAgents: ['content-expert', 'learning-strategist']
-  },
-  {
-    id: 'genetics-intro',
-    name: 'Genetics Track',
-    description: 'Explore the principles of genetics and DNA replication.',
-    topics: ['Genetics', 'DNA', 'RNA', 'Protein Synthesis'],
-    difficulty: 'intermediate',
-    estimatedTimeHours: 12,
-    prerequisites: ['Cell Biology'],
-    recommendedAgents: ['content-expert', 'assessment-expert']
-  },
-  {
-    id: 'evolution-principles',
-    name: 'Evolution Track',
-    description: 'Understand the mechanisms of evolution and natural selection.',
-    topics: ['Evolution', 'Natural Selection', 'Genetics'],
-    difficulty: 'intermediate',
-    estimatedTimeHours: 10,
-    prerequisites: ['Genetics'],
-    recommendedAgents: ['content-expert', 'engagement-specialist']
-  }
-];
+import { QuorumForge } from './QuorumForge';
 
 export class LearningPathService {
-  private paths: LearningPath[];
-  
-  constructor(initialPaths: LearningPath[] = predefinedLearningPaths) {
-    this.paths = [...initialPaths];
+  private quorumForge: QuorumForge;
+  private learningPaths: LearningPath[] = [];
+
+  constructor(quorumForge: QuorumForge) {
+    this.quorumForge = quorumForge;
+    this.initializeSamplePaths();
   }
-  
-  // Get all available learning paths
-  public getAllPaths(): LearningPath[] {
-    return this.paths;
+
+  private initializeSamplePaths(): void {
+    this.learningPaths = [
+      {
+        id: 'math-basics',
+        name: 'Mathematics Fundamentals',
+        description: 'Learn the basics of mathematics from arithmetic to algebra',
+        steps: [
+          {
+            id: 'step-1',
+            title: 'Basic Arithmetic',
+            description: 'Addition, subtraction, multiplication, division',
+            type: 'lesson',
+            estimatedDuration: 30
+          },
+          {
+            id: 'step-2',
+            title: 'Fractions and Decimals',
+            description: 'Understanding and working with fractions and decimals',
+            type: 'lesson',
+            estimatedDuration: 45
+          },
+          {
+            id: 'step-3',
+            title: 'Basic Algebra',
+            description: 'Introduction to variables and simple equations',
+            type: 'lesson',
+            estimatedDuration: 60
+          }
+        ],
+        difficulty: 'beginner',
+        prerequisites: [],
+        createdAt: new Date()
+      }
+    ];
   }
-  
-  // Get a learning path by ID
+
+  public getAvailablePaths(): LearningPath[] {
+    return this.learningPaths;
+  }
+
   public getPathById(id: string): LearningPath | undefined {
-    return this.paths.find(path => path.id === id);
+    return this.learningPaths.find(path => path.id === id);
   }
-  
-  // Get learning paths that contain a specific topic
-  public getPathsByTopic(topic: string): LearningPath[] {
-    return this.paths.filter(path => 
-      path.topics.some(t => t.toLowerCase() === topic.toLowerCase())
-    );
-  }
-  
-  // Get learning paths appropriate for a user's knowledge level
-  public getPathsByDifficulty(difficulty: 'beginner' | 'intermediate' | 'advanced'): LearningPath[] {
-    return this.paths.filter(path => path.difficulty === difficulty);
-  }
-  
-  // Add a new learning path
-  public addPath(path: LearningPath): void {
-    this.paths.push(path);
-  }
-  
-  // Generate a personalized learning path using the QuorumForge system
-  public async generatePersonalizedPath(
-    userId: string,
-    interests: string[],
-    currentKnowledge: string[],
-    targetTopics: string[],
-    preferredDifficulty: 'beginner' | 'intermediate' | 'advanced'
+
+  public async createAdaptivePath(
+    topic: string,
+    userLevel: 'beginner' | 'intermediate' | 'advanced',
+    goals: string[]
   ): Promise<LearningPath> {
-    try {
-      // Use QuorumForge to deliberate on the best learning path
-      const context = {
-        userId,
-        interests,
-        currentKnowledge,
-        targetTopics,
-        preferredDifficulty
-      };
-      
-      // Deliberate using the meta-council for complex decisions
-      const decision = await quorumForge.deliberate(
-        'meta',
-        'learning-path-generation',
-        context
-      );
-      
-      // In a real implementation, this would parse the decision to create a path
-      // For this simulation, we'll create a simplified path based on the inputs
-      const newPath: LearningPath = {
-        id: `custom-${Date.now()}`,
-        name: `Custom ${targetTopics[0]} Path for User`,
-        description: `Personalized learning path focusing on ${targetTopics.join(', ')}`,
-        topics: [...targetTopics],
-        difficulty: preferredDifficulty,
-        estimatedTimeHours: 10, // Would be calculated in a real system
-        prerequisites: currentKnowledge,
-        recommendedAgents: ['learning-strategist', 'content-expert']
-      };
-      
-      // Add the new path to the collection
-      this.addPath(newPath);
-      
-      return newPath;
-    } catch (error) {
-      console.error('Error generating personalized learning path:', error);
-      throw new Error('Failed to generate personalized learning path');
-    }
-  }
-  
-  // Recommend the next best learning path based on completed paths
-  public recommendNextPath(completedPathIds: string[]): LearningPath | null {
-    // Get completed paths
-    const completed = this.paths.filter(path => completedPathIds.includes(path.id));
+    // In a real implementation, this would use QuorumForge to generate a personalized path
+    const pathId = `adaptive-${Date.now()}`;
     
-    // Extract all completed topics
-    const completedTopics = new Set<string>();
-    completed.forEach(path => path.topics.forEach(topic => completedTopics.add(topic)));
-    
-    // Find paths that aren't completed but have prerequisites satisfied
-    const eligiblePaths = this.paths.filter(path => {
-      // Skip already completed paths
-      if (completedPathIds.includes(path.id)) return false;
-      
-      // Check if prerequisites are met
-      return path.prerequisites.every(prereq => completedTopics.has(prereq));
-    });
-    
-    // Sort by difficulty (prefer next level up from most recent completion)
-    const difficultyOrder = ['beginner', 'intermediate', 'advanced'];
-    const lastCompletedPath = completed[completed.length - 1];
-    const lastDifficultyIndex = lastCompletedPath 
-      ? difficultyOrder.indexOf(lastCompletedPath.difficulty) 
-      : -1;
-    
-    // Prefer paths that are one level higher than the last completed path
-    eligiblePaths.sort((a, b) => {
-      const aIndex = difficultyOrder.indexOf(a.difficulty);
-      const bIndex = difficultyOrder.indexOf(b.difficulty);
-      
-      // Prefer paths that are one level higher
-      const aDistance = Math.abs(aIndex - (lastDifficultyIndex + 1));
-      const bDistance = Math.abs(bIndex - (lastDifficultyIndex + 1));
-      
-      return aDistance - bDistance;
-    });
-    
-    return eligiblePaths.length > 0 ? eligiblePaths[0] : null;
+    const adaptivePath: LearningPath = {
+      id: pathId,
+      name: `Adaptive ${topic} Path`,
+      description: `Personalized learning path for ${topic} at ${userLevel} level`,
+      steps: [
+        {
+          id: `${pathId}-step-1`,
+          title: `Introduction to ${topic}`,
+          description: `Basic concepts and overview of ${topic}`,
+          type: 'lesson',
+          estimatedDuration: 30
+        },
+        {
+          id: `${pathId}-step-2`,
+          title: `${topic} Practice`,
+          description: `Hands-on exercises to reinforce learning`,
+          type: 'exercise',
+          estimatedDuration: 45
+        },
+        {
+          id: `${pathId}-step-3`,
+          title: `${topic} Assessment`,
+          description: `Test your understanding of ${topic}`,
+          type: 'quiz',
+          estimatedDuration: 20
+        }
+      ],
+      difficulty: userLevel,
+      prerequisites: userLevel === 'beginner' ? [] : [`${topic}-basics`],
+      createdAt: new Date()
+    };
+
+    this.learningPaths.push(adaptivePath);
+    return adaptivePath;
   }
 }
-
-// Create a singleton instance
-export const learningPathService = new LearningPathService();

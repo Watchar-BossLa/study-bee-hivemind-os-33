@@ -1,55 +1,48 @@
 
-import { Book, BookOpen, FlaskConical, Dumbbell, PencilRuler, Brain, FlipVertical } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { BookOpen, GraduationCap, Users, Trophy, BarChart3, Brain } from 'lucide-react';
 
-interface LearnMenuItem {
-  title: string;
+export interface LearnMenuItem {
+  label: string;
+  href: string;
   description: string;
-  url: string;
-  icon: LucideIcon;
+  icon: typeof BookOpen;
 }
 
 export const learnMenuItems: LearnMenuItem[] = [
   {
-    title: "Courses",
-    description: "Browse our structured learning courses",
-    url: "/courses",
-    icon: BookOpen
+    label: 'Courses',
+    href: '/courses',
+    description: 'Browse our comprehensive course catalog',
+    icon: BookOpen,
   },
   {
-    title: "Flashcards",
-    description: "Create and review flashcards with spaced repetition",
-    url: "/flashcards",
-    icon: FlipVertical
+    label: 'AI Tutor',
+    href: '/graph-tutor',
+    description: 'Get personalized help from our AI tutor',
+    icon: Brain,
   },
   {
-    title: "AI Tutor",
-    description: "Get personalized help from our AI tutor",
-    url: "/tutor",
-    icon: Brain
+    label: 'Live Sessions',
+    href: '/live-sessions',
+    description: 'Join collaborative learning sessions',
+    icon: Users,
   },
   {
-    title: "Live Sessions",
-    description: "Join interactive live study sessions",
-    url: "/live-sessions",
-    icon: Book
+    label: 'Arena',
+    href: '/arena',
+    description: 'Compete in knowledge challenges',
+    icon: Trophy,
   },
   {
-    title: "Practice Arena",
-    description: "Test your knowledge in competitive quizzes",
-    url: "/arena",
-    icon: Dumbbell
+    label: 'Analytics',
+    href: '/analytics',
+    description: 'Track your learning progress',
+    icon: BarChart3,
   },
   {
-    title: "OCR Flashcards",
-    description: "Create flashcards by scanning notes",
-    url: "/ocr",
-    icon: PencilRuler
+    label: 'Qualifications',
+    href: '/qualifications',
+    description: 'Explore certification pathways',
+    icon: GraduationCap,
   },
-  {
-    title: "Labs",
-    description: "Experimental learning features",
-    url: "/labs",
-    icon: FlaskConical
-  }
 ];

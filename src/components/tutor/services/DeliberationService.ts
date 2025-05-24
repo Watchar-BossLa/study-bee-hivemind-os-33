@@ -1,158 +1,57 @@
 
-import { SpecializedAgent } from '../types/agents';
-import { CouncilDecision } from '../types/councils';
-import { VotingService } from './deliberation/VotingService';
-import { ConsensusService } from './deliberation/ConsensusService';
-import { Plan } from './frameworks/CrewAIPlanner';
-import { VoteHistoryStorage } from './deliberation/VoteHistoryStorage';
-import { VoteIntegrityService } from './deliberation/VoteIntegrityService';
-import { DeliberationProcessor } from './deliberation/DeliberationProcessor';
-import { DecisionBuilder } from './deliberation/DecisionBuilder';
-
-export interface DeliberationOptions {
-  timeLimit?: number; // ms
-  complexityOverride?: 'low' | 'medium' | 'high';
-  consensusThreshold?: number; // 0-1
-  boostAgentIds?: string[]; // IDs of agents to boost
-  boostFactor?: number; // How much to boost (0-1)
-  minRequiredVotes?: number;
-  usePerformanceHistory?: boolean;
-}
+import { DeliberationResult, SpecializedAgent } from '../types/agents';
 
 export class DeliberationService {
-  private decisions: CouncilDecision[] = [];
-  private votingService: VotingService;
-  private consensusService: ConsensusService;
-  private voteHistoryStorage: VoteHistoryStorage;
-  private deliberationProcessor: DeliberationProcessor;
-  private decisionBuilder: DecisionBuilder;
-  
-  constructor() {
-    this.votingService = new VotingService();
-    this.consensusService = new ConsensusService();
-    this.voteHistoryStorage = new VoteHistoryStorage();
-    this.deliberationProcessor = new DeliberationProcessor(this.votingService, this.consensusService);
-    this.decisionBuilder = new DecisionBuilder();
+  public async processDeliberation(
+    query: string,
+    agentResponses: Array<{
+      agentId: string;
+      response: string;
+      confidence: number;
+    }>,
+    context: Record<string, any> = {}
+  ): Promise<DeliberationResult> {
+    // Simple deliberation logic - in a real implementation, this would be much more sophisticated
+    const votes = agentResponses.map(response => ({
+      agentId: response.agentId,
+      vote: response.confidence > 0.8 ? 'approve' as const : 'abstain' as const,
+      reasoning: `Agent ${response.agentId} provided response with ${response.confidence} confidence`
+    }));
+
+    // Calculate consensus confidence as average of agent confidences
+    const averageConfidence = agentResponses.reduce((sum, resp) => sum + resp.confidence, 0) / agentResponses.length;
+
+    // Combine responses into a consensus response
+    const consensusResponse = this.combineResponses(agentResponses);
+
+    return {
+      id: `deliberation_${Date.now()}`,
+      topic: query,
+      consensusResponse,
+      confidence: averageConfidence,
+      participatingAgents: agentResponses.map(resp => resp.agentId),
+      votes,
+      recommendations: [`Continue with confidence level: ${averageConfidence.toFixed(2)}`],
+      timestamp: new Date()
+    };
   }
 
-  public async deliberate(
-    council: SpecializedAgent[],
-    topic: string,
-    context: Record<string, any>,
-    options?: DeliberationOptions
-  ): Promise<CouncilDecision> {
-    console.log(`Starting deliberation on topic: ${topic}`);
-    
-    // Check if we have a cached decision for this topic/council
-    const councilId = this.getCouncilId(council);
-    const cachedDecision = this.voteHistoryStorage.getCachedDecision(topic, councilId);
-    
-    if (cachedDecision && !options?.timeLimit) {
-      console.log(`Using cached decision for topic: ${topic}`);
-      return cachedDecision;
+  private combineResponses(responses: Array<{ agentId: string; response: string; confidence: number }>): string {
+    if (responses.length === 0) {
+      return "I don't have enough information to provide a comprehensive answer.";
     }
-    
-    const startTime = Date.now();
-    
-    // Process the deliberation
-    const { votes, suggestion, confidence, suspiciousVotes } = 
-      this.deliberationProcessor.processDeliberation(council, topic, context, options);
-    
-    // Create decision
-    const decision = this.decisionBuilder.createDecision(
-      topic,
-      votes,
-      suggestion,
-      confidence,
-      suspiciousVotes
-    );
 
-    // Add to history and cache
-    this.decisions.push(decision);
-    this.voteHistoryStorage.addVoteToHistory(
-      decision, 
-      councilId, 
-      this.generateTopicId(topic),
-      Date.now() - startTime
-    );
-    
-    return decision;
-  }
-  
-  public async deliberateWithPlan(
-    council: SpecializedAgent[],
-    topic: string,
-    context: Record<string, any>,
-    plan: Plan,
-    options?: DeliberationOptions
-  ): Promise<CouncilDecision> {
-    console.log(`Deliberating with CrewAI plan: ${plan.title}`);
-    
-    const startTime = Date.now();
-    
-    // Process the deliberation with plan
-    const { votes, suggestion, confidence, suspiciousVotes } = 
-      this.deliberationProcessor.processDeliberationWithPlan(council, topic, plan, options);
-    
-    // Create decision
-    let decision = this.decisionBuilder.createDecision(
-      topic,
-      votes,
-      suggestion,
-      confidence,
-      suspiciousVotes
-    );
-    
-    // Add plan metadata to the decision
-    decision = this.decisionBuilder.addPlanMetadata(decision, plan);
+    if (responses.length === 1) {
+      return responses[0].response;
+    }
 
-    // Add to history
-    this.decisions.push(decision);
+    // Simple combination strategy - in practice, this would be much more sophisticated
+    const highConfidenceResponses = responses.filter(r => r.confidence > 0.8);
     
-    const councilId = this.getCouncilId(council);
-    this.voteHistoryStorage.addVoteToHistory(
-      decision, 
-      councilId, 
-      this.generateTopicId(topic),
-      Date.now() - startTime
-    );
-    
-    return decision;
-  }
-  
-  /**
-   * Record user feedback on a consensus decision
-   */
-  public recordFeedback(
-    decisionIndex: number, 
-    rating: number, 
-    comments?: string
-  ): void {
-    // In a real implementation, this would update agent performance metrics
-    console.log(`Received feedback on decision ${decisionIndex}: ${rating}`);
-  }
+    if (highConfidenceResponses.length > 0) {
+      return highConfidenceResponses[0].response;
+    }
 
-  public getRecentDecisions(limit: number = 10): CouncilDecision[] {
-    return this.decisions.slice(-limit);
-  }
-  
-  /**
-   * Generate a unique ID for a council based on member IDs
-   */
-  private getCouncilId(council: SpecializedAgent[]): string {
-    return council
-      .map(agent => agent.id)
-      .sort()
-      .join('-');
-  }
-  
-  /**
-   * Generate a topic ID by normalizing the topic string
-   */
-  private generateTopicId(topic: string): string {
-    return topic.toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '')
-      .substring(0, 32);
+    return responses[0].response;
   }
 }

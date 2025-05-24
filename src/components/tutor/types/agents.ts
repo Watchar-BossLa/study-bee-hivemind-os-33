@@ -4,15 +4,36 @@ export interface Agent {
   name: string;
   type: string;
   capabilities: string[];
-  status: 'active' | 'inactive' | 'busy';
+  status: 'active' | 'inactive' | 'busy' | 'idle';
   createdAt: Date;
 }
 
+export interface BaseAgent extends Agent {
+  role: string;
+}
+
 export interface SpecializedAgent extends Agent {
-  specialization: string;
+  role: string;
+  domain: string;
   expertise: string[];
-  confidenceLevel: number;
-  lastActive: Date;
+  performance: {
+    accuracy: number;
+    responseTime: number;
+    userFeedback: number;
+  };
+  specializationDepth?: number;
+  adaptability?: number;
+  collaborationScore?: number;
+}
+
+export interface AgentPerformanceMetrics {
+  overallAccuracy: number;
+  userFeedbackAverage: number;
+  responseTimeAverage: number;
+  domainSpecificPerformance: Record<string, number>;
+  topicPerformance: Record<string, number>;
+  improvementRate: number;
+  lastUpdated: Date;
 }
 
 export interface Council {
@@ -30,6 +51,45 @@ export interface Message {
   role: 'user' | 'assistant';
   timestamp: Date;
   metadata?: Record<string, any>;
+  loading?: boolean;
+}
+
+export interface UserInteraction {
+  id: string;
+  userId: string;
+  sessionId: string;
+  query: string;
+  response: string;
+  agentIds: string[];
+  timestamp: Date;
+  feedbackRating?: number;
+  contextData?: Record<string, any>;
+}
+
+export interface LLMModel {
+  id: string;
+  name: string;
+  provider: string;
+  costPerToken: number;
+  maxTokens: number;
+  capabilities: string[];
+  isActive: boolean;
+}
+
+export interface LearningPath {
+  id: string;
+  name: string;
+  description: string;
+  steps: Array<{
+    id: string;
+    title: string;
+    description: string;
+    type: 'lesson' | 'quiz' | 'exercise';
+    estimatedDuration: number;
+  }>;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  prerequisites: string[];
+  createdAt: Date;
 }
 
 export interface Plan {

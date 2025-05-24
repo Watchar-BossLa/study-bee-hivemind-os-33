@@ -1,97 +1,99 @@
 
-import { useState, useCallback, useRef } from 'react';
-import { Message } from '../types/agents';
+import { useState, useCallback } from 'react';
+import { MessageType } from '../types/chat';
+import { quorumForge } from '../services/QuorumForge';
+
+const initialMessages: MessageType[] = [
+  {
+    id: '1',
+    content: 'Hello! I\'m your AI tutor powered by QuorumForge. I can help you understand various subjects using specialized AI agents and a knowledge graph to provide context-rich explanations. What would you like to learn about today?',
+    role: 'assistant',
+    timestamp: new Date(Date.now() - 60000),
+    modelUsed: 'QuorumForge OS',
+  },
+];
 
 export const useTutorChat = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<MessageType[]>(initialMessages);
+  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [swarmMetrics, setSwarmMetrics] = useState<Map<string, any>>(new Map());
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const [processingProgress, setProcessingProgress] = useState(0);
 
-  const addMessage = useCallback((message: Message) => {
+  const addMessage = useCallback((message: MessageType) => {
     setMessages(prev => [...prev, message]);
   }, []);
 
-  const updateMessage = useCallback((id: string, updates: Partial<Message>) => {
+  const updateMessage = useCallback((messageId: string, updates: Partial<MessageType>) => {
     setMessages(prev => 
-      prev.map(msg => msg.id === id ? { ...msg, ...updates } : msg)
+      prev.map(msg => 
+        msg.id === messageId ? { ...msg, ...updates } : msg
+      )
     );
   }, []);
 
-  const sendMessage = useCallback(async (content: string, metadata?: Record<string, any>) => {
-    // Create user message
-    const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      content,
+  const handleSend = useCallback(async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: MessageType = {
+      id: Date.now().toString(),
+      content: input.trim(),
       role: 'user',
       timestamp: new Date(),
-      metadata
     };
 
     addMessage(userMessage);
+    setInput('');
     setIsLoading(true);
+    setProcessingProgress(0);
 
     try {
-      // Abort any existing request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      // Simulate processing progress
+      const progressInterval = setInterval(() => {
+        setProcessingProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
 
-      abortControllerRef.current = new AbortController();
+      // Get response from QuorumForge
+      const result = await quorumForge.processQuery(userMessage.content);
 
-      // Simulate AI response
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      clearInterval(progressInterval);
+      setProcessingProgress(100);
 
-      const aiMessage: Message = {
-        id: `ai-${Date.now()}`,
-        content: `I understand your question: "${content}". Let me help you with that.`,
+      const assistantMessage: MessageType = {
+        id: (Date.now() + 1).toString(),
+        content: result.response,
         role: 'assistant',
         timestamp: new Date(),
-        metadata: {
-          council: 'tutor',
-          confidence: 0.9
-        }
+        modelUsed: 'QuorumForge OS',
+        agentContributors: result.agentContributions.map(contrib => contrib.agentId),
       };
 
-      addMessage(aiMessage);
-
-      // Update swarm metrics with new data
-      setSwarmMetrics(prev => {
-        const newMetrics = new Map(prev);
-        newMetrics.set('lastUpdate', Date.now());
-        newMetrics.set('totalMessages', messages.length + 2);
-        return newMetrics;
-      });
-
+      addMessage(assistantMessage);
     } catch (error) {
-      if (error instanceof Error && error.name !== 'AbortError') {
-        console.error('Error sending message:', error);
-        const errorMessage: Message = {
-          id: `error-${Date.now()}`,
-          content: 'Sorry, I encountered an error while processing your message.',
-          role: 'assistant',
-          timestamp: new Date(),
-          metadata: { error: true }
-        };
-        addMessage(errorMessage);
-      }
+      console.error('Error processing message:', error);
+      
+      const errorMessage: MessageType = {
+        id: (Date.now() + 1).toString(),
+        content: 'I apologize, but I encountered an error processing your request. Please try again.',
+        role: 'assistant',
+        timestamp: new Date(),
+        modelUsed: 'Error Handler',
+      };
+
+      addMessage(errorMessage);
     } finally {
       setIsLoading(false);
+      setProcessingProgress(0);
     }
-  }, [addMessage, messages.length]);
-
-  const clearMessages = useCallback(() => {
-    setMessages([]);
-    setSwarmMetrics(new Map());
-  }, []);
+  }, [input, isLoading, addMessage]);
 
   return {
     messages,
+    input,
     isLoading,
-    swarmMetrics,
-    sendMessage,
+    processingProgress,
+    setInput,
+    handleSend,
     addMessage,
-    updateMessage,
-    clearMessages
+    updateMessage
   };
 };

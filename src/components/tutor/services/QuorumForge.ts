@@ -1,145 +1,108 @@
 
-import { SpecializedAgent, Council, Plan, DeliberationResult } from '../types/agents';
 import { AgentService } from './AgentService';
 import { LLMRouter } from './LLMRouter';
 import { DeliberationService } from './DeliberationService';
+import { allSpecializedAgents } from './SpecializedAgents';
 
-/**
- * QuorumForge - The main orchestrator for agent-based deliberation
- */
 export class QuorumForge {
   private agentService: AgentService;
   private llmRouter: LLMRouter;
   private deliberationService: DeliberationService;
-  
-  constructor(llmRouter: LLMRouter) {
-    this.llmRouter = llmRouter;
-    this.agentService = new AgentService(llmRouter);
+
+  constructor() {
+    this.agentService = new AgentService(allSpecializedAgents);
+    this.llmRouter = new LLMRouter();
     this.deliberationService = new DeliberationService();
   }
-  
-  /**
-   * Create a specialized council for a given topic
-   */
-  public async createCouncil(topic: string, agentTypes: string[]): Promise<Council> {
-    const agents: SpecializedAgent[] = [];
-    
-    for (const agentType of agentTypes) {
-      const agent = await this.agentService.createAgent(agentType, topic);
-      if (agent) {
-        agents.push(agent);
-      }
-    }
-    
-    const council: Council = {
-      id: `council-${Date.now()}`,
-      name: `${topic} Council`,
-      topic,
-      agents,
-      createdAt: new Date(),
-      isActive: true
-    };
-    
-    return council;
-  }
-  
-  /**
-   * Run a deliberation process with a council
-   */
-  public async deliberate(council: Council, query: string): Promise<DeliberationResult> {
-    console.log(`Starting deliberation for council ${council.id} on query: ${query}`);
-    
-    // Generate initial responses from all agents
-    const agentResponses = await Promise.all(
-      council.agents.map(async (agent) => {
-        try {
-          const response = await this.agentService.getAgentResponse(agent, query);
-          return {
-            agentId: agent.id,
-            response,
-            confidence: Math.random() * 0.4 + 0.6 // Random confidence between 0.6-1.0
-          };
-        } catch (error) {
-          console.error(`Error getting response from agent ${agent.id}:`, error);
-          return {
-            agentId: agent.id,
-            response: 'I was unable to provide a response at this time.',
-            confidence: 0.1
-          };
-        }
-      })
-    );
-    
-    // Run deliberation process
-    const deliberationResult = await this.deliberationService.processDeliberation(
-      agentResponses,
-      query,
-      council.id
-    );
-    
-    return deliberationResult;
-  }
-  
-  /**
-   * Create a plan based on deliberation results
-   */
-  public async createPlan(deliberationResult: DeliberationResult): Promise<Plan> {
-    const plan: Plan = {
-      id: `plan-${Date.now()}`,
-      title: `Action Plan for ${deliberationResult.topic}`,
-      description: deliberationResult.consensusResponse,
-      tasks: deliberationResult.recommendations.map((rec, index) => ({
-        id: `task-${index + 1}`,
-        title: `Task ${index + 1}`,
-        description: rec,
-        priority: index + 1,
-        status: 'pending' as const,
-        estimatedTime: 30
-      })),
-      status: 'draft' as const,
-      createdAt: new Date(),
-      createdBy: 'quorum-forge'
-    };
-    
-    return plan;
-  }
-  
-  /**
-   * Execute a plan with the appropriate agents
-   */
-  public async executePlan(plan: Plan, council: Council): Promise<{
-    success: boolean;
-    results: Array<{ taskId: string; result: string; success: boolean }>;
+
+  public async processQuery(
+    query: string,
+    context: Record<string, any> = {}
+  ): Promise<{
+    response: string;
+    agentContributions: Array<{
+      agentId: string;
+      response: string;
+      confidence: number;
+    }>;
+    consensusScore: number;
   }> {
-    console.log(`Executing plan ${plan.id} with council ${council.id}`);
+    // Get relevant agents for the query
+    const relevantAgents = this.getRelevantAgents(query);
     
-    const results = await Promise.all(
-      plan.tasks.map(async (task) => {
-        try {
-          // Select appropriate agent for the task
-          const agent = council.agents[0]; // Simplified selection
-          const result = await this.agentService.getAgentResponse(agent, 
-            `Execute this task: ${task.description}`
-          );
-          
-          return {
-            taskId: task.id,
-            result,
-            success: true
-          };
-        } catch (error) {
-          console.error(`Error executing task ${task.id}:`, error);
-          return {
-            taskId: task.id,
-            result: 'Task execution failed',
-            success: false
-          };
-        }
-      })
+    // Get responses from each agent
+    const agentResponses = await Promise.all(
+      relevantAgents.map(agent => 
+        this.agentService.getAgentResponse(agent.id, query, context)
+      )
     );
+
+    // Process deliberation
+    const deliberationResult = await this.deliberationService.processDeliberation(
+      query,
+      agentResponses,
+      context
+    );
+
+    return {
+      response: deliberationResult.consensusResponse,
+      agentContributions: agentResponses.map(resp => ({
+        agentId: resp.agentId,
+        response: resp.response,
+        confidence: resp.confidence
+      })),
+      consensusScore: deliberationResult.confidence
+    };
+  }
+
+  private getRelevantAgents(query: string) {
+    // Simple keyword-based agent selection
+    const availableAgents = this.agentService.getAvailableAgents();
     
-    const success = results.every(r => r.success);
+    // For now, return up to 3 agents based on availability
+    return availableAgents.slice(0, 3);
+  }
+
+  public getAgentService(): AgentService {
+    return this.agentService;
+  }
+
+  public getLLMRouter(): LLMRouter {
+    return this.llmRouter;
+  }
+
+  public getDeliberationService(): DeliberationService {
+    return this.deliberationService;
+  }
+
+  public async submitTask(task: {
+    type: string;
+    content: string;
+    metadata?: Record<string, any>;
+    priority?: 'low' | 'normal' | 'high';
+  }): Promise<string> {
+    // Generate a task ID
+    const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    return { success, results };
+    console.log(`QuorumForge: Task ${taskId} submitted:`, task);
+    
+    return taskId;
+  }
+
+  public async waitForTaskCompletion(taskId: string, timeoutMs: number = 30000): Promise<any> {
+    console.log(`QuorumForge: Waiting for task ${taskId} completion (timeout: ${timeoutMs}ms)`);
+    
+    // For now, simulate task completion
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          taskId,
+          status: 'completed',
+          result: 'Task completed successfully'
+        });
+      }, Math.random() * 2000); // Random delay up to 2 seconds
+    });
   }
 }
+
+export const quorumForge = new QuorumForge();

@@ -1,5 +1,5 @@
 
-import { BaseAgent, SpecializedAgent, AgentPerformanceMetrics } from '../types/agents';
+import { SpecializedAgent, AgentPerformanceMetrics } from '../types/agents';
 
 export class AgentService {
   private agents: SpecializedAgent[];
@@ -36,7 +36,7 @@ export class AgentService {
     return this.agents.find(agent => agent.id === id);
   }
 
-  public updateAgentStatus(agentId: string, status: 'idle' | 'busy' | 'error'): void {
+  public updateAgentStatus(agentId: string, status: 'active' | 'inactive' | 'busy' | 'idle'): void {
     const agent = this.getAgentById(agentId);
     if (agent) {
       agent.status = status;
@@ -44,7 +44,7 @@ export class AgentService {
   }
 
   public getAvailableAgents(): SpecializedAgent[] {
-    return this.agents.filter(agent => agent.status === 'idle');
+    return this.agents.filter(agent => agent.status === 'active' || agent.status === 'idle');
   }
   
   public getAgentsByDomain(domain: string): SpecializedAgent[] {
@@ -151,5 +151,35 @@ export class AgentService {
   
   public getAllAgentPerformanceMetrics(): Map<string, AgentPerformanceMetrics> {
     return new Map(this.agentPerformance);
+  }
+
+  public async getAgentResponse(agentId: string, query: string, context: Record<string, any> = {}): Promise<{
+    agentId: string;
+    response: string;
+    confidence: number;
+    modelUsed: string;
+    processingTimeMs: number;
+  }> {
+    const agent = this.getAgentById(agentId);
+    if (!agent) {
+      throw new Error(`Agent ${agentId} not found`);
+    }
+
+    // Simulate agent response generation
+    const startTime = Date.now();
+    
+    // Mock response based on agent's domain and expertise
+    const response = `As a ${agent.role} specializing in ${agent.domain}, I can help with: ${query}. 
+                     My expertise includes ${agent.expertise.join(', ')}.`;
+    
+    const processingTime = Date.now() - startTime + Math.random() * 500; // Add some realistic delay
+    
+    return {
+      agentId,
+      response,
+      confidence: agent.performance.accuracy,
+      modelUsed: 'gpt-4',
+      processingTimeMs: processingTime
+    };
   }
 }
