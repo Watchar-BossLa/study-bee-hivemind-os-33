@@ -1,6 +1,6 @@
 
-import { DeliberationResult, SpecializedAgent } from '../types/agents';
-import { Council, CouncilDecision } from '../types/councils';
+import { DeliberationResult, SpecializedAgent, Council } from '../types/agents';
+import { CouncilDecision } from '../types/councils';
 
 export interface DeliberationOptions {
   consensusThreshold?: number;

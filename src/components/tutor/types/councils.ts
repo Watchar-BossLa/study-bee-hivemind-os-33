@@ -5,6 +5,7 @@ export interface CouncilVote {
   reasoning: string;
   confidence?: number;
   timestamp?: Date;
+  suggestion?: string;
 }
 
 export interface CouncilDecision {

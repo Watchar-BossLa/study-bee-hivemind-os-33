@@ -11,6 +11,7 @@ export interface RouterRequest {
   preferredModality?: string;
   previousSuccess?: Record<string, number>;
   promptTokens?: number;
+  maxTokens?: number;
 }
 
 export interface ModelSelectionResult {
