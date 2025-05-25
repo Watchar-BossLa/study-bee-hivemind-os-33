@@ -27,6 +27,15 @@ export interface UserInteraction {
   timestamp: Date;
   satisfaction?: number;
   metadata?: Record<string, any>;
+  userFeedback?: {
+    rating: number;
+    comments?: string;
+    helpfulAgents?: string[];
+  };
+  context?: {
+    topicId?: string;
+    [key: string]: any;
+  };
 }
 
 export interface LearningPath {
@@ -70,6 +79,11 @@ export interface SpecializedAgent {
     successRate: number;
     averageResponseTime: number;
     lastUsed: Date;
+    lastInteractions?: Array<{
+      timestamp: Date;
+      confidenceScore: number;
+      topicId: string;
+    }>;
   };
 }
 

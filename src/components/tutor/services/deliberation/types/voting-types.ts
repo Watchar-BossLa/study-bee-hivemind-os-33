@@ -4,13 +4,16 @@ import { SpecializedAgent } from '../../../types/agents';
 
 export interface PlanTask {
   id: string;
+  taskId?: string; // For backward compatibility
   title?: string;
   description?: string;
   priority?: number;
+  assignedAgentId?: string;
 }
 
 export interface Plan {
   id: string;
+  planId?: string; // For backward compatibility
   title: string;
   type?: string;
   summary?: string;

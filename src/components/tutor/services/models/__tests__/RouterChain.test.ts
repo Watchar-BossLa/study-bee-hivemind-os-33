@@ -1,7 +1,8 @@
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { RouterChain } from '../RouterChain';
-import type { LLMModel, RouterRequest } from '../RouterChain';
+import { LLMModel } from '../../../types/agents';
+import { RouterRequest } from '../../../types/router';
 
 describe('RouterChain', () => {
   let routerChain: RouterChain;
@@ -16,112 +17,90 @@ describe('RouterChain', () => {
         id: 'model-a',
         name: 'Model A',
         provider: 'local',
-        costPer1kTokens: 0.001,
+        costPerToken: 0.0001,
         maxTokens: 4096,
-        contextWindow: 8192,
-        latencyMs: 100,
-        capabilities: ['text'],
-        qualityScore: 8.5
+        latency: 'low',
+        capabilities: ['tutor'],
+        isActive: true,
+        isAvailable: true
       },
       {
         id: 'model-b',
         name: 'Model B',
         provider: 'openai',
-        costPer1kTokens: 0.002,
+        costPerToken: 0.002,
         maxTokens: 4096,
-        contextWindow: 8192,
-        latencyMs: 200,
-        capabilities: ['text'],
-        qualityScore: 9.0
-      },
-      {
-        id: 'model-c',
-        name: 'Model C',
-        provider: 'anthropic',
-        costPer1kTokens: 0.003,
-        maxTokens: 4096,
-        contextWindow: 8192,
-        latencyMs: 150,
-        capabilities: ['text'],
-        qualityScore: 9.2
+        latency: 'medium',
+        capabilities: ['tutor'],
+        isActive: true,
+        isAvailable: true
       }
     ];
 
     const request: RouterRequest = {
-      promptTokens: 100,
-      maxTokens: 500,
-      priority: 'medium',
-      useCase: 'general'
+      query: 'test query',
+      task: 'tutor',
+      complexity: 'medium',
+      urgency: 'medium',
+      costSensitivity: 'medium'
     };
 
-    const selectedModel = routerChain.selectOptimalModel(models, request);
+    const result = routerChain.selectModel(models, request);
     
-    // Should select the most cost-effective model for medium priority
-    expect(selectedModel.id).toBe('model-a');
+    expect(result.modelId).toBe('model-a');
+    expect(result.confidence).toBeGreaterThan(0);
   });
 
-  it('should prioritize quality for high priority requests', () => {
+  it('should prioritize quality for high complexity requests', () => {
     const models: LLMModel[] = [
       {
         id: 'model-a',
         name: 'Model A',
         provider: 'local',
-        costPer1kTokens: 0.001,
+        costPerToken: 0.0001,
         maxTokens: 4096,
-        contextWindow: 8192,
-        latencyMs: 100,
-        capabilities: ['text'],
-        qualityScore: 7.0
+        latency: 'low',
+        capabilities: ['tutor'],
+        isActive: true,
+        isAvailable: true
       },
       {
         id: 'model-b',
         name: 'Model B',
         provider: 'openai',
-        costPer1kTokens: 0.002,
-        maxTokens: 4096,
-        contextWindow: 8192,
-        latencyMs: 200,
-        capabilities: ['text'],
-        qualityScore: 9.5
+        costPerToken: 0.002,
+        maxTokens: 32000,
+        latency: 'medium',
+        capabilities: ['tutor'],
+        isActive: true,
+        isAvailable: true
       }
     ];
 
     const request: RouterRequest = {
-      promptTokens: 100,
-      maxTokens: 500,
-      priority: 'high',
-      useCase: 'critical'
+      query: 'complex query',
+      task: 'tutor',
+      complexity: 'high',
+      urgency: 'high',
+      costSensitivity: 'low'
     };
 
-    const selectedModel = routerChain.selectOptimalModel(models, request);
+    const result = routerChain.selectModel(models, request);
     
-    // Should select higher quality model for high priority
-    expect(selectedModel.id).toBe('model-b');
+    expect(result.modelId).toBe('model-b');
+    expect(result.confidence).toBeGreaterThan(0);
   });
 
-  it('should calculate routing score correctly', () => {
-    const model: LLMModel = {
-      id: 'test-model',
-      name: 'Test Model',
-      provider: 'local',
-      costPer1kTokens: 0.001,
-      maxTokens: 4096,
-      contextWindow: 8192,
-      latencyMs: 100,
-      capabilities: ['text'],
-      qualityScore: 8.0
-    };
-
+  it('should handle empty model list', () => {
+    const models: LLMModel[] = [];
     const request: RouterRequest = {
-      promptTokens: 100,
-      maxTokens: 500,
-      priority: 'medium',
-      useCase: 'general'
+      query: 'test query',
+      task: 'tutor',
+      complexity: 'medium',
+      urgency: 'medium',
+      costSensitivity: 'medium'
     };
 
-    const score = routerChain.calculateRoutingScore(model, request);
-    
-    expect(score).toBeGreaterThan(0);
-    expect(score).toBeLessThanOrEqual(100);
+    expect(() => routerChain.selectModel(models, request)).toThrow();
   });
 });

@@ -11,6 +11,7 @@ export const availableLLMs: LLMModel[] = [
     costPerToken: 0.0001,
     latency: 'low',
     maxTokens: 4096,
+    isActive: true,
     isAvailable: true
   },
   {
@@ -21,6 +22,7 @@ export const availableLLMs: LLMModel[] = [
     costPerToken: 0.001,
     latency: 'medium',
     maxTokens: 8192,
+    isActive: true,
     isAvailable: true
   },
   {
@@ -31,6 +33,7 @@ export const availableLLMs: LLMModel[] = [
     costPerToken: 0.0008,
     latency: 'medium',
     maxTokens: 100000,
+    isActive: true,
     isAvailable: true
   },
   {
@@ -41,6 +44,7 @@ export const availableLLMs: LLMModel[] = [
     costPerToken: 0.0003,
     latency: 'medium',
     maxTokens: 32768,
+    isActive: true,
     isAvailable: true
   },
   {
@@ -51,6 +55,7 @@ export const availableLLMs: LLMModel[] = [
     costPerToken: 0.0006,
     latency: 'medium',
     maxTokens: 32000,
+    isActive: true,
     isAvailable: true
   }
 ];

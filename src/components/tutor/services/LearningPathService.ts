@@ -4,7 +4,7 @@ import { SpecializedAgent, LearningPath } from '../types/agents';
 export class LearningPathService {
   private agents: SpecializedAgent[];
 
-  constructor(agents: SpecializedAgent[]) {
+  constructor(agents: SpecializedAgent[] = []) {
     this.agents = agents;
   }
 
@@ -45,12 +45,10 @@ export class LearningPathService {
   }
 
   public updatePathProgress(pathId: string, completedTopics: string[]): void {
-    // Implementation for updating path progress
     console.log(`Updated progress for path ${pathId}:`, completedTopics);
   }
 
   public getAvailablePaths(): LearningPath[] {
-    // Return sample learning paths
     return [
       {
         id: 'math-basics',
@@ -70,4 +68,15 @@ export class LearningPathService {
       }
     ];
   }
+
+  public getPathsByTopic(topic: string): LearningPath[] {
+    return this.getAvailablePaths().filter(path =>
+      path.topics.some(pathTopic =>
+        pathTopic.toLowerCase().includes(topic.toLowerCase())
+      )
+    );
+  }
 }
+
+// Export singleton instance
+export const learningPathService = new LearningPathService();

@@ -33,8 +33,8 @@ export class FrameworkManager {
     this.config = config;
     this.crewAIPlanner = new CrewAIPlanner();
     this.a2ap2pHub = new A2AP2PHub();
-    this.langChainIntegration = new LangChainIntegration();
-    this.swarmWrapper = new OpenAISwarmWrapper();
+    this.langChainIntegration = new LangChainIntegration([]);
+    this.swarmWrapper = new OpenAISwarmWrapper([]);
     this.autogenIntegration = new AutogenIntegration();
   }
 
@@ -59,7 +59,7 @@ export class FrameworkManager {
       throw new Error('Swarm framework is disabled');
     }
 
-    return await this.swarmWrapper.executeSwarmTask(task, agents);
+    return await this.swarmWrapper.executeTasks([{ task, agents }]);
   }
 
   public async setupA2ACommunication(agents: SpecializedAgent[]): Promise<void> {
@@ -82,7 +82,7 @@ export class FrameworkManager {
       throw new Error('LangChain framework is disabled');
     }
 
-    return await this.langChainIntegration.runAgent(agent, task);
+    return await this.langChainIntegration.runChain(agent, task);
   }
 
   public async executeAutogenConversation(
@@ -93,7 +93,7 @@ export class FrameworkManager {
       throw new Error('Autogen framework is disabled');
     }
 
-    return await this.autogenIntegration.startConversation(agents, initialMessage);
+    return await this.autogenIntegration.runSecurityReview(initialMessage, { agents });
   }
 
   public async executePlan(plan: Plan): Promise<{ result: string; metadata: Record<string, any> }> {

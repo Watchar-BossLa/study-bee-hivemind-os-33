@@ -1,3 +1,4 @@
+
 import { SpecializedAgent } from '../../types/agents';
 import { RouterRequest } from '../../types/router';
 import { LLMRouter } from '../LLMRouter';
@@ -22,7 +23,6 @@ export class AgentResponseProcessor {
     agent.status = 'busy';
     
     try {
-      // Validate the request context using PydanticValidator
       const validatedContext = this.pydanticValidator.validateContext(context);
       
       const routerRequest = this.createRouterRequest(message, validatedContext);
@@ -44,7 +44,6 @@ export class AgentResponseProcessor {
         modelSelection
       );
       
-      // Validate the response using PydanticValidator before returning
       const validatedResponse = this.pydanticValidator.validatePlan(response);
       
       this.updateMetrics(agent, selectedModel.id, routerRequest, processingTime, validatedContext, confidenceScore);
@@ -132,14 +131,14 @@ export class AgentResponseProcessor {
   ) {
     this.router.logSelection(modelId, request, true, processingTime);
     
-    if (agent.performanceHistory) {
+    if (agent.performanceHistory?.lastInteractions) {
       agent.performanceHistory.lastInteractions = [
         {
           timestamp: new Date(),
           confidenceScore,
           topicId: context.topicId || 'general'
         },
-        ...agent.performanceHistory.lastInteractions || []
+        ...agent.performanceHistory.lastInteractions
       ].slice(0, 10);
     }
     

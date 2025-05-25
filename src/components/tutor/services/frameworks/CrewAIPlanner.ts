@@ -33,11 +33,13 @@ export class CrewAIPlanner {
     try {
       const plan: Plan = {
         id: planId,
+        planId: planId, // For backward compatibility
         title: `CrewAI plan for: ${goal}`,
         type: 'crew_ai_plan',
         summary: `CrewAI plan for: ${goal}`,
         tasks: tasks.map(task => ({
           id: task.id,
+          taskId: task.id, // For backward compatibility
           description: task.description,
           priority: 3
         })),
@@ -49,11 +51,13 @@ export class CrewAIPlanner {
     } catch (error) {
       const errorPlan: Plan = {
         id: planId,
+        planId: planId, // For backward compatibility
         title: `Failed plan for: ${goal}`,
         type: 'crew_ai_plan',
         summary: `Failed plan for: ${goal}`,
         tasks: [{
           id: 'error-task',
+          taskId: 'error-task', // For backward compatibility
           description: `Plan creation failed: ${error}`,
           priority: 5
         }],
@@ -66,7 +70,6 @@ export class CrewAIPlanner {
   }
 
   public async executePlan(plan: Plan): Promise<{ result: string; metadata: Record<string, any> }> {
-    // Simulate plan execution
     return {
       result: `Executed plan: ${plan.title}`,
       metadata: {
@@ -78,4 +81,5 @@ export class CrewAIPlanner {
   }
 }
 
-export { Plan };
+// Use export type instead of re-export for isolatedModules
+export type { Plan };
