@@ -118,7 +118,7 @@ export class SeniorManagerGPT {
           // Submit task to MCP Core for execution
           const taskId = await this.mcpCore.submitTask({
             type: 'execute_task',
-            payload: {
+            content: {
               taskId: task.id,
               description: task.description,
               priority: task.priority

@@ -1,8 +1,10 @@
+
 import { InteractionService } from '../InteractionService';
 import { CouncilService } from '../CouncilService';
 import { FrameworkManager } from './FrameworkManager';
 import { LLMRouter } from '../LLMRouter';
 import { MCPCore } from './MCPCore';
+import { Council } from '../../types/agents';
 
 export class InteractionManager {
   private interactionService: InteractionService;

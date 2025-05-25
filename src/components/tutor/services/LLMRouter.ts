@@ -1,6 +1,14 @@
 
 import { LLMModel } from '../types/agents';
 import { RouterRequest, ModelSelectionResult } from '../types/router';
+import { RouterHeuristic, CacheStats } from './models/types/RouterTypes';
+
+export interface PerformanceMetrics {
+  selectionCount: number;
+  successRate: number;
+  averageResponseTime: number;
+  userSatisfaction: number;
+}
 
 export class LLMRouter {
   private models: LLMModel[] = [
@@ -36,6 +44,42 @@ export class LLMRouter {
       isActive: true,
       isAvailable: true,
       latency: 'high'
+    }
+  ];
+
+  private performanceMetrics: Map<string, PerformanceMetrics> = new Map();
+  private cacheStats: CacheStats = { hits: 0, misses: 0, size: 0, hitRate: 0 };
+  private heuristics: RouterHeuristic[] = [
+    {
+      name: 'Cost Efficiency',
+      weight: 0.3,
+      evaluate: (model: LLMModel, request: RouterRequest) => {
+        if (request.costSensitivity === 'high') {
+          return 1 / (model.costPerToken * 1000);
+        }
+        return 0.5;
+      },
+      reason: (model: LLMModel, request: RouterRequest) => 
+        `Cost per token: ${model.costPerToken}`
+    },
+    {
+      name: 'Capability Match',
+      weight: 0.4,
+      evaluate: (model: LLMModel, request: RouterRequest) => {
+        return model.capabilities.includes(request.task) ? 1 : 0;
+      },
+      reason: (model: LLMModel, request: RouterRequest) => 
+        `Supports ${request.task}: ${model.capabilities.includes(request.task)}`
+    },
+    {
+      name: 'Performance',
+      weight: 0.3,
+      evaluate: (model: LLMModel, request: RouterRequest) => {
+        const metrics = this.performanceMetrics.get(model.id);
+        return metrics?.successRate || 0.5;
+      },
+      reason: (model: LLMModel, request: RouterRequest) => 
+        `Success rate: ${this.performanceMetrics.get(model.id)?.successRate || 0.5}`
     }
   ];
 
@@ -106,6 +150,27 @@ export class LLMRouter {
       rating,
       request: request.query?.substring(0, 50)
     });
+
+    // Update performance metrics
+    const metrics = this.performanceMetrics.get(modelId) || {
+      selectionCount: 0,
+      successRate: 0,
+      averageResponseTime: 0,
+      userSatisfaction: 0
+    };
+    
+    metrics.selectionCount++;
+    if (success !== undefined) {
+      metrics.successRate = (metrics.successRate * (metrics.selectionCount - 1) + (success ? 1 : 0)) / metrics.selectionCount;
+    }
+    if (processingTime !== undefined) {
+      metrics.averageResponseTime = (metrics.averageResponseTime * (metrics.selectionCount - 1) + processingTime) / metrics.selectionCount;
+    }
+    if (rating !== undefined) {
+      metrics.userSatisfaction = (metrics.userSatisfaction * (metrics.selectionCount - 1) + rating) / metrics.selectionCount;
+    }
+    
+    this.performanceMetrics.set(modelId, metrics);
   }
 
   public getAvailableModels(): LLMModel[] {
@@ -117,6 +182,24 @@ export class LLMRouter {
     if (model) {
       model.isActive = isActive;
     }
+  }
+
+  // New methods required by dashboard
+  public getPerformanceMetrics(): Map<string, PerformanceMetrics> {
+    return new Map(this.performanceMetrics);
+  }
+
+  public getCacheStats(): CacheStats {
+    return { ...this.cacheStats };
+  }
+
+  public getHeuristics(): RouterHeuristic[] {
+    return [...this.heuristics];
+  }
+
+  public resetMetrics(): void {
+    this.performanceMetrics.clear();
+    this.cacheStats = { hits: 0, misses: 0, size: 0, hitRate: 0 };
   }
 }
 

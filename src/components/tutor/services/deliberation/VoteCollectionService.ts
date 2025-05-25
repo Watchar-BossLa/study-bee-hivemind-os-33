@@ -15,6 +15,7 @@ export class VoteCollectionService {
     council.forEach(agent => {
       votes.push({
         agentId: agent.id,
+        vote: 'approve',
         suggestion: `Suggestion from ${agent.name}`,
         confidence: 0.8,
         reasoning: `Reasoning from ${agent.name}`
@@ -35,6 +36,7 @@ export class VoteCollectionService {
     council.forEach(agent => {
       votes.push({
         agentId: agent.id,
+        vote: 'approve',
         suggestion: `Plan-based suggestion from ${agent.name}`,
         confidence: 0.85,
         reasoning: `Plan-based reasoning from ${agent.name}`

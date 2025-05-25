@@ -49,7 +49,7 @@ describe('ConsensusService', () => {
     mockVoteHistoryStorage.recordVotes = jest.fn().mockImplementation(() => {});
     mockVoteHistoryStorage.getVoteHistory = jest.fn().mockReturnValue([{
       topic: 'topic-123',
-      votes: [{ agentId: 'agent1', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' }],
+      votes: [{ agentId: 'agent1', vote: 'approve', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' }],
       consensus: 'Option A',
       confidenceScore: 0.8,
       timestamp: new Date()
@@ -67,8 +67,8 @@ describe('ConsensusService', () => {
     it('should calculate consensus based on weighted votes', async () => {
       // Arrange
       const votes: CouncilVote[] = [
-        { agentId: 'agent1', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' },
-        { agentId: 'agent2', confidence: 0.5, suggestion: 'Option B', reasoning: 'Reason 2' }
+        { agentId: 'agent1', vote: 'approve', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' },
+        { agentId: 'agent2', vote: 'approve', confidence: 0.5, suggestion: 'Option B', reasoning: 'Reason 2' }
       ];
       
       // Act
@@ -88,8 +88,8 @@ describe('ConsensusService', () => {
     it('should reject invalid votes', async () => {
       // Arrange
       const votes: CouncilVote[] = [
-        { agentId: 'agent1', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' },
-        { agentId: 'agent2', confidence: 0.5, suggestion: 'Option B', reasoning: 'Reason 2' }
+        { agentId: 'agent1', vote: 'approve', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' },
+        { agentId: 'agent2', vote: 'approve', confidence: 0.5, suggestion: 'Option B', reasoning: 'Reason 2' }
       ];
       
       mockVoteIntegrityService.validateVotes.mockReturnValue(false);
@@ -106,7 +106,7 @@ describe('ConsensusService', () => {
       const mockHistoricalData = [{
         topic: 'topic-123',
         votes: [
-          { agentId: 'agent1', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' }
+          { agentId: 'agent1', vote: 'approve' as const, confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' }
         ],
         consensus: 'Option A',
         confidenceScore: 0.8,
@@ -128,7 +128,7 @@ describe('ConsensusService', () => {
     it('should delegate to the calculator', () => {
       // Arrange
       const votes: CouncilVote[] = [
-        { agentId: 'agent1', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' }
+        { agentId: 'agent1', vote: 'approve', confidence: 0.8, suggestion: 'Option A', reasoning: 'Reason 1' }
       ];
       const suggestionGroups = new Map<string, CouncilVote[]>();
       suggestionGroups.set('Option A', [votes[0]]);

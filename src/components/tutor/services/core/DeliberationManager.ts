@@ -1,5 +1,5 @@
 
-import { SpecializedAgent } from '../../types/agents';
+import { SpecializedAgent, Council } from '../../types/agents';
 import { CouncilDecision } from '../../types/councils'; 
 import { DeliberationService, DeliberationOptions } from '../DeliberationService';
 import { CouncilService } from '../CouncilService';

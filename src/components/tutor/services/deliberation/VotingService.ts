@@ -1,4 +1,3 @@
-
 import { CouncilVote } from '../../types/councils';
 import { VoteHistoryStorage } from './VoteHistoryStorage';
 import { VoteWeightCalculator } from './VoteWeightCalculator';
@@ -42,6 +41,7 @@ export class VotingService {
     
     const vote: CouncilVote = {
       agentId: agent.id,
+      vote: 'approve',
       suggestion,
       confidence,
       reasoning,
