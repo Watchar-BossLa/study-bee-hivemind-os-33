@@ -38,7 +38,7 @@ const SwarmMetricsTab: React.FC = () => {
     name: period.period,
     avgSuccessRate: Math.round(period.avgSuccessRate * 100),
     avgFanoutRatio: Number(period.avgFanoutRatio.toFixed(1)),
-    avgDuration: Math.round(period.avgDurationMs),
+    avgDuration: Math.round(period.avgDuration),
     tasks: period.totalTasks
   })).reverse();
   
