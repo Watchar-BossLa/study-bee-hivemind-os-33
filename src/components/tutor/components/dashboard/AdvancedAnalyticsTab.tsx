@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { 
   Brain, 
-  Zap, 
   TrendingUp, 
   AlertTriangle, 
-  Clock, 
+  CheckCircle, 
+  Activity, 
+  Zap,
   Target,
-  Activity,
+  Clock,
+  Users,
   Atom,
-  BarChart3
+  Eye,
+  Lightbulb
 } from 'lucide-react';
-import { advancedLearningAnalytics, LearningVelocityMetrics, PredictiveModel, InterventionAlert } from '@/components/tutor/services/analytics/AdvancedLearningAnalytics';
-import { quantumLearningEngine } from '@/components/tutor/services/quantum/QuantumLearningEngine';
+import { AdvancedLearningAnalytics } from '../../services/analytics/AdvancedLearningAnalytics';
+import { quantumLearningEngine } from '../../services/quantum/QuantumLearningEngineService';
 
 const AdvancedAnalyticsTab: React.FC = () => {
   const [learningMetrics, setLearningMetrics] = useState<LearningVelocityMetrics | null>(null);
