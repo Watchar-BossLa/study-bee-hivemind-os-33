@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { 
   Brain, 
@@ -17,9 +19,15 @@ import {
   Users,
   Atom,
   Eye,
-  Lightbulb
+  Lightbulb,
+  BarChart3
 } from 'lucide-react';
-import { AdvancedLearningAnalytics } from '../../services/analytics/AdvancedLearningAnalytics';
+import { 
+  LearningVelocityMetrics, 
+  PredictiveModel, 
+  InterventionAlert, 
+  advancedLearningAnalytics 
+} from '../../services/analytics/AdvancedLearningAnalytics';
 import { quantumLearningEngine } from '../../services/quantum/QuantumLearningEngineService';
 
 const AdvancedAnalyticsTab: React.FC = () => {
@@ -46,7 +54,8 @@ const AdvancedAnalyticsTab: React.FC = () => {
       const metrics = advancedLearningAnalytics.analyzeLearningVelocity(userId, mockSessionData);
       const prediction = advancedLearningAnalytics.generatePredictiveModel(userId, 'Linear Algebra', metrics);
       const alerts = advancedLearningAnalytics.getActiveAlerts(userId);
-      const quantum = quantumLearningEngine.getQuantumCoherence ? quantumLearningEngine.getQuantumCoherence(userId) : 0.75;
+      const quantumState = quantumLearningEngine.getQuantumState ? quantumLearningEngine.getQuantumState(userId) : null;
+      const quantum = quantumState?.coherence || 0.75;
 
       setLearningMetrics(metrics);
       setPredictiveModel(prediction);
@@ -345,10 +354,10 @@ const AdvancedAnalyticsTab: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">{concept}</span>
                     <span className="text-sm text-muted-foreground">
-                      {Math.round(mastery * 100)}%
+                      {Math.round(Number(mastery) * 100)}%
                     </span>
                   </div>
-                  <Progress value={mastery * 100} className="h-2" />
+                  <Progress value={Number(mastery) * 100} className="h-2" />
                 </div>
               ))}
             </div>
