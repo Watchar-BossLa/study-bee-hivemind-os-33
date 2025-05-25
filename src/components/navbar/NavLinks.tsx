@@ -32,6 +32,10 @@ const NavLinks = () => {
         Adaptive Quiz
       </MenuLink>
       
+      <MenuLink to="/quorum-dashboard" active={isActive('/quorum-dashboard')}>
+        QuorumForge
+      </MenuLink>
+      
       <MenuLink to="/analytics" active={isActive('/analytics')}>
         Analytics
       </MenuLink>

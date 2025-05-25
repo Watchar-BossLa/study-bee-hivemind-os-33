@@ -9,6 +9,7 @@ import Analytics from './pages/Analytics';
 import Tutor from './pages/Tutor';
 import GraphTutor from './pages/GraphTutor';
 import AdaptiveQuiz from './pages/AdaptiveQuiz';
+import QuorumDashboard from './pages/QuorumDashboard';
 import './App.css';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
         <Route path="/tutor" element={<Tutor />} />
         <Route path="/graph-tutor" element={<GraphTutor />} />
         <Route path="/adaptive-quiz" element={<AdaptiveQuiz />} />
+        <Route path="/quorum-dashboard" element={<QuorumDashboard />} />
       </Routes>
     </BrowserRouter>
   );

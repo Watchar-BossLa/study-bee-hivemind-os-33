@@ -1,5 +1,6 @@
+
 export interface SwarmMetricsRecord {
-  executionId?: string; // Made optional to support legacy data
+  executionId?: string;
   timestamp: Date;
   taskCount: number;
   durationMs: number;
@@ -19,12 +20,24 @@ export interface AggregatedSwarmMetrics {
   totalTasks: number;
 }
 
+export interface AgentPerformanceMetrics {
+  agentId: string;
+  agentName: string;
+  totalTasks: number;
+  successfulTasks: number;
+  averageResponseTime: number;
+  userRating: number;
+  lastActive: Date;
+  specialization: string[];
+  collaborationScore: number;
+}
+
 export class SwarmMetricsService {
   private metrics: SwarmMetricsRecord[] = [];
+  private agentMetrics: Map<string, AgentPerformanceMetrics> = new Map();
   private maxRecords = 1000;
 
   public recordMetrics(metrics: SwarmMetricsRecord): void {
-    // Auto-generate executionId if not provided
     const metricsWithId = {
       ...metrics,
       executionId: metrics.executionId || `exec_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
@@ -32,14 +45,78 @@ export class SwarmMetricsService {
     
     this.metrics.unshift(metricsWithId);
     
-    // Keep only the most recent records
+    // Update agent-specific metrics
+    if (metrics.agentParticipation) {
+      this.updateAgentMetrics(metrics.agentParticipation, metrics.successRate, metrics.durationMs);
+    }
+    
     if (this.metrics.length > this.maxRecords) {
       this.metrics = this.metrics.slice(0, this.maxRecords);
     }
   }
 
+  private updateAgentMetrics(participation: Record<string, number>, successRate: number, duration: number): void {
+    Object.entries(participation).forEach(([agentId, participationLevel]) => {
+      const existing = this.agentMetrics.get(agentId) || {
+        agentId,
+        agentName: this.getAgentName(agentId),
+        totalTasks: 0,
+        successfulTasks: 0,
+        averageResponseTime: 0,
+        userRating: 4.5,
+        lastActive: new Date(),
+        specialization: this.getAgentSpecialization(agentId),
+        collaborationScore: 0.85
+      };
+
+      const newTotalTasks = existing.totalTasks + participationLevel;
+      const newSuccessfulTasks = existing.successfulTasks + (participationLevel * successRate);
+      const newAverageResponseTime = (existing.averageResponseTime * existing.totalTasks + duration * participationLevel) / newTotalTasks;
+
+      this.agentMetrics.set(agentId, {
+        ...existing,
+        totalTasks: newTotalTasks,
+        successfulTasks: newSuccessfulTasks,
+        averageResponseTime: newAverageResponseTime,
+        lastActive: new Date()
+      });
+    });
+  }
+
+  private getAgentName(agentId: string): string {
+    const nameMap: Record<string, string> = {
+      'content-expert': 'Content Expert',
+      'learning-strategist': 'Learning Strategist',
+      'assessment-expert': 'Assessment Expert',
+      'engagement-specialist': 'Engagement Specialist',
+      'metacognition-coach': 'Metacognition Coach'
+    };
+    return nameMap[agentId] || agentId;
+  }
+
+  private getAgentSpecialization(agentId: string): string[] {
+    const specializationMap: Record<string, string[]> = {
+      'content-expert': ['Mathematics', 'Science', 'Content Delivery'],
+      'learning-strategist': ['Study Planning', 'Learning Paths', 'Strategy'],
+      'assessment-expert': ['Testing', 'Evaluation', 'Progress Tracking'],
+      'engagement-specialist': ['Motivation', 'Gamification', 'User Experience'],
+      'metacognition-coach': ['Self-Reflection', 'Learning Awareness', 'Study Skills']
+    };
+    return specializationMap[agentId] || ['General'];
+  }
+
   public getRecentMetrics(count: number = 10): SwarmMetricsRecord[] {
     return this.metrics.slice(0, count);
+  }
+
+  public getAgentPerformanceMetrics(): AgentPerformanceMetrics[] {
+    return Array.from(this.agentMetrics.values());
+  }
+
+  public getTopPerformingAgents(limit: number = 5): AgentPerformanceMetrics[] {
+    return this.getAgentPerformanceMetrics()
+      .sort((a, b) => (b.successfulTasks / Math.max(b.totalTasks, 1)) - (a.successfulTasks / Math.max(a.totalTasks, 1)))
+      .slice(0, limit);
   }
 
   public getAggregatedMetrics(
@@ -113,5 +190,6 @@ export class SwarmMetricsService {
 
   public clearMetrics(): void {
     this.metrics = [];
+    this.agentMetrics.clear();
   }
 }

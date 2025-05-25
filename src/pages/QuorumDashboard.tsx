@@ -3,14 +3,15 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SwarmMetricsTab from '@/components/tutor/components/dashboard/SwarmMetricsTab';
+import AgentPerformanceTab from '@/components/tutor/components/dashboard/AgentPerformanceTab';
 import LLMRouterTab from '@/components/tutor/components/dashboard/LLMRouterTab';
 import { SwarmVisualization } from '@/components/tutor/components/dashboard/SwarmVisualization';
 import { quorumForge } from '@/components/tutor/services/QuorumForge';
 
 const QuorumDashboard = () => {
-  const [activeTab, setActiveTab] = useState('llm-router');
+  const [activeTab, setActiveTab] = useState('agent-performance');
   
-  // Example swarm metrics data
+  // Enhanced example swarm metrics data with agent participation
   const exampleSwarmMetrics = [
     {
       executionId: 'exec_1',
@@ -18,7 +19,12 @@ const QuorumDashboard = () => {
       taskCount: 12,
       durationMs: 450,
       successRate: 0.92,
-      fanoutRatio: 3.5
+      fanoutRatio: 3.5,
+      agentParticipation: {
+        'content-expert': 4,
+        'learning-strategist': 3,
+        'engagement-specialist': 5
+      }
     },
     {
       executionId: 'exec_2',
@@ -26,7 +32,12 @@ const QuorumDashboard = () => {
       taskCount: 18,
       durationMs: 520,
       successRate: 0.89,
-      fanoutRatio: 4.0
+      fanoutRatio: 4.0,
+      agentParticipation: {
+        'content-expert': 6,
+        'assessment-expert': 4,
+        'metacognition-coach': 8
+      }
     },
     {
       executionId: 'exec_3',
@@ -34,7 +45,12 @@ const QuorumDashboard = () => {
       taskCount: 15,
       durationMs: 380,
       successRate: 0.95,
-      fanoutRatio: 3.8
+      fanoutRatio: 3.8,
+      agentParticipation: {
+        'engagement-specialist': 7,
+        'learning-strategist': 4,
+        'content-expert': 4
+      }
     },
     {
       executionId: 'exec_4',
@@ -42,7 +58,12 @@ const QuorumDashboard = () => {
       taskCount: 22,
       durationMs: 490,
       successRate: 0.91,
-      fanoutRatio: 4.2
+      fanoutRatio: 4.2,
+      agentParticipation: {
+        'content-expert': 8,
+        'assessment-expert': 6,
+        'engagement-specialist': 8
+      }
     }
   ];
 
@@ -50,6 +71,7 @@ const QuorumDashboard = () => {
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold mb-6">QuorumForge Dashboard</h1>
       
+      {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
@@ -97,14 +119,20 @@ const QuorumDashboard = () => {
         </Card>
       </div>
       
+      {/* Main Dashboard Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList className="mb-4">
+          <TabsTrigger value="agent-performance">Agent Performance</TabsTrigger>
           <TabsTrigger value="llm-router">Smart LLM Router</TabsTrigger>
           <TabsTrigger value="swarm">Swarm Performance</TabsTrigger>
           <TabsTrigger value="councils">Council Activity</TabsTrigger>
           <TabsTrigger value="a2a">A2A Network</TabsTrigger>
           <TabsTrigger value="plans">Plans & Execution</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="agent-performance">
+          <AgentPerformanceTab />
+        </TabsContent>
         
         <TabsContent value="llm-router">
           <LLMRouterTab />
@@ -265,6 +293,7 @@ const QuorumDashboard = () => {
         </TabsContent>
       </Tabs>
       
+      {/* Bottom Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
