@@ -5,6 +5,7 @@ import { A2AP2PHub } from '../frameworks/A2AP2PHub';
 import { LangChainIntegration } from '../frameworks/LangChainIntegration';
 import { OpenAISwarmWrapper } from '../frameworks/OpenAISwarmWrapper';
 import { AutogenIntegration } from '../frameworks/AutogenIntegration';
+import { LLMRouter } from '../LLMRouter';
 import { Plan } from '../deliberation/types/voting-types';
 
 export interface FrameworkConfig {
@@ -22,6 +23,7 @@ export class FrameworkManager {
   private swarmWrapper: OpenAISwarmWrapper;
   private autogenIntegration: AutogenIntegration;
   private config: FrameworkConfig;
+  private llmRouter: LLMRouter;
 
   constructor(config: FrameworkConfig = {
     enableCrewAI: true,
@@ -31,10 +33,11 @@ export class FrameworkManager {
     enableA2AP2P: true
   }) {
     this.config = config;
+    this.llmRouter = new LLMRouter();
     this.crewAIPlanner = new CrewAIPlanner();
     this.a2ap2pHub = new A2AP2PHub();
-    this.langChainIntegration = new LangChainIntegration([]);
-    this.swarmWrapper = new OpenAISwarmWrapper([]);
+    this.langChainIntegration = new LangChainIntegration(this.llmRouter);
+    this.swarmWrapper = new OpenAISwarmWrapper(this.llmRouter);
     this.autogenIntegration = new AutogenIntegration();
   }
 
@@ -82,7 +85,7 @@ export class FrameworkManager {
       throw new Error('LangChain framework is disabled');
     }
 
-    return await this.langChainIntegration.runChain(agent, task);
+    return await this.langChainIntegration.runChain(agent.id, task);
   }
 
   public async executeAutogenConversation(

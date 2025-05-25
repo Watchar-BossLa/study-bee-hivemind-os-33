@@ -1,10 +1,9 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AutogenIntegration } from '../AutogenIntegration';
-import { MCPCore } from '../../core/MCPCore';
 
-// Mock MCPCore
-const mockMCPCore = {
+// Create a complete mock of MCPCore
+const createMockMCPCore = () => ({
   submitTask: vi.fn(),
   waitForTaskCompletion: vi.fn(),
   getTaskStatus: vi.fn(),
@@ -19,6 +18,7 @@ const mockMCPCore = {
     off: vi.fn()
   },
   taskHandlers: new Map(),
+  messageHandlers: new Map(),
   initialize: vi.fn(),
   shutdown: vi.fn(),
   getMetrics: vi.fn(),
@@ -31,15 +31,24 @@ const mockMCPCore = {
   updateTaskPriority: vi.fn(),
   updateTaskPayload: vi.fn(),
   registerTaskHandler: vi.fn(),
-  unregisterTaskHandler: vi.fn()
-} as MCPCore;
+  unregisterTaskHandler: vi.fn(),
+  setupEventListeners: vi.fn(),
+  processTask: vi.fn(),
+  sendMessage: vi.fn(),
+  receiveMessage: vi.fn(),
+  broadcastMessage: vi.fn(),
+  getAgentList: vi.fn(),
+  updateAgentStatus: vi.fn()
+});
 
 describe('AutogenIntegration', () => {
   let autogenIntegration: AutogenIntegration;
+  let mockMCPCore: ReturnType<typeof createMockMCPCore>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    autogenIntegration = new AutogenIntegration(mockMCPCore);
+    mockMCPCore = createMockMCPCore();
+    autogenIntegration = new AutogenIntegration(mockMCPCore as any);
   });
 
   it('should create AutogenIntegration instance', () => {
@@ -98,5 +107,19 @@ describe('AutogenIntegration', () => {
       }
     });
     expect(result).toEqual(mockResult);
+  });
+
+  it('should work without MCPCore', async () => {
+    const standaloneIntegration = new AutogenIntegration();
+    
+    const result = await standaloneIntegration.runSecurityReview('const x = 1;', {});
+    
+    expect(result).toEqual({
+      vulnerabilitiesFound: 0,
+      severityLevels: [],
+      recommendations: [],
+      patchedCode: 'const x = 1;',
+      conversationSummary: 'Security review completed (simulated)'
+    });
   });
 });

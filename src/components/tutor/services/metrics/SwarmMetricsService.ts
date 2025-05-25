@@ -1,72 +1,102 @@
 export interface SwarmMetricsRecord {
-  timestamp: number;
+  executionId: string;
+  timestamp: Date;
+  taskCount: number;
+  durationMs: number;
   successRate: number;
   fanoutRatio: number;
-  durationMs: number;
-  taskCount: number;
-  executionId: string;
-}
-
-export interface AggregatedSwarmMetrics {
-  period: string;
-  avgSuccessRate: number;
-  avgFanoutRatio: number;
-  avgDurationMs: number;
-  totalTasks: number;
+  agentParticipation?: Record<string, number>;
+  modelUsage?: Record<string, number>;
+  errorDetails?: string[];
 }
 
 export class SwarmMetricsService {
   private metrics: SwarmMetricsRecord[] = [];
+  private maxRecords = 1000;
 
-  public recordMetrics(record: SwarmMetricsRecord): void {
-    this.metrics.push(record);
+  public recordMetrics(metrics: SwarmMetricsRecord): void {
+    this.metrics.unshift(metrics);
     
-    // Keep only last 1000 records to prevent memory bloat
-    if (this.metrics.length > 1000) {
-      this.metrics = this.metrics.slice(-1000);
+    // Keep only the most recent records
+    if (this.metrics.length > this.maxRecords) {
+      this.metrics = this.metrics.slice(0, this.maxRecords);
     }
   }
 
-  public getRecentMetrics(limit: number = 20): SwarmMetricsRecord[] {
-    return this.metrics
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, limit);
+  public getRecentMetrics(count: number = 10): SwarmMetricsRecord[] {
+    return this.metrics.slice(0, count);
   }
 
-  public getAggregatedMetrics(period: 'hour' | 'day' | 'week', limit: number = 7): AggregatedSwarmMetrics[] {
-    if (this.metrics.length === 0) return [];
+  public getAggregatedMetrics(
+    period: 'hour' | 'day' | 'week' = 'day',
+    limit: number = 7
+  ) {
+    const now = new Date();
+    const periodMs = {
+      hour: 60 * 60 * 1000,
+      day: 24 * 60 * 60 * 1000,
+      week: 7 * 24 * 60 * 60 * 1000
+    }[period];
 
-    const periodMs = period === 'hour' ? 3600000 : period === 'day' ? 86400000 : 604800000;
-    const now = Date.now();
-    const periods: Map<string, SwarmMetricsRecord[]> = new Map();
-
-    // Group metrics by period
-    this.metrics.forEach(metric => {
-      const periodStart = Math.floor((now - metric.timestamp) / periodMs) * periodMs;
-      const periodKey = new Date(now - periodStart).toISOString().split('T')[0];
+    const aggregated = [];
+    
+    for (let i = 0; i < limit; i++) {
+      const periodStart = new Date(now.getTime() - (i + 1) * periodMs);
+      const periodEnd = new Date(now.getTime() - i * periodMs);
       
-      if (!periods.has(periodKey)) {
-        periods.set(periodKey, []);
-      }
-      periods.get(periodKey)!.push(metric);
-    });
-
-    // Aggregate metrics for each period
-    const aggregated: AggregatedSwarmMetrics[] = [];
-    periods.forEach((records, periodKey) => {
-      if (records.length > 0) {
-        aggregated.push({
-          period: periodKey,
-          avgSuccessRate: records.reduce((sum, r) => sum + r.successRate, 0) / records.length,
-          avgFanoutRatio: records.reduce((sum, r) => sum + r.fanoutRatio, 0) / records.length,
-          avgDurationMs: records.reduce((sum, r) => sum + r.durationMs, 0) / records.length,
-          totalTasks: records.reduce((sum, r) => sum + r.taskCount, 0)
+      const periodMetrics = this.metrics.filter(m => 
+        m.timestamp >= periodStart && m.timestamp < periodEnd
+      );
+      
+      if (periodMetrics.length > 0) {
+        const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+        
+        aggregated.unshift({
+          period: periodStart.toISOString().split('T')[0],
+          count: periodMetrics.length,
+          avgDuration: avg(periodMetrics.map(m => m.durationMs)),
+          avgSuccessRate: avg(periodMetrics.map(m => m.successRate)),
+          avgFanoutRatio: avg(periodMetrics.map(m => m.fanoutRatio)),
+          totalTasks: periodMetrics.reduce((sum, m) => sum + m.taskCount, 0)
+        });
+      } else {
+        aggregated.unshift({
+          period: periodStart.toISOString().split('T')[0],
+          count: 0,
+          avgDuration: 0,
+          avgSuccessRate: 0,
+          avgFanoutRatio: 0,
+          totalTasks: 0
         });
       }
-    });
+    }
+    
+    return aggregated;
+  }
 
-    return aggregated
-      .sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime())
-      .slice(0, limit);
+  public getMetricsSummary() {
+    if (this.metrics.length === 0) {
+      return {
+        totalExecutions: 0,
+        avgSuccessRate: 0,
+        avgDuration: 0,
+        avgFanoutRatio: 0,
+        totalTasks: 0
+      };
+    }
+
+    const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+    
+    return {
+      totalExecutions: this.metrics.length,
+      avgSuccessRate: avg(this.metrics.map(m => m.successRate)),
+      avgDuration: avg(this.metrics.map(m => m.durationMs)),
+      avgFanoutRatio: avg(this.metrics.map(m => m.fanoutRatio)),
+      totalTasks: this.metrics.reduce((sum, m) => sum + m.taskCount, 0)
+    };
+  }
+
+  public clearMetrics(): void {
+    this.metrics = [];
   }
 }

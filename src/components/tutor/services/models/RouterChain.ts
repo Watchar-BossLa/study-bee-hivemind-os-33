@@ -64,6 +64,13 @@ export class RouterChain {
       reasoningTrace: scoredModels[0].reasoningTrace
     };
   }
+
+  /**
+   * Score models using the internal scorer
+   */
+  public scoreModels(models: LLMModel[], request: RouterRequest) {
+    return this.scorer.scoreModels(models, request);
+  }
   
   /**
    * Add a custom heuristic

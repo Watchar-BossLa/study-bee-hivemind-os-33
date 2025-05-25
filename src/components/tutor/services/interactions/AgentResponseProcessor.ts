@@ -26,8 +26,7 @@ export class AgentResponseProcessor {
       const validatedContext = this.pydanticValidator.validateContext(context);
       
       const routerRequest = this.createRouterRequest(message, validatedContext);
-      const modelSelection = this.router.getDetailedSelection(routerRequest);
-      const selectedModel = this.router.selectModel(routerRequest);
+      const modelSelection = await this.router.selectModel(routerRequest);
       
       const startTime = Date.now();
       const { processingTime, expertiseMatch } = await this.simulateProcessing(agent, message);
@@ -38,15 +37,14 @@ export class AgentResponseProcessor {
       const response = this.prepareResponse(
         agent, 
         agentSpecificResponse, 
-        selectedModel, 
+        modelSelection, 
         confidenceScore, 
-        startTime, 
-        modelSelection
+        startTime
       );
       
       const validatedResponse = this.pydanticValidator.validatePlan(response);
       
-      this.updateMetrics(agent, selectedModel.id, routerRequest, processingTime, validatedContext, confidenceScore);
+      this.updateMetrics(agent, modelSelection.modelId, routerRequest, processingTime, validatedContext, confidenceScore);
       
       return validatedResponse;
     } catch (error) {
@@ -104,19 +102,18 @@ export class AgentResponseProcessor {
   private prepareResponse(
     agent: SpecializedAgent,
     response: string,
-    selectedModel: any,
+    modelSelection: any,
     confidenceScore: number,
-    startTime: number,
-    modelSelection: any
+    startTime: number
   ) {
     return {
       agentId: agent.id,
       response,
-      modelUsed: selectedModel.id,
+      modelUsed: modelSelection.modelId,
       confidenceScore,
       processingTimeMs: Date.now() - startTime,
-      fallbackModels: modelSelection.fallbackOptions,
-      reasoningTrace: modelSelection.reasoningTrace,
+      fallbackModels: modelSelection.fallbackOptions || [],
+      reasoningTrace: modelSelection.reasoningTrace || [],
       validatedSchema: true
     };
   }
@@ -131,7 +128,7 @@ export class AgentResponseProcessor {
   ) {
     this.router.logSelection(modelId, request, true, processingTime);
     
-    if (agent.performanceHistory?.lastInteractions) {
+    if (agent.performanceHistory && agent.performanceHistory.lastInteractions) {
       agent.performanceHistory.lastInteractions = [
         {
           timestamp: new Date(),
@@ -153,7 +150,7 @@ export class AgentResponseProcessor {
     this.userModelSuccessRates.set(userId, userRates);
   }
 
-  private handleError(agent: SpecializedAgent, message: string, error: any) {
+  private async handleError(agent: SpecializedAgent, message: string, error: any) {
     console.error("Error in agent response processing:", error);
     
     const routerRequest: RouterRequest = {
@@ -165,8 +162,8 @@ export class AgentResponseProcessor {
     };
     
     try {
-      const selectedModel = this.router.selectModel(routerRequest);
-      this.router.logSelection(selectedModel.id, routerRequest, false);
+      const selectedModel = await this.router.selectModel(routerRequest);
+      this.router.logSelection(selectedModel.modelId, routerRequest, false);
     } catch (routerError) {
       console.error("Could not select model for error logging:", routerError);
     }

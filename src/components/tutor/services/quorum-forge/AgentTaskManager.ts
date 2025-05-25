@@ -1,5 +1,13 @@
 
-import { MCPCore, TaskPriority } from '../core/MCPCore';
+import { MCPCore } from '../core/MCPCore';
+
+// Define TaskPriority as both type and enum
+export enum TaskPriority {
+  LOW = 'low',
+  NORMAL = 'normal', 
+  HIGH = 'high',
+  CRITICAL = 'critical'
+}
 
 /**
  * Manages agent tasks in QuorumForge

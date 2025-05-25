@@ -124,8 +124,7 @@ export class ModelSelector {
       const selectedModel = this.models.find(m => m.id === result.modelId);
       
       if (selectedModel) {
-        // Get fallback options
-        const scoredModels = routerChain.scoreModels(
+        const scoredModels = this.scoreModels(
           this.models.filter(model => model.isAvailable && model.capabilities.includes(request.task)),
           request
         );
@@ -138,7 +137,10 @@ export class ModelSelector {
           modelId: selectedModel.id,
           confidence: result.confidence,
           fallbackOptions,
-          reasoningTrace: result.reasoningTrace
+          reasoningTrace: result.reasoningTrace,
+          estimatedCost: selectedModel.costPerToken * 1000,
+          estimatedLatency: this.getEstimatedLatency(selectedModel.latency),
+          specializedCapabilities: selectedModel.capabilities
         };
       }
     } catch (error) {
@@ -160,7 +162,19 @@ export class ModelSelector {
       modelId: topModel.id,
       confidence: Math.min(0.99, scoredModels[0].score / (scoredModels[0].score + (scoredModels[1]?.score || 1))),
       fallbackOptions: scoredModels.slice(1, 3).map(item => item.model.id),
-      reasoningTrace: scoredModels[0].reasoningTrace
+      reasoningTrace: scoredModels[0].reasoningTrace,
+      estimatedCost: topModel.costPerToken * 1000,
+      estimatedLatency: this.getEstimatedLatency(topModel.latency),
+      specializedCapabilities: topModel.capabilities
     };
+  }
+
+  private getEstimatedLatency(latency: 'low' | 'medium' | 'high'): number {
+    switch (latency) {
+      case 'low': return 500;
+      case 'medium': return 1500;
+      case 'high': return 3000;
+      default: return 1500;
+    }
   }
 }
