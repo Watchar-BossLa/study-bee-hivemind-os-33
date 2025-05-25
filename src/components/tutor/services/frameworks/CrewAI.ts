@@ -1,4 +1,3 @@
-
 import { LLMRouter } from '../LLMRouter';
 
 export interface Agent {
@@ -161,14 +160,10 @@ export class CrewAI {
   /**
    * Execute a single task
    */
-  private async executeTask(task: Task, inputs?: Record<string, any>): Promise<{
-    taskId: string;
-    result: string;
-    agentId: string;
-    executionTime: number;
-    success: boolean;
-    error?: string;
-  }> {
+  public async executeTask(
+    task: any,
+    context: Record<string, any> = {}
+  ): Promise<{ result: string; metadata: Record<string, any> }> {
     const startTime = Date.now();
     
     try {
@@ -184,13 +179,21 @@ export class CrewAI {
         inputs: inputs || {}
       };
       
+      // Create router request without priority property
+      const routerRequest = {
+        query: task.description || task.content,
+        task: task.type || 'general',
+        complexity: context.complexity || 'medium',
+        urgency: context.urgency || 'medium',
+        costSensitivity: context.costSensitivity || 'medium',
+        contextLength: context.contextLength,
+        userSkillLevel: context.userSkillLevel,
+        topicId: context.topicId,
+        preferredModality: context.preferredModality
+      };
+      
       // Use LLM Router to get response
-      const model = this.llmRouter.selectModel({
-        promptTokens: 500,
-        maxTokens: 1000,
-        priority: 'medium',
-        useCase: 'agent_task'
-      });
+      const model = this.llmRouter.selectModel(routerRequest);
       
       // Simulate task execution
       const prompt = `
@@ -213,23 +216,21 @@ export class CrewAI {
       const executionTime = Date.now() - startTime;
       
       return {
-        taskId: task.id,
         result,
-        agentId: task.agent.id,
-        executionTime,
-        success: true
+        metadata: {
+          executionTime
+        }
       };
       
     } catch (error) {
       const executionTime = Date.now() - startTime;
       
       return {
-        taskId: task.id,
         result: '',
-        agentId: task.agent.id,
-        executionTime,
-        success: false,
-        error: (error as Error).message
+        metadata: {
+          executionTime,
+          error: (error as Error).message
+        }
       };
     }
   }

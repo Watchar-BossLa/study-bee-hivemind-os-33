@@ -1,3 +1,4 @@
+
 import { CouncilVote } from '../../../types/councils';
 import { SpecializedAgent } from '../../../types/agents';
 
@@ -14,6 +15,7 @@ export interface Plan {
   summary: string;
   tasks?: PlanTask[];
   members?: Array<{ id: string; name: string; role: string; }>;
+  memberCount?: number;
 }
 
 export interface VotingOptions {

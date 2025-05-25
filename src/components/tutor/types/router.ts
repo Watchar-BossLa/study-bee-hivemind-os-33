@@ -12,6 +12,7 @@ export interface RouterRequest {
   previousSuccess?: Record<string, number>;
   promptTokens?: number;
   maxTokens?: number;
+  priority?: 'low' | 'normal' | 'high' | 'critical';
 }
 
 export interface ModelSelectionResult {

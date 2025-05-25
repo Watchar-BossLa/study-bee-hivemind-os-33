@@ -30,11 +30,21 @@ export class DeliberationManager {
     maxTurns: number = 3, 
     consensusThreshold: number = 0.8
   ): Promise<CouncilDecision> {
-    const council = this.councilService.getCouncil(councilId);
+    const councilAgents = this.councilService.getCouncil(councilId);
     
-    if (!council) {
+    if (!councilAgents) {
       throw new Error(`Council with ID ${councilId} not found`);
     }
+    
+    // Create a Council object from the agents array
+    const council: Council = {
+      id: councilId,
+      name: `Council-${councilId}`,
+      topic: topic,
+      agents: councilAgents,
+      status: 'active',
+      createdAt: new Date()
+    };
     
     const options: DeliberationOptions = {
       consensusThreshold,
