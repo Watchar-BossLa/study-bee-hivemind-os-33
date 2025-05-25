@@ -1,6 +1,6 @@
 
 import { CouncilDecision, CouncilVote } from '../../types/councils';
-import { Plan } from '../frameworks/CrewAIPlanner';
+import { Plan } from './types/voting-types';
 
 export class DecisionBuilder {
   /**
@@ -42,7 +42,7 @@ export class DecisionBuilder {
         id: plan.id,
         title: plan.title,
         taskCount: plan.tasks.length,
-        memberCount: plan.members.length
+        memberCount: plan.members?.length || 0
       }
     };
   }

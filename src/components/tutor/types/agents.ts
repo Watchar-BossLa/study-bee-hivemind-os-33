@@ -54,7 +54,7 @@ export interface LLMModel {
 export interface SpecializedAgent {
   id: string;
   name: string;
-  type?: AgentType;
+  type: AgentType;
   role: string;
   capabilities: string[];
   status: AgentStatus;
@@ -62,8 +62,8 @@ export interface SpecializedAgent {
   expertise: string[];
   specialization: string[];
   performance: AgentPerformance;
-  adaptability?: number;
-  collaborationScore?: number;
+  adaptability: number;
+  collaborationScore: number;
   specializationDepth?: number;
   createdAt: Date;
   performanceHistory?: {

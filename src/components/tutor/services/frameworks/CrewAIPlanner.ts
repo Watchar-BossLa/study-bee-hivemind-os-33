@@ -1,4 +1,5 @@
-import { Plan } from './PydanticSchemaModels';
+
+import { Plan } from '../deliberation/types/voting-types';
 import { v4 as uuidv4 } from 'uuid';
 
 export class CrewAIPlanner {
@@ -30,35 +31,31 @@ export class CrewAIPlanner {
     ];
 
     try {
-      
       const plan: Plan = {
-        planId: planId,
+        id: planId,
+        title: `CrewAI plan for: ${goal}`,
         type: 'crew_ai_plan',
         summary: `CrewAI plan for: ${goal}`,
         tasks: tasks.map(task => ({
-          taskId: task.id,
+          id: task.id,
           description: task.description,
-          status: 'completed' as 'completed' | 'in-progress' | 'draft' | 'approved' | 'rejected',
-          assignedAgentId: task.assignedTo
+          priority: 3
         })),
         memberCount: agents.length,
-        members: agents.map(agentId => ({
-          id: agentId,
-          name: `Agent-${agentId}`,
-          role: 'crew_member'
-        }))
+        members: agents
       };
 
       return plan;
     } catch (error) {
       const errorPlan: Plan = {
-        planId: planId,
+        id: planId,
+        title: `Failed plan for: ${goal}`,
         type: 'crew_ai_plan',
         summary: `Failed plan for: ${goal}`,
         tasks: [{
-          taskId: 'error-task',
+          id: 'error-task',
           description: `Plan creation failed: ${error}`,
-          status: 'completed' as 'completed' | 'in-progress' | 'draft' | 'approved' | 'rejected'
+          priority: 5
         }],
         memberCount: 0,
         members: []
@@ -67,4 +64,18 @@ export class CrewAIPlanner {
       return errorPlan;
     }
   }
+
+  public async executePlan(plan: Plan): Promise<{ result: string; metadata: Record<string, any> }> {
+    // Simulate plan execution
+    return {
+      result: `Executed plan: ${plan.title}`,
+      metadata: {
+        planId: plan.id,
+        tasksCompleted: plan.tasks.length,
+        executionTime: Date.now()
+      }
+    };
+  }
 }
+
+export { Plan };

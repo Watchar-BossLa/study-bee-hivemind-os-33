@@ -1,4 +1,5 @@
-import { Plan } from './PydanticSchemaModels';
+
+import { Plan } from '../deliberation/types/voting-types';
 import { SpecializedAgent } from '../../types/agents';
 
 export interface AgentToAgentCommunication {
@@ -15,49 +16,13 @@ export interface AgentToAgentCommunication {
  */
 export class A2AP2PHub implements AgentToAgentCommunication {
   private peerConnections: Map<string, RTCPeerConnection> = new Map();
+  private dataChannels: Map<string, RTCDataChannel> = new Map();
   private iceServers: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
 
   constructor(iceServers?: RTCIceServer[]) {
     if (iceServers) {
       this.iceServers = iceServers;
     }
-  }
-
-  private createMockPeerConnection(): RTCPeerConnection {
-    // Create a minimal mock that satisfies the RTCPeerConnection interface
-    const mockConnection = {
-      dataChannel: {
-        send: (data: string) => {
-          console.log('Mock data channel send:', data);
-        },
-        readyState: 'open'
-      },
-      close: () => {
-        console.log('Mock peer connection closed');
-      },
-      // Add minimal required RTCPeerConnection properties
-      canTrickleIceCandidates: null,
-      connectionState: 'connected' as RTCPeerConnectionState,
-      currentLocalDescription: null,
-      currentRemoteDescription: null,
-      iceConnectionState: 'connected' as RTCIceConnectionState,
-      iceGatheringState: 'complete' as RTCIceGatheringState,
-      localDescription: null,
-      remoteDescription: null,
-      signalingState: 'stable' as RTCSignalingState,
-      // Add minimal required methods
-      addIceCandidate: () => Promise.resolve(),
-      addTrack: () => ({} as RTCRtpSender),
-      createAnswer: () => Promise.resolve({} as RTCSessionDescriptionInit),
-      createOffer: () => Promise.resolve({} as RTCSessionDescriptionInit),
-      setLocalDescription: () => Promise.resolve(),
-      setRemoteDescription: () => Promise.resolve(),
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: () => false
-    } as unknown as RTCPeerConnection;
-
-    return mockConnection;
   }
 
   public async initiateConnection(agent1: SpecializedAgent, agent2: SpecializedAgent): Promise<RTCPeerConnection> {
@@ -67,21 +32,15 @@ export class A2AP2PHub implements AgentToAgentCommunication {
   }
 
   public createDataChannel(connection: RTCPeerConnection, label: string): RTCDataChannel {
-    return connection.createDataChannel(label);
+    const dataChannel = connection.createDataChannel(label);
+    this.dataChannels.set(label, dataChannel);
+    return dataChannel;
   }
 
   public async connectToPeer(peerId: string): Promise<void> {
     try {
-      if (process.env.NODE_ENV === 'test') {
-        // Mock RTCPeerConnection for testing environment
-        const mockConnection = this.createMockPeerConnection();
-        this.peerConnections.set(peerId, mockConnection);
-        return;
-      }
-      
-      // Use the proper mock creation method
-      const mockConnection = this.createMockPeerConnection();
-      this.peerConnections.set(peerId, mockConnection);
+      const connection = new RTCPeerConnection({ iceServers: this.iceServers });
+      this.peerConnections.set(peerId, connection);
       
       console.log(`Connecting to peer: ${peerId}`);
     } catch (error) {
@@ -91,8 +50,9 @@ export class A2AP2PHub implements AgentToAgentCommunication {
   }
 
   public async sendMessage(connection: RTCPeerConnection, message: string): Promise<void> {
-    if (connection.connectionState === 'connected' && connection.dataChannel) {
-      connection.dataChannel.send(message);
+    const dataChannel = this.dataChannels.get('default');
+    if (connection.connectionState === 'connected' && dataChannel && dataChannel.readyState === 'open') {
+      dataChannel.send(message);
     } else {
       console.warn('Connection not open or data channel not available.');
     }
@@ -100,16 +60,17 @@ export class A2AP2PHub implements AgentToAgentCommunication {
 
   public async receiveMessage(connection: RTCPeerConnection): Promise<string> {
     return new Promise((resolve, reject) => {
-      if (!connection.dataChannel) {
+      const dataChannel = this.dataChannels.get('default');
+      if (!dataChannel) {
         reject('Data channel is not available.');
         return;
       }
 
-      connection.dataChannel.onmessage = (event) => {
+      dataChannel.onmessage = (event) => {
         resolve(event.data);
       };
 
-      connection.dataChannel.onerror = (error) => {
+      dataChannel.onerror = (error) => {
         reject(`Data channel error: ${error}`);
       };
     });

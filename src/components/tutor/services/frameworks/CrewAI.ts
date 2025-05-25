@@ -1,336 +1,131 @@
-import { LLMRouter } from '../LLMRouter';
 
-export interface Agent {
-  id: string;
-  name: string;
-  role: string;
-  goal: string;
-  backstory: string;
-  capabilities: string[];
-  llmModel: string;
-}
+import { SpecializedAgent } from '../../types/agents';
+import { RouterRequest } from '../../types/router';
 
-export interface Task {
-  id: string;
-  description: string;
-  agent: Agent;
-  dependencies: string[];
-  expectedOutput: string;
-  tools: string[];
-}
-
-export interface Crew {
-  id: string;
-  name: string;
-  agents: Agent[];
-  tasks: Task[];
-  process: 'sequential' | 'hierarchical';
-  manager?: Agent;
-}
-
-/**
- * CrewAI Integration for multi-agent coordination and task execution
- */
 export class CrewAI {
-  private llmRouter: LLMRouter;
-  private crews: Map<string, Crew> = new Map();
-  private activeExecutions: Map<string, any> = new Map();
-  
-  constructor(llmRouter: LLMRouter) {
-    this.llmRouter = llmRouter;
-  }
-  
-  /**
-   * Create a new agent
-   */
-  public createAgent(config: Omit<Agent, 'id'>): Agent {
-    const agent: Agent = {
-      id: `agent-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-      ...config
-    };
-    
-    console.log(`Created CrewAI agent: ${agent.id} (${agent.role})`);
-    return agent;
-  }
-  
-  /**
-   * Create a new task
-   */
-  public createTask(config: Omit<Task, 'id'>): Task {
-    const task: Task = {
-      id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-      ...config
-    };
-    
-    console.log(`Created CrewAI task: ${task.id}`);
-    return task;
-  }
-  
-  /**
-   * Create a new crew
-   */
-  public createCrew(config: Omit<Crew, 'id'>): Crew {
-    const crew: Crew = {
-      id: `crew-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-      ...config
-    };
-    
-    this.crews.set(crew.id, crew);
-    
-    console.log(`Created CrewAI crew: ${crew.id} with ${crew.agents.length} agents and ${crew.tasks.length} tasks`);
-    return crew;
-  }
-  
-  /**
-   * Execute a crew's tasks
-   */
-  public async kickoff(crewId: string, inputs?: Record<string, any>): Promise<{
-    success: boolean;
-    results: Array<{
-      taskId: string;
-      result: string;
-      agentId: string;
-      executionTime: number;
-    }>;
-    totalTime: number;
-    errors?: string[];
-  }> {
-    const crew = this.crews.get(crewId);
-    if (!crew) {
-      throw new Error(`Crew not found: ${crewId}`);
-    }
-    
-    console.log(`Starting CrewAI execution for crew: ${crewId}`);
-    
-    const startTime = Date.now();
-    const results: any[] = [];
-    const errors: string[] = [];
-    
-    this.activeExecutions.set(crewId, {
-      startTime,
-      status: 'running'
+  private agents: Map<string, SpecializedAgent> = new Map();
+
+  constructor(agents: SpecializedAgent[] = []) {
+    agents.forEach(agent => {
+      this.agents.set(agent.id, agent);
     });
-    
+  }
+
+  public addAgent(agent: SpecializedAgent): void {
+    this.agents.set(agent.id, agent);
+  }
+
+  public removeAgent(agentId: string): boolean {
+    return this.agents.delete(agentId);
+  }
+
+  public getAgent(agentId: string): SpecializedAgent | undefined {
+    return this.agents.get(agentId);
+  }
+
+  public async createCrew(
+    agentIds: string[],
+    goal: string,
+    backstory?: string
+  ): Promise<{
+    id: string;
+    agents: SpecializedAgent[];
+    goal: string;
+    backstory: string;
+  }> {
+    const selectedAgents = agentIds
+      .map(id => this.agents.get(id))
+      .filter(agent => agent !== undefined) as SpecializedAgent[];
+
+    if (selectedAgents.length === 0) {
+      throw new Error('No valid agents found for crew creation');
+    }
+
+    return {
+      id: `crew-${Date.now()}`,
+      agents: selectedAgents,
+      goal,
+      backstory: backstory || `A crew of ${selectedAgents.length} specialized agents working towards: ${goal}`
+    };
+  }
+
+  public async executeCrew(
+    crewId: string,
+    task: string,
+    context: Record<string, any> = {}
+  ): Promise<{ result: string; metadata: Record<string, any> }> {
     try {
-      if (crew.process === 'sequential') {
-        // Execute tasks sequentially
-        for (const task of crew.tasks) {
-          const taskResult = await this.executeTask(task, inputs);
-          results.push(taskResult);
-          
-          if (!taskResult.success) {
-            errors.push(`Task ${task.id} failed: ${taskResult.error}`);
-          }
-        }
-      } else if (crew.process === 'hierarchical') {
-        // Execute tasks with hierarchical coordination
-        const taskResults = await this.executeHierarchicalTasks(crew, inputs);
-        results.push(...taskResults);
-      }
-      
-      const totalTime = Date.now() - startTime;
-      
-      this.activeExecutions.set(crewId, {
-        startTime,
-        status: 'completed',
-        totalTime
-      });
-      
-      return {
-        success: errors.length === 0,
-        results,
-        totalTime,
-        errors: errors.length > 0 ? errors : undefined
+      // Simulate crew execution
+      const result = `Crew ${crewId} executed task: ${task}`;
+      const metadata = {
+        crewId,
+        task,
+        context,
+        timestamp: new Date().toISOString(),
+        executionTime: Math.random() * 1000 + 500
       };
-      
+
+      return { result, metadata };
     } catch (error) {
-      const totalTime = Date.now() - startTime;
-      
-      this.activeExecutions.set(crewId, {
-        startTime,
-        status: 'failed',
-        totalTime,
-        error: (error as Error).message
-      });
-      
-      throw error;
+      console.error('Error executing crew:', error);
+      return {
+        result: `Crew execution failed: ${error}`,
+        metadata: {
+          crewId,
+          task,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString()
+        }
+      };
     }
   }
-  
-  /**
-   * Execute a single task
-   */
+
   public async executeTask(
+    agentId: string,
     task: any,
     context: Record<string, any> = {}
   ): Promise<{ result: string; metadata: Record<string, any> }> {
-    const startTime = Date.now();
-    
-    try {
-      console.log(`Executing task ${task.id} with agent ${task.agent.id}`);
-      
-      // Prepare context for the agent
-      const context = {
-        task: task.description,
-        role: task.agent.role,
-        goal: task.agent.goal,
-        backstory: task.agent.backstory,
-        expectedOutput: task.expectedOutput,
-        inputs: inputs || {}
-      };
-      
-      // Create router request without priority property
-      const routerRequest = {
-        query: task.description || task.content,
-        task: task.type || 'general',
-        complexity: context.complexity || 'medium',
-        urgency: context.urgency || 'medium',
-        costSensitivity: context.costSensitivity || 'medium',
-        contextLength: context.contextLength,
-        userSkillLevel: context.userSkillLevel,
-        topicId: context.topicId,
-        preferredModality: context.preferredModality
-      };
-      
-      // Use LLM Router to get response
-      const model = this.llmRouter.selectModel(routerRequest);
-      
-      // Simulate task execution
-      const prompt = `
-        You are ${task.agent.name}, a ${task.agent.role}.
-        
-        Background: ${task.agent.backstory}
-        Goal: ${task.agent.goal}
-        
-        Task: ${task.description}
-        Expected Output: ${task.expectedOutput}
-        
-        Additional Context: ${JSON.stringify(context.inputs)}
-        
-        Please complete this task according to your role and goal.
-      `;
-      
-      // In a real implementation, this would call the actual LLM
-      const result = `Task completed by ${task.agent.name}: ${task.description}`;
-      
-      const executionTime = Date.now() - startTime;
-      
-      return {
-        result,
-        metadata: {
-          executionTime
-        }
-      };
-      
-    } catch (error) {
-      const executionTime = Date.now() - startTime;
-      
-      return {
-        result: '',
-        metadata: {
-          executionTime,
-          error: (error as Error).message
-        }
-      };
+    const agent = this.agents.get(agentId);
+    if (!agent) {
+      throw new Error(`Agent ${agentId} not found`);
     }
-  }
-  
-  /**
-   * Execute tasks in hierarchical mode
-   */
-  private async executeHierarchicalTasks(crew: Crew, inputs?: Record<string, any>): Promise<any[]> {
-    if (!crew.manager) {
-      throw new Error('Hierarchical process requires a manager agent');
-    }
+
+    // Extract task properties safely
+    const inputs = context.inputs || {};
     
-    console.log(`Executing hierarchical tasks with manager: ${crew.manager.id}`);
-    
-    // Manager coordinates task execution
-    const results: any[] = [];
-    
-    // Sort tasks by dependencies
-    const sortedTasks = this.sortTasksByDependencies(crew.tasks);
-    
-    for (const task of sortedTasks) {
-      // Manager assigns task to appropriate agent
-      const assignedAgent = this.assignTaskToAgent(task, crew.agents);
-      
-      const taskWithAgent = { ...task, agent: assignedAgent };
-      const result = await this.executeTask(taskWithAgent, inputs);
-      
-      results.push(result);
-      
-      // Update inputs with task results for dependent tasks
-      if (inputs) {
-        inputs[`task_${task.id}_result`] = result.result;
-      }
-    }
-    
-    return results;
-  }
-  
-  /**
-   * Sort tasks by their dependencies
-   */
-  private sortTasksByDependencies(tasks: Task[]): Task[] {
-    const sorted: Task[] = [];
-    const visited = new Set<string>();
-    
-    const visit = (task: Task) => {
-      if (visited.has(task.id)) {
-        return;
-      }
-      
-      // Visit dependencies first
-      for (const depId of task.dependencies) {
-        const depTask = tasks.find(t => t.id === depId);
-        if (depTask && !visited.has(depId)) {
-          visit(depTask);
-        }
-      }
-      
-      visited.add(task.id);
-      sorted.push(task);
+    // Create router request for LLM selection
+    const routerRequest: RouterRequest = {
+      query: task.task || task.description || String(task),
+      task: task.task || task.description || String(task),
+      complexity: inputs.complexity || 'medium',
+      urgency: inputs.urgency || 'medium',
+      costSensitivity: inputs.costSensitivity || 'medium',
+      contextLength: inputs.contextLength,
+      userSkillLevel: inputs.userSkillLevel,
+      topicId: inputs.topicId,
+      preferredModality: inputs.preferredModality
     };
-    
-    for (const task of tasks) {
-      visit(task);
-    }
-    
-    return sorted;
+
+    // Simulate task execution
+    const result = `Agent ${agent.name} executed task with router request`;
+    const metadata = {
+      agentId,
+      agentName: agent.name,
+      routerRequest,
+      executionTime: Date.now(),
+      domain: agent.domain
+    };
+
+    return { result, metadata };
   }
-  
-  /**
-   * Assign task to the most suitable agent
-   */
-  private assignTaskToAgent(task: Task, agents: Agent[]): Agent {
-    // Simple assignment based on capabilities
-    for (const agent of agents) {
-      if (agent.capabilities.some(cap => task.tools.includes(cap))) {
-        return agent;
-      }
-    }
-    
-    // Default to first agent if no specific match
-    return agents[0];
+
+  public getAvailableAgents(): SpecializedAgent[] {
+    return Array.from(this.agents.values()).filter(agent => agent.status === 'active');
   }
-  
-  /**
-   * Get crew execution status
-   */
-  public getExecutionStatus(crewId: string): any {
-    return this.activeExecutions.get(crewId);
-  }
-  
-  /**
-   * Stop crew execution
-   */
-  public stopExecution(crewId: string): boolean {
-    const execution = this.activeExecutions.get(crewId);
-    if (execution && execution.status === 'running') {
-      execution.status = 'stopped';
-      return true;
-    }
-    return false;
+
+  public getAgentsByDomain(domain: string): SpecializedAgent[] {
+    return Array.from(this.agents.values()).filter(agent => 
+      agent.domain.toLowerCase() === domain.toLowerCase() && agent.status === 'active'
+    );
   }
 }

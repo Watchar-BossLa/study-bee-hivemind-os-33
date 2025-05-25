@@ -3,7 +3,7 @@ import { SpecializedAgent } from '../../types/agents';
 import { CouncilDecision, CouncilVote } from '../../types/councils';
 import { VotingService, VotingOptions } from './VotingService';
 import { ConsensusService, ConsensusOptions } from './ConsensusService';
-import { Plan } from '../frameworks/CrewAIPlanner';
+import { Plan } from './types/voting-types';
 
 // Define a proper context type instead of using Record<string, any>
 export interface DeliberationContext {

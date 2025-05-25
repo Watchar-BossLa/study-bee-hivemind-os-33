@@ -3,18 +3,19 @@ import { CouncilVote } from '../../../types/councils';
 import { SpecializedAgent } from '../../../types/agents';
 
 export interface PlanTask {
-  taskId: string;
-  description: string;
-  status: string;
-  assignedAgentId?: string;
+  id: string;
+  title?: string;
+  description?: string;
+  priority?: number;
 }
 
 export interface Plan {
-  planId: string;
-  type: string;
-  summary: string;
-  tasks?: PlanTask[];
-  members?: Array<{ id: string; name: string; role: string; }>;
+  id: string;
+  title: string;
+  type?: string;
+  summary?: string;
+  tasks: PlanTask[];
+  members?: string[];
   memberCount?: number;
 }
 
