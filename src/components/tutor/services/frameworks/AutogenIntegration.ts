@@ -25,7 +25,7 @@ export class AutogenIntegration {
 
     const taskId = await this.mcpCore.submitTask({
       type: 'security_review',
-      payload: {
+      content: {
         codeSnippet,
         context
       }
@@ -50,7 +50,7 @@ export class AutogenIntegration {
 
     const taskId = await this.mcpCore.submitTask({
       type: 'collaborative_analysis',
-      payload: {
+      content: {
         agents,
         prompt
       }

@@ -13,6 +13,7 @@ const QuorumDashboard = () => {
   // Example swarm metrics data
   const exampleSwarmMetrics = [
     {
+      executionId: 'exec_1',
       timestamp: new Date(Date.now() - 3600000),
       taskCount: 12,
       durationMs: 450,
@@ -20,6 +21,7 @@ const QuorumDashboard = () => {
       fanoutRatio: 3.5
     },
     {
+      executionId: 'exec_2',
       timestamp: new Date(Date.now() - 2400000),
       taskCount: 18,
       durationMs: 520,
@@ -27,6 +29,7 @@ const QuorumDashboard = () => {
       fanoutRatio: 4.0
     },
     {
+      executionId: 'exec_3',
       timestamp: new Date(Date.now() - 1200000),
       taskCount: 15,
       durationMs: 380,
@@ -34,6 +37,7 @@ const QuorumDashboard = () => {
       fanoutRatio: 3.8
     },
     {
+      executionId: 'exec_4',
       timestamp: new Date(),
       taskCount: 22,
       durationMs: 490,

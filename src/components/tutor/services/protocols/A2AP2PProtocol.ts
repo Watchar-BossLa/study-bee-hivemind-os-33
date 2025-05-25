@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from '@/lib/uuid';
 import { A2AMessageType, A2ATransportProtocol, A2AErrorCode } from './A2AProtocol';
 
@@ -61,7 +60,7 @@ export interface P2PMessageHeader {
 
 export interface P2PMessageBody {
   content?: any;
-  metadata?: Record<string, any>;
+  metadata?: string | Record<string, any>; // Allow both types for encryption compatibility
 }
 
 export interface P2PMessage {

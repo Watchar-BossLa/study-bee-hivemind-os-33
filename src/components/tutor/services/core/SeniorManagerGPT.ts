@@ -1,4 +1,3 @@
-
 import { LLMRouter } from '../LLMRouter';
 import { MCPCore } from './MCPCore';
 import { BudgetManager } from './senior-manager/BudgetManager';
@@ -59,13 +58,16 @@ export class SeniorManagerGPT {
   /**
    * Review and approve/reject a plan
    */
-  public async reviewPlan(plan: Plan): Promise<{
+  public async reviewPlan(
+    plan: Plan, 
+    context: Record<string, any> = {}
+  ): Promise<{
     approved: boolean;
     feedback: string;
     modifications?: Partial<Plan>;
     budgetAllocation?: Record<string, number>;
   }> {
-    console.log(`SeniorManagerGPT reviewing plan: ${plan.id}`);
+    console.log(`SeniorManagerGPT reviewing plan: ${plan.id}`, context);
     
     // Check budget constraints
     const budgetAnalysis = this.budgetManager.analyzePlan(plan);

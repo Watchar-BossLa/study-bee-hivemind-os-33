@@ -1,5 +1,5 @@
 export interface SwarmMetricsRecord {
-  executionId: string;
+  executionId?: string; // Made optional to support legacy data
   timestamp: Date;
   taskCount: number;
   durationMs: number;
@@ -10,12 +10,27 @@ export interface SwarmMetricsRecord {
   errorDetails?: string[];
 }
 
+export interface AggregatedSwarmMetrics {
+  period: string;
+  count: number;
+  avgDuration: number;
+  avgSuccessRate: number;
+  avgFanoutRatio: number;
+  totalTasks: number;
+}
+
 export class SwarmMetricsService {
   private metrics: SwarmMetricsRecord[] = [];
   private maxRecords = 1000;
 
   public recordMetrics(metrics: SwarmMetricsRecord): void {
-    this.metrics.unshift(metrics);
+    // Auto-generate executionId if not provided
+    const metricsWithId = {
+      ...metrics,
+      executionId: metrics.executionId || `exec_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
+    };
+    
+    this.metrics.unshift(metricsWithId);
     
     // Keep only the most recent records
     if (this.metrics.length > this.maxRecords) {
@@ -30,7 +45,7 @@ export class SwarmMetricsService {
   public getAggregatedMetrics(
     period: 'hour' | 'day' | 'week' = 'day',
     limit: number = 7
-  ) {
+  ): AggregatedSwarmMetrics[] {
     const now = new Date();
     const periodMs = {
       hour: 60 * 60 * 1000,
@@ -38,7 +53,7 @@ export class SwarmMetricsService {
       week: 7 * 24 * 60 * 60 * 1000
     }[period];
 
-    const aggregated = [];
+    const aggregated: AggregatedSwarmMetrics[] = [];
     
     for (let i = 0; i < limit; i++) {
       const periodStart = new Date(now.getTime() - (i + 1) * periodMs);

@@ -1,4 +1,3 @@
-
 import { UserInteraction } from '../../types/agents';
 import { InteractionManager } from '../core/InteractionManager';
 
@@ -20,7 +19,24 @@ export class UserInteractionManager {
     userId: string,
     context: Record<string, any>
   ): Promise<UserInteraction> {
-    return this.interactionManager.processUserInteraction(message, userId, context);
+    const response = await this.interactionManager.processUserInteraction(message, userId, context);
+    
+    // Convert the response to UserInteraction format
+    const userInteraction: UserInteraction = {
+      id: Math.random().toString(36).substring(7),
+      userId,
+      agentId: 'combined',
+      message,
+      response: response.response,
+      timestamp: new Date(),
+      context: {
+        ...context,
+        agentContributions: response.agentContributions,
+        metadata: response.metadata
+      }
+    };
+    
+    return userInteraction;
   }
   
   /**
