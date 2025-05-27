@@ -1,129 +1,113 @@
 
-// Enhanced SuperMemo SM-2⁺ algorithm implementation with reinforcement learning tuning
-export interface ReviewResult {
-  easinessFactor: number;
-  nextReviewDate: Date;
-  consecutiveCorrect: number;
-  intervalDays: number;
-  retention: number;
-}
+// Enhanced spaced repetition with RL optimization
+import { enhancedSM2, EnhancedSM2Result } from './spacedRepetition/EnhancedSM2Algorithm';
+import { UserPerformanceMetrics } from './spacedRepetition/types';
 
-// User performance metrics to help with RL fine-tuning
-export interface UserPerformanceMetrics {
-  averageResponseTimeMs: number;
-  retentionRate: number;
-  totalReviews: number;
-  streakDays: number;
+export { UserPerformanceMetrics } from './spacedRepetition/types';
+
+export interface ReviewResult extends EnhancedSM2Result {
+  // Backward compatibility
+  nextReviewDate: Date;
+  easinessFactor: number;
+  consecutiveCorrect: number;
 }
 
 /**
- * SM-2⁺ algorithm with reinforcement learning policy modification
- * Adjusts intervals based on user performance metrics and response data
+ * Enhanced SM-2+ algorithm with Reinforcement Learning optimization
+ * 
+ * @param consecutiveCorrect - Number of consecutive correct answers
+ * @param easinessFactor - Current easiness factor (1.3 to 2.5)
+ * @param wasCorrect - Whether the answer was correct
+ * @param responseTimeMs - Time taken to respond in milliseconds
+ * @param userMetrics - User's performance metrics for RL optimization
+ * @param cardDifficulty - Difficulty level of the card (1-10)
+ * @param userId - User ID for personalization
+ * @returns Enhanced review result with RL metrics
  */
 export function calculateNextReview(
   consecutiveCorrect: number,
   easinessFactor: number,
   wasCorrect: boolean,
   responseTimeMs?: number,
-  performanceMetrics?: UserPerformanceMetrics
+  userMetrics?: UserPerformanceMetrics,
+  cardDifficulty: number = 5,
+  userId?: string
 ): ReviewResult {
-  // Base easiness adjustment - more severe penalty for incorrect answers
-  const baseEasiness = wasCorrect ? 
-    Math.max(1.3, easinessFactor + 0.1) : 
-    Math.max(1.3, easinessFactor - 0.3);
-  
-  // Apply RL policy modifications based on performance metrics
-  let adjustedEasiness = baseEasiness;
-  if (performanceMetrics) {
-    // Adjust based on overall retention rate
-    if (performanceMetrics.retentionRate < 85) {
-      adjustedEasiness *= 0.95; // Make intervals shorter if retention is low
-    } else if (performanceMetrics.retentionRate > 95) {
-      adjustedEasiness *= 1.05; // Make intervals longer if retention is high
-    }
-    
-    // Adjust for streak - reward consistent study
-    if (performanceMetrics.streakDays > 7) {
-      adjustedEasiness *= 1.02;
-    }
-  }
-  
-  // Response time adjustment - faster responses indicate stronger recall
-  if (responseTimeMs && wasCorrect) {
-    // Normalize response time (adjust thresholds based on application data)
-    const avgResponseTime = performanceMetrics?.averageResponseTimeMs || 3000;
-    const normalizedTime = Math.min(Math.max(responseTimeMs / avgResponseTime, 0.5), 1.5);
-    
-    // Faster responses get slightly longer intervals
-    adjustedEasiness *= (2 - normalizedTime);
-  }
-  
-  const newConsecutive = wasCorrect ? consecutiveCorrect + 1 : 0;
-  
-  // Calculate interval days with SM-2⁺ algorithm
-  let intervalDays;
-  if (!wasCorrect) {
-    // If incorrect, review again soon but not immediately (spaced repetition principle)
-    intervalDays = 1;
-  } else {
-    if (newConsecutive === 1) {
-      intervalDays = 1; // First correct response
-    } else if (newConsecutive === 2) {
-      intervalDays = 6; // Second correct response
-    } else {
-      // For subsequent correct responses, use the SM-2 formula with our adjustments
-      intervalDays = Math.round((consecutiveCorrect) * adjustedEasiness);
-    }
-  }
-  
-  // Calculate estimated retention based on interval and easiness
-  const retention = calculateRetention(intervalDays, adjustedEasiness);
-  
-  // Generate next review date
-  const nextReview = new Date();
-  nextReview.setDate(nextReview.getDate() + intervalDays);
-  
+  const result = enhancedSM2.calculateNextReview(
+    consecutiveCorrect,
+    easinessFactor,
+    wasCorrect,
+    responseTimeMs,
+    userMetrics,
+    cardDifficulty,
+    userId
+  );
+
   return {
-    easinessFactor: adjustedEasiness,
-    nextReviewDate: nextReview,
-    consecutiveCorrect: newConsecutive,
-    intervalDays,
-    retention
+    ...result,
+    // Maintain backward compatibility
+    nextReviewDate: result.nextReviewDate,
+    easinessFactor: result.easinessFactor,
+    consecutiveCorrect: result.consecutiveCorrect
   };
 }
 
 /**
- * Estimates memory retention percentage based on the interval and easiness factor
- * Uses the Ebbinghaus forgetting curve with SM-2⁺ parameter adjustments
+ * Update user performance profile for better RL optimization
  */
-function calculateRetention(intervalDays: number, easinessFactor: number): number {
-  // Simplified retention calculation based on interval and easiness
-  // R = e^(-t/S) where t is time and S is strength (related to easiness)
-  const stabilityFactor = 2 * easinessFactor;
-  const retention = 100 * Math.exp(-intervalDays / stabilityFactor);
-  return Math.max(0, Math.min(100, retention));
+export function updateUserProfile(userId: string, metrics: UserPerformanceMetrics): void {
+  enhancedSM2.updateUserProfile(userId, metrics);
 }
 
 /**
- * Retrieve optimal study time using the SM-2⁺ algorithm
- * Returns the ideal time to review a card to maximize long-term retention
+ * Get current user performance profile
  */
-export function getOptimalReviewTime(
-  lastReviewDate: Date, 
-  easinessFactor: number,
-  consecutiveCorrect: number
-): Date {
-  let intervalDays = 1;
+export function getUserProfile(userId: string): UserPerformanceMetrics | undefined {
+  return enhancedSM2.getUserProfile(userId);
+}
+
+/**
+ * Export policy weights for model persistence
+ */
+export function exportRLPolicy(): string {
+  return enhancedSM2.exportPolicyWeights();
+}
+
+/**
+ * Import policy weights for model loading
+ */
+export function importRLPolicy(weightsData: string): void {
+  enhancedSM2.importPolicyWeights(weightsData);
+}
+
+/**
+ * Calculate optimal review batch size based on user metrics
+ */
+export function calculateOptimalBatchSize(userMetrics: UserPerformanceMetrics): number {
+  const baseSize = 20;
+  const velocityMultiplier = (userMetrics.learningVelocity || 1.0);
+  const cognitiveLoadAdjustment = 1.0 - (userMetrics.cognitiveLoad || 0.5);
   
-  if (consecutiveCorrect === 1) {
-    intervalDays = 1;
-  } else if (consecutiveCorrect === 2) {
-    intervalDays = 6;
-  } else if (consecutiveCorrect > 2) {
-    intervalDays = Math.round((consecutiveCorrect - 1) * easinessFactor);
+  return Math.max(5, Math.min(50, Math.round(baseSize * velocityMultiplier * cognitiveLoadAdjustment)));
+}
+
+/**
+ * Predict next session difficulty based on user performance
+ */
+export function predictSessionDifficulty(
+  userMetrics: UserPerformanceMetrics, 
+  recentAccuracy: number
+): 'easy' | 'medium' | 'hard' | 'adaptive' {
+  const cognitiveLoad = userMetrics.cognitiveLoad || 0.5;
+  const retentionRate = userMetrics.retentionRate / 100.0;
+  
+  if (recentAccuracy > 0.85 && cognitiveLoad < 0.6 && retentionRate > 0.8) {
+    return 'hard';
+  } else if (recentAccuracy < 0.6 || cognitiveLoad > 0.8) {
+    return 'easy';
+  } else if (userMetrics.learningVelocity && userMetrics.learningVelocity > 1.2) {
+    return 'adaptive';
+  } else {
+    return 'medium';
   }
-  
-  const optimalDate = new Date(lastReviewDate);
-  optimalDate.setDate(optimalDate.getDate() + intervalDays);
-  return optimalDate;
 }
