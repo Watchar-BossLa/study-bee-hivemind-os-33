@@ -70,11 +70,11 @@ export class RealTimeAdaptationService {
     metrics: RealTimeMetrics, 
     sessionData: SessionData
   ): AdaptationAction | null {
-    const { accuracy, consecutiveCorrect, consecutiveIncorrect } = metrics;
+    const { currentAccuracy, consecutiveCorrect, consecutiveIncorrect } = metrics;
     const { difficulty } = sessionData;
 
     // Increase difficulty if performing well
-    if (accuracy >= this.thresholds.difficultyIncrease.accuracy && 
+    if (currentAccuracy >= this.thresholds.difficultyIncrease.accuracy && 
         consecutiveCorrect >= this.thresholds.difficultyIncrease.consecutiveCorrect &&
         difficulty < 10) {
       return {
@@ -92,7 +92,7 @@ export class RealTimeAdaptationService {
     }
 
     // Decrease difficulty if struggling
-    if (accuracy <= this.thresholds.difficultyDecrease.accuracy && 
+    if (currentAccuracy <= this.thresholds.difficultyDecrease.accuracy && 
         consecutiveIncorrect >= this.thresholds.difficultyDecrease.consecutiveIncorrect &&
         difficulty > 1) {
       return {
