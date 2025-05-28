@@ -1,3 +1,4 @@
+
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
@@ -22,7 +23,7 @@ jest.mock('@/components/ui/use-toast', () => ({
   })
 }));
 
-const createWrapper = () => {
+const createWrapper = (): React.FC<{ children: React.ReactNode }> => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -30,7 +31,7 @@ const createWrapper = () => {
     }
   });
   
-  return ({ children }: { children: React.ReactNode }) => (
+  return ({ children }) => (
     <QueryClientProvider client={queryClient}>
       {children}
     </QueryClientProvider>
