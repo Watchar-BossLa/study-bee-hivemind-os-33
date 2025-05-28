@@ -3,7 +3,7 @@
 import { enhancedSM2, EnhancedSM2Result } from './spacedRepetition/EnhancedSM2Algorithm';
 import { UserPerformanceMetrics } from './spacedRepetition/types';
 
-export { UserPerformanceMetrics } from './spacedRepetition/types';
+export type { UserPerformanceMetrics } from './spacedRepetition/types';
 
 export interface ReviewResult extends EnhancedSM2Result {
   // Backward compatibility
