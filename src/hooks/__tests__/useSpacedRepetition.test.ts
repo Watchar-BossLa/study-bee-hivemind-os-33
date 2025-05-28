@@ -23,7 +23,7 @@ jest.mock('@/components/ui/use-toast', () => ({
   })
 }));
 
-const createWrapper = (): React.FC<{ children: React.ReactNode }> => {
+const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -31,11 +31,15 @@ const createWrapper = (): React.FC<{ children: React.ReactNode }> => {
     }
   });
   
-  return ({ children }) => (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
+  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    return (
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    );
+  };
+  
+  return Wrapper;
 };
 
 describe('useSpacedRepetition', () => {
