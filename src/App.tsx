@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   createBrowserRouter,
@@ -43,8 +44,8 @@ import Settings from '@/pages/Settings';
 import NotImplemented from '@/pages/NotImplemented';
 import NotFound from '@/pages/NotFound';
 import NotFoundPage from '@/pages/NotFoundPage';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import ErrorFallback from '@/components/ErrorFallback';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { ErrorFallback } from '@/components/error/ErrorFallback';
 import StudyGroups from '@/pages/StudyGroups';
 import PeerLearning from '@/pages/PeerLearning';
 import CollaborativeNotes from '@/pages/CollaborativeNotes';
