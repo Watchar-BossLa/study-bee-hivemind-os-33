@@ -1,45 +1,16 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 
-export const useArenaTimer = () => {
-  const [timeLeft, setTimeLeft] = useState(15);
-  const [timerActive, setTimerActive] = useState(false);
+export const useArenaTimer = (initialTime: number = 30) => {
+  const [timeLeft, setTimeLeft] = useState(initialTime);
 
-  useEffect(() => {
-    let timerId: number | undefined;
-
-    if (timerActive && timeLeft > 0) {
-      timerId = window.setInterval(() => {
-        setTimeLeft(prev => Math.max(0, prev - 1));
-      }, 1000);
-    }
-
-    return () => {
-      if (timerId !== undefined) {
-        clearInterval(timerId);
-      }
-    };
-  }, [timerActive, timeLeft]);
-
-  const startTimer = () => {
-    setTimerActive(true);
-  };
-
-  const stopTimer = () => {
-    setTimerActive(false);
-  };
-
-  const resetTimer = () => {
-    setTimeLeft(15);
-    setTimerActive(false);
-  };
+  const resetTimer = useCallback((newTime?: number) => {
+    setTimeLeft(newTime ?? initialTime);
+  }, [initialTime]);
 
   return {
     timeLeft,
     setTimeLeft,
-    timerActive,
-    startTimer,
-    stopTimer,
     resetTimer
   };
 };
