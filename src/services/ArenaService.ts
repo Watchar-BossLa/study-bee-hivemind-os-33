@@ -62,14 +62,26 @@ export class ArenaService extends BaseService {
 
   async getMatchPlayers(matchId: string): Promise<ServiceResponse<MatchPlayer[]>> {
     return this.executeWithRetry(async () => {
+      // Select all columns including the ones that might not exist in older records
       const { data, error } = await supabase
         .from('match_players')
-        .select('*')
+        .select(`
+          id,
+          match_id,
+          user_id,
+          score,
+          questions_answered,
+          correct_answers,
+          total_response_time,
+          streak,
+          created_at,
+          updated_at
+        `)
         .eq('match_id', matchId);
 
       if (error) throw error;
       
-      // Map database fields to MatchPlayer interface
+      // Map database fields to MatchPlayer interface with proper fallbacks
       const players: MatchPlayer[] = (data || []).map(player => ({
         id: player.id,
         match_id: player.match_id,
@@ -79,7 +91,7 @@ export class ArenaService extends BaseService {
         questions_answered: player.questions_answered || 0,
         total_response_time: player.total_response_time || 0,
         streak: player.streak || 0,
-        joined_at: player.created_at || new Date().toISOString() // Map created_at to joined_at
+        joined_at: player.created_at || new Date().toISOString()
       }));
       
       return players;
