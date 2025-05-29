@@ -14,6 +14,7 @@ import GraphTutor from './pages/GraphTutor';
 import AdaptiveQuiz from './pages/AdaptiveQuiz';
 import QuorumDashboard from './pages/QuorumDashboard';
 import Login from './pages/Login';
+import LiveSessions from './pages/LiveSessions';
 import './App.css';
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
         <Route path="/adaptive-quiz" element={<AdaptiveQuiz />} />
         <Route path="/quorum-dashboard" element={<QuorumDashboard />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/live-sessions" element={<LiveSessions />} />
       </Routes>
     </BrowserRouter>
   );

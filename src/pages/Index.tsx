@@ -1,71 +1,79 @@
 
 import React from 'react';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import { Helmet } from 'react-helmet-async';
 import HeroSection from '@/components/HeroSection';
 import FeaturesSection from '@/components/FeaturesSection';
 import AIFeatures from '@/components/AIFeatures';
-import { CourseProps } from '@/types/course';
-import QuickActionsSection from '@/components/home/QuickActionsSection';
-import AnalyticsSection from '@/components/home/AnalyticsSection';
-import LearningProgressSection from '@/components/home/LearningProgressSection';
-import StatisticsSection from '@/components/home/StatisticsSection';
-import FeaturedCourses from '@/components/home/FeaturedCourses';
-import CTA from '@/components/home/CTA';
-
-// Featured courses data
-const featuredCourses: CourseProps[] = [
-  {
-    id: "1",
-    title: "Introduction to Biology",
-    category: "Science",
-    level: "Beginner",
-    description: "Learn the fundamentals of biology, from cells to ecosystems, with interactive lessons and AI-powered quizzes.",
-    lessons: 24,
-    students: 3452,
-    duration: "12 hours",
-  },
-  {
-    id: "2",
-    title: "Advanced Mathematics",
-    category: "Mathematics",
-    level: "Advanced",
-    description: "Master complex mathematical concepts including calculus, linear algebra, and differential equations.",
-    lessons: 36,
-    students: 1823,
-    duration: "20 hours",
-  },
-  {
-    id: "3",
-    title: "World History: Ancient Civilizations",
-    category: "History",
-    level: "Intermediate",
-    description: "Explore the rise and fall of ancient civilizations including Egypt, Greece, Rome, and China.",
-    lessons: 18,
-    students: 2741,
-    duration: "15 hours",
-  }
-];
+import Footer from '@/components/Footer';
+import Navbar from '@/components/Navbar';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import { Users, Video, MessageSquare, BarChart3 } from 'lucide-react';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
-      <main className="flex-grow">
+    <>
+      <Helmet>
+        <title>Study Bee - AI-Powered Learning Platform</title>
+        <meta name="description" content="Master any subject with Study Bee's AI tutor, spaced repetition flashcards, and interactive quizzes. Join millions learning smarter, not harder." />
+      </Helmet>
+      <div className="min-h-screen">
+        <Navbar />
         <HeroSection />
-        <QuickActionsSection />
-        <AnalyticsSection />
-        <LearningProgressSection />
-        <StatisticsSection />
-        <AIFeatures />
+        
+        {/* Quick Actions Section */}
+        <section className="py-16 bg-muted/50">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-bold text-center mb-12">Start Learning Today</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
+              <Link to="/live-sessions">
+                <Button 
+                  variant="outline" 
+                  className="w-full h-24 flex-col gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
+                  <Users className="h-6 w-6" />
+                  <span>Live Sessions</span>
+                </Button>
+              </Link>
+              
+              <Link to="/flashcards">
+                <Button 
+                  variant="outline" 
+                  className="w-full h-24 flex-col gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
+                  <MessageSquare className="h-6 w-6" />
+                  <span>Flashcards</span>
+                </Button>
+              </Link>
+              
+              <Link to="/arena">
+                <Button 
+                  variant="outline" 
+                  className="w-full h-24 flex-col gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
+                  <Video className="h-6 w-6" />
+                  <span>Arena</span>
+                </Button>
+              </Link>
+              
+              <Link to="/analytics">
+                <Button 
+                  variant="outline" 
+                  className="w-full h-24 flex-col gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
+                  <BarChart3 className="h-6 w-6" />
+                  <span>Analytics</span>
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+        
         <FeaturesSection />
-        <FeaturedCourses courses={featuredCourses} />
-        <CTA />
-      </main>
-      
-      <Footer />
-    </div>
+        <AIFeatures />
+        <Footer />
+      </div>
+    </>
   );
 };
 

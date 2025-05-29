@@ -1,149 +1,212 @@
 
 import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Trash2, Plus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { X, Plus, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { LiveSession } from '@/types/livesessions';
 
-export interface PollFormProps {
-  onSubmit: (question: string, options: string[], allowMultipleChoices: boolean) => Promise<void>;
-  onCancel: () => void;
+interface CreatePollFormProps {
+  session: LiveSession;
+  onClose: () => void;
+  onPollCreated: () => void;
 }
 
-const CreatePollForm: React.FC<PollFormProps> = ({ onSubmit, onCancel }) => {
+const CreatePollForm: React.FC<CreatePollFormProps> = ({ 
+  session, 
+  onClose, 
+  onPollCreated 
+}) => {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']);
-  const [allowMultipleChoices, setAllowMultipleChoices] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [allowMultiple, setAllowMultiple] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const { toast } = useToast();
 
   const addOption = () => {
-    if (options.length < 10) {
+    if (options.length < 6) {
       setOptions([...options, '']);
     }
   };
 
   const removeOption = (index: number) => {
     if (options.length > 2) {
-      const newOptions = [...options];
-      newOptions.splice(index, 1);
-      setOptions(newOptions);
+      setOptions(options.filter((_, i) => i !== index));
     }
   };
 
-  const updateOption = (index: number, text: string) => {
+  const updateOption = (index: number, value: string) => {
     const newOptions = [...options];
-    newOptions[index] = text;
+    newOptions[index] = value;
     setOptions(newOptions);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
     
-    // Validate
     if (!question.trim()) {
-      setErrorMessage('Please enter a question');
+      toast({
+        title: 'Question required',
+        description: 'Please enter a poll question',
+        variant: 'destructive'
+      });
       return;
     }
-    
-    if (options.some(opt => !opt.trim())) {
-      setErrorMessage('All options must have text');
+
+    const validOptions = options.filter(opt => opt.trim());
+    if (validOptions.length < 2) {
+      toast({
+        title: 'More options needed',
+        description: 'Please provide at least 2 options',
+        variant: 'destructive'
+      });
       return;
     }
-    
-    setIsSubmitting(true);
-    
+
+    setIsCreating(true);
     try {
-      await onSubmit(question, options, allowMultipleChoices);
-    } catch (err) {
-      setErrorMessage('Failed to create poll. Please try again.');
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: 'Authentication required',
+          description: 'You need to be logged in to create polls',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // First, end any existing active polls
+      await supabase
+        .from('session_polls')
+        .update({ is_active: false, ended_at: new Date().toISOString() })
+        .eq('session_id', session.id)
+        .eq('is_active', true);
+
+      // Create the new poll
+      const pollOptions = validOptions.map((text, index) => ({
+        id: index.toString(),
+        text,
+        votes: 0
+      }));
+
+      const { error } = await supabase
+        .from('session_polls')
+        .insert({
+          session_id: session.id,
+          creator_id: user.id,
+          question: question.trim(),
+          options: pollOptions,
+          allow_multiple_choices: allowMultiple,
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Poll created',
+        description: 'Your poll is now live',
+      });
+
+      onPollCreated();
+    } catch (error) {
+      console.error('Error creating poll:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create poll',
+        variant: 'destructive'
+      });
     } finally {
-      setIsSubmitting(false);
+      setIsCreating(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="question">Question</Label>
-        <Input
-          id="question"
-          placeholder="Enter your poll question"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          disabled={isSubmitting}
-          required
-        />
-      </div>
-      
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label>Poll Options</Label>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={addOption}
-            disabled={options.length >= 10 || isSubmitting}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add Option
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          Create Poll
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
           </Button>
-        </div>
-        
-        {options.map((option, index) => (
-          <div key={index} className="flex items-center space-x-2">
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="question">Poll Question</Label>
             <Input
-              placeholder={`Option ${index + 1}`}
-              value={option}
-              onChange={(e) => updateOption(index, e.target.value)}
-              disabled={isSubmitting}
+              id="question"
+              placeholder="What would you like to ask?"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
               required
-              className="flex-1"
             />
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              onClick={() => removeOption(index)}
-              disabled={options.length <= 2 || isSubmitting}
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
+          </div>
+
+          <div>
+            <Label>Options</Label>
+            <div className="space-y-2 mt-2">
+              {options.map((option, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    placeholder={`Option ${index + 1}`}
+                    value={option}
+                    onChange={(e) => updateOption(index, e.target.value)}
+                  />
+                  {options.length > 2 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeOption(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              
+              {options.length < 6 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addOption}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Option
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="multiple"
+              checked={allowMultiple}
+              onCheckedChange={(checked) => setAllowMultiple(checked as boolean)}
+            />
+            <Label htmlFor="multiple">Allow multiple selections</Label>
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <Button type="submit" disabled={isCreating} className="flex-1">
+              {isCreating ? 'Creating...' : 'Create Poll'}
+            </Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
             </Button>
           </div>
-        ))}
-      </div>
-      
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="multipleChoice"
-          checked={allowMultipleChoices}
-          onCheckedChange={setAllowMultipleChoices}
-          disabled={isSubmitting}
-        />
-        <Label htmlFor="multipleChoice">Allow multiple choices</Label>
-      </div>
-      
-      {errorMessage && (
-        <p className="text-sm font-medium text-destructive">{errorMessage}</p>
-      )}
-      
-      <div className="flex justify-end space-x-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating Poll...' : 'Create Poll'}
-        </Button>
-      </div>
-    </form>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

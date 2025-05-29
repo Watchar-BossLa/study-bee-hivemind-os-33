@@ -3,34 +3,38 @@ export interface LiveSession {
   id: string;
   title: string;
   description?: string;
+  host: SessionParticipant;
+  participants: SessionParticipant[];
   subject: string;
-  host: {
-    id: string;
-    name: string;
-    avatar?: string;
-    isCurrentUser?: boolean;
-  };
-  participants: {
-    id: string;
-    name: string;
-    avatar?: string;
-  }[];
   maxParticipants: number;
-  startTime: string;
-  endTime?: string;
-  status: 'scheduled' | 'active' | 'ended';
   isPrivate: boolean;
   accessCode?: string;
-  features: {
-    video: boolean;
-    audio: boolean;
-    chat: boolean;
-    whiteboard: boolean;
-    screenSharing: boolean;
-    polls?: boolean;
-  };
+  status: 'active' | 'ended' | 'scheduled';
+  features: SessionFeatures;
   createdAt: string;
   updatedAt: string;
+  startTime: string;
+  endTime?: string;
+}
+
+export interface SessionParticipant {
+  id: string;
+  name: string;
+  avatar?: string;
+  role: 'host' | 'moderator' | 'participant';
+  isActive: boolean;
+  joinedAt: string;
+  lastSeen: string;
+}
+
+export interface SessionFeatures {
+  chat: boolean;
+  audio: boolean;
+  video: boolean;
+  whiteboard: boolean;
+  polls: boolean;
+  screenSharing: boolean;
+  breakoutRooms: boolean;
 }
 
 export interface SessionMessage {
@@ -40,25 +44,10 @@ export interface SessionMessage {
   userName: string;
   userAvatar?: string;
   content: string;
-  type: 'text' | 'system' | 'file';
+  type: 'text' | 'system' | 'poll' | 'file';
   timestamp: string;
-}
-
-export interface WhiteboardDrawing {
-  id: string;
-  sessionId: string;
-  userId: string;
-  paths: any[];
-  timestamp: string;
-}
-
-export interface SessionNote {
-  id: string;
-  sessionId: string;
-  userId: string;
-  content: string;
-  timestamp: string;
-  isShared: boolean;
+  editedAt?: string;
+  replyTo?: string;
 }
 
 export interface SessionPoll {
@@ -66,28 +55,43 @@ export interface SessionPoll {
   sessionId: string;
   creatorId: string;
   question: string;
-  options: { text: string }[];
-  isActive: boolean;
+  options: PollOption[];
   allowMultipleChoices: boolean;
+  isActive: boolean;
   createdAt: string;
   endedAt?: string;
 }
 
-export interface PollResponse {
+export interface PollOption {
   id: string;
-  pollId: string;
-  userId: string;
-  selectedOptions: number[];
-  createdAt: string;
+  text: string;
+  votes: number;
 }
 
 export interface PollResults {
-  totalResponses: number;
-  optionCounts: number[];
-  respondents: {
-    id: string;
-    name: string;
-    avatar?: string;
-    selectedOptions: number[];
-  }[];
+  totalVotes: number;
+  options: (PollOption & { percentage: number })[];
+  voters: string[];
+}
+
+export interface SessionNote {
+  id: string;
+  sessionId: string;
+  userId: string;
+  content: string;
+  isShared: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WhiteboardPath {
+  id: string;
+  sessionId: string;
+  userId: string;
+  userName: string;
+  pathData: number[][];
+  color: string;
+  brushSize: number;
+  tool: 'pen' | 'eraser' | 'highlighter';
+  createdAt: string;
 }
