@@ -1,23 +1,25 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import FlashcardsList from '@/components/shared/flashcards/FlashcardsList';
-import { useToast } from '@/components/ui/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import FlashcardFilters from '@/components/flashcards/FlashcardFilters';
 import { FlashcardFilter } from '@/components/shared/flashcards/types';
 import { Loader2, Plus, ListFilter } from 'lucide-react';
+import { useFlashcardOperations } from '@/hooks/flashcards/useFlashcardOperations';
 
 const Flashcards = () => {
-  const { toast } = useToast();
   const [filters, setFilters] = useState<FlashcardFilter>({
     subject: undefined,
     difficulty: undefined,
     showPreloaded: true
   });
+
+  const { handleEdit } = useFlashcardOperations();
 
   // Fetch flashcards from Supabase
   const { data: flashcards, isLoading, refetch } = useQuery({
@@ -55,92 +57,12 @@ const Flashcards = () => {
       
       if (error) {
         console.error('Error fetching flashcards:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load flashcards. Please try again.',
-          variant: 'destructive'
-        });
         return [];
       }
       
       return data || [];
     }
   });
-
-  const handleEdit = async (id: string, updatedCard: { question: string; answer: string }) => {
-    try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: 'Authentication required',
-          description: 'You need to be logged in to edit flashcards',
-          variant: 'destructive'
-        });
-        return;
-      }
-      
-      // Check if this is a preloaded card
-      const { data: flashcard } = await supabase
-        .from('flashcards')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (flashcard?.is_preloaded) {
-        // For preloaded cards, create a copy for the user
-        const { error: insertError } = await supabase
-          .from('flashcards')
-          .insert({
-            user_id: user.id,
-            question: updatedCard.question,
-            answer: updatedCard.answer,
-            subject_area: flashcard.subject_area,
-            difficulty: flashcard.difficulty,
-            is_preloaded: false
-          });
-        
-        if (insertError) throw insertError;
-        
-        toast({
-          title: 'Card copied to your collection',
-          description: 'The preloaded card has been copied and edited in your collection.',
-          duration: 3000
-        });
-      } else {
-        // For user's cards, update directly
-        const { error: updateError } = await supabase
-          .from('flashcards')
-          .update({
-            question: updatedCard.question,
-            answer: updatedCard.answer,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', id)
-          .eq('user_id', user.id);
-        
-        if (updateError) throw updateError;
-        
-        toast({
-          title: 'Card updated',
-          description: 'Your flashcard has been updated successfully.',
-          duration: 3000
-        });
-      }
-      
-      // Refetch cards to update the list
-      refetch();
-      
-    } catch (error) {
-      console.error('Error updating flashcard:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update the flashcard. Please try again.',
-        variant: 'destructive'
-      });
-    }
-  };
 
   const handleApplyFilters = () => {
     refetch();

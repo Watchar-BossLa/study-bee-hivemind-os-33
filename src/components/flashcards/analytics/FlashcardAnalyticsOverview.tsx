@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { useFlashcardAnalyticsSummary } from '@/hooks/flashcards/useFlashcardAnalyticsSummary';
+import { useFlashcardAnalyticsSummary } from '@/hooks/flashcards/useFlashcardAnalytics';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Brain, CheckCheck, Clock, Calendar } from 'lucide-react';
+import { OverviewMetricCard } from './components/OverviewMetricCard';
 
 const FlashcardAnalyticsOverview = () => {
   const { data: summary, isLoading } = useFlashcardAnalyticsSummary();
@@ -13,15 +12,11 @@ const FlashcardAnalyticsOverview = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {Array(4).fill(0).map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="pb-2">
-              <Skeleton className="h-4 w-24" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-10 w-full mb-2" />
-              <Skeleton className="h-4 w-3/4" />
-            </CardContent>
-          </Card>
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
         ))}
       </div>
     );
@@ -29,13 +24,9 @@ const FlashcardAnalyticsOverview = () => {
 
   if (!summary) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-center text-muted-foreground">
-            No flashcard data available yet. Start reviewing cards to see your statistics.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="text-center text-muted-foreground py-8">
+        No flashcard data available yet. Start reviewing cards to see your statistics.
+      </div>
     );
   }
 
@@ -74,42 +65,7 @@ const FlashcardAnalyticsOverview = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {statCards.map((card, i) => (
-        <Card key={i}>
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-            {card.icon}
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {card.value}
-              {card.unit && <span className="text-sm font-normal ml-1">{card.unit}</span>}
-            </div>
-            
-            {card.total && (
-              <div className="mt-2">
-                <Progress 
-                  value={card.total > 0 ? (Number(card.value) / card.total) * 100 : 0} 
-                  className="h-2" 
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {card.value} of {card.total} cards
-                </p>
-              </div>
-            )}
-            
-            {card.secondaryValue && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {card.secondaryValue}
-              </p>
-            )}
-            
-            {!card.total && !card.secondaryValue && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {card.description}
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <OverviewMetricCard key={i} {...card} />
       ))}
     </div>
   );

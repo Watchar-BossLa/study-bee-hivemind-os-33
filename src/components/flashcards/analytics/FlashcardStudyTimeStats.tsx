@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useFlashcardStudyTime } from '@/hooks/flashcards/useFlashcardStudyTime';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useFlashcardStudyTime } from '@/hooks/flashcards/useFlashcardAnalytics';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Clock } from 'lucide-react';
+import { StudyTimeMetric } from './components/StudyTimeMetric';
 
 const formatTime = (ms: number): string => {
   if (ms === 0) return '0m';
@@ -53,7 +54,7 @@ export const FlashcardStudyTimeStats = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs value={timeframe} onValueChange={(v: string) => setTimeframe(v as any)} className="w-full">
+        <Tabs value={timeframe} onValueChange={(v) => setTimeframe(v as typeof timeframe)} className="w-full">
           <TabsList className="grid grid-cols-4 mb-4">
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="week">Week</TabsTrigger>
@@ -62,24 +63,22 @@ export const FlashcardStudyTimeStats = () => {
           </TabsList>
           
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-muted/50 p-3 rounded-lg text-center">
-              <p className="text-sm text-muted-foreground mb-1">Total time</p>
-              <p className="text-2xl font-bold">{formatTime(data?.totalTimeMs || 0)}</p>
-            </div>
-            <div className="bg-muted/50 p-3 rounded-lg text-center">
-              <p className="text-sm text-muted-foreground mb-1">Sessions</p>
-              <p className="text-2xl font-bold">{data?.sessions || 0}</p>
-            </div>
-            <div className="bg-muted/50 p-3 rounded-lg text-center">
-              <p className="text-sm text-muted-foreground mb-1">Cards reviewed</p>
-              <p className="text-2xl font-bold">{data?.uniqueCards || 0}</p>
-            </div>
-            <div className="bg-muted/50 p-3 rounded-lg text-center">
-              <p className="text-sm text-muted-foreground mb-1">Avg. per card</p>
-              <p className="text-2xl font-bold">
-                {formatTime(data?.averageTimePerCardMs || 0)}
-              </p>
-            </div>
+            <StudyTimeMetric 
+              label="Total time"
+              value={formatTime(data?.totalTimeMs || 0)}
+            />
+            <StudyTimeMetric 
+              label="Sessions"
+              value={data?.sessions || 0}
+            />
+            <StudyTimeMetric 
+              label="Cards reviewed"
+              value={data?.uniqueCards || 0}
+            />
+            <StudyTimeMetric 
+              label="Avg. per card"
+              value={formatTime(data?.averageTimePerCardMs || 0)}
+            />
           </div>
         </Tabs>
       </CardContent>
