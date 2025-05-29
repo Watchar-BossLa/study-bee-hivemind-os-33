@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { tutorService } from '@/services/TutorService';
 import { MessageType } from '@/components/tutor/types/chat';
-import { errorHandler } from '@/utils/errorHandling';
+import { ErrorHandler } from '@/utils/errorHandling';
 
 export const useTutorOperations = () => {
   const processMessage = useCallback(async (
@@ -30,7 +30,7 @@ export const useTutorOperations = () => {
         agentContributors: result.data.agentContributions.map(contrib => contrib.agentId),
       };
     } catch (error) {
-      errorHandler.handle(error, 'tutor-message-processing');
+      ErrorHandler.handle(error, 'tutor-message-processing');
       return {
         id: (Date.now() + 1).toString(),
         content: 'I apologize, but I encountered an error processing your request. Please try again.',
@@ -53,7 +53,7 @@ export const useTutorOperations = () => {
         throw result.error || new Error('Failed to record feedback');
       }
     } catch (error) {
-      errorHandler.handle(error, 'tutor-feedback-recording');
+      ErrorHandler.handle(error, 'tutor-feedback-recording');
     }
   }, []);
 

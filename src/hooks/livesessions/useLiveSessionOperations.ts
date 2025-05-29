@@ -1,7 +1,7 @@
 
 import { useCallback } from 'react';
 import { liveSessionService, CreateSessionData } from '@/services/LiveSessionService';
-import { errorHandler } from '@/utils/errorHandling';
+import { ErrorHandler } from '@/utils/errorHandling';
 import { toast } from 'sonner';
 
 export const useLiveSessionOperations = () => {
@@ -15,7 +15,7 @@ export const useLiveSessionOperations = () => {
       toast.success('Session created successfully');
       return result.data;
     } catch (error) {
-      errorHandler.handle(error, 'session-creation');
+      ErrorHandler.handle(error, 'session-creation');
       return null;
     }
   }, []);
@@ -30,7 +30,7 @@ export const useLiveSessionOperations = () => {
       toast.success('Joined session successfully');
       return true;
     } catch (error) {
-      errorHandler.handle(error, 'session-joining');
+      ErrorHandler.handle(error, 'session-joining');
       return false;
     }
   }, []);
@@ -45,7 +45,7 @@ export const useLiveSessionOperations = () => {
       toast.success('Left session successfully');
       return true;
     } catch (error) {
-      errorHandler.handle(error, 'session-leaving');
+      ErrorHandler.handle(error, 'session-leaving');
       return false;
     }
   }, []);
@@ -59,7 +59,7 @@ export const useLiveSessionOperations = () => {
       
       return result.data;
     } catch (error) {
-      errorHandler.handle(error, 'sessions-fetching');
+      ErrorHandler.handle(error, 'sessions-fetching');
       return [];
     }
   }, []);

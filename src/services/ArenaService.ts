@@ -68,7 +68,21 @@ export class ArenaService extends BaseService {
         .eq('match_id', matchId);
 
       if (error) throw error;
-      return (data || []) as MatchPlayer[];
+      
+      // Map database fields to MatchPlayer interface
+      const players: MatchPlayer[] = (data || []).map(player => ({
+        id: player.id,
+        match_id: player.match_id,
+        user_id: player.user_id,
+        score: player.score || 0,
+        correct_answers: player.correct_answers || 0,
+        questions_answered: player.questions_answered || 0,
+        total_response_time: player.total_response_time || 0,
+        streak: player.streak || 0,
+        joined_at: player.created_at || new Date().toISOString() // Map created_at to joined_at
+      }));
+      
+      return players;
     }, 'arena-players-fetching');
   }
 

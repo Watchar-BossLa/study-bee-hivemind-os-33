@@ -1,7 +1,7 @@
 
 import { useCallback } from 'react';
 import { liveSessionService, CreateSessionData } from '@/services/LiveSessionService';
-import { errorHandler } from '@/utils/errorHandling';
+import { ErrorHandler } from '@/utils/errorHandling';
 import { toast } from 'sonner';
 
 export function useSessionActions() {
@@ -19,7 +19,7 @@ export function useSessionActions() {
       toast.success('Session created successfully');
       return result.data.id;
     } catch (error) {
-      errorHandler.handle(error, 'session-creation');
+      ErrorHandler.handle(error, 'session-creation');
       toast.error('Failed to create session');
       return null;
     }
@@ -38,7 +38,7 @@ export function useSessionActions() {
       toast.success('Joined session successfully');
       return true;
     } catch (error) {
-      errorHandler.handle(error, 'session-joining');
+      ErrorHandler.handle(error, 'session-joining');
       toast.error('Failed to join session');
       return false;
     }
@@ -57,7 +57,7 @@ export function useSessionActions() {
       toast.success('Left session successfully');
       return true;
     } catch (error) {
-      errorHandler.handle(error, 'session-leaving');
+      ErrorHandler.handle(error, 'session-leaving');
       toast.error('Failed to leave session');
       return false;
     }

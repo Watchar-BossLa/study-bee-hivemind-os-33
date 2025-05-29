@@ -1,7 +1,7 @@
 
 import { useCallback } from 'react';
 import { arenaService } from '@/services/ArenaService';
-import { errorHandler } from '@/utils/errorHandling';
+import { ErrorHandler } from '@/utils/errorHandling';
 import { ArenaMatchConfig } from '@/services/ArenaService';
 
 export const useArenaOperations = () => {
@@ -13,7 +13,7 @@ export const useArenaOperations = () => {
       }
       return result.data;
     } catch (error) {
-      errorHandler.handle(error, 'arena-match-finding');
+      ErrorHandler.handle(error, 'arena-match-finding');
       return null;
     }
   }, []);
@@ -26,7 +26,7 @@ export const useArenaOperations = () => {
       }
       return true;
     } catch (error) {
-      errorHandler.handle(error, 'arena-match-joining');
+      ErrorHandler.handle(error, 'arena-match-joining');
       return false;
     }
   }, []);
@@ -39,7 +39,7 @@ export const useArenaOperations = () => {
       }
       return result.data;
     } catch (error) {
-      errorHandler.handle(error, 'arena-questions-loading');
+      ErrorHandler.handle(error, 'arena-questions-loading');
       return [];
     }
   }, []);
@@ -67,7 +67,7 @@ export const useArenaOperations = () => {
       }
       return true;
     } catch (error) {
-      errorHandler.handle(error, 'arena-answer-submission');
+      ErrorHandler.handle(error, 'arena-answer-submission');
       return false;
     }
   }, []);
