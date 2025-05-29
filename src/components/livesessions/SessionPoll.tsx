@@ -101,25 +101,27 @@ const SessionPollComponent: React.FC<SessionPollProps> = ({ session }) => {
       if (!poll) return;
 
       // Calculate results
-      const optionVotes: { [key: number]: number } = {};
-      let totalVotes = 0;
+      const optionCounts = new Array(poll.options.length).fill(0);
+      let totalResponses = 0;
 
       responses?.forEach(response => {
         const selectedOptions = response.selected_options as number[];
         selectedOptions.forEach(optionIndex => {
-          optionVotes[optionIndex] = (optionVotes[optionIndex] || 0) + 1;
-          totalVotes++;
+          if (optionIndex >= 0 && optionIndex < optionCounts.length) {
+            optionCounts[optionIndex]++;
+          }
         });
+        totalResponses++;
       });
 
       const results: PollResults = {
-        totalVotes,
-        options: poll.options.map((option, index) => ({
-          ...option,
-          votes: optionVotes[index] || 0,
-          percentage: totalVotes > 0 ? ((optionVotes[index] || 0) / totalVotes) * 100 : 0
-        })),
-        voters: responses?.map(r => 'voter-id') || [] // In real app, get actual voter IDs
+        totalResponses,
+        optionCounts,
+        respondents: responses?.map(r => ({
+          id: 'voter-id',
+          name: 'Voter',
+          selectedOptions: r.selected_options as number[]
+        })) || []
       };
 
       setPollResults(results);

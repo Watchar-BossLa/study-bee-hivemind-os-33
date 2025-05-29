@@ -52,6 +52,17 @@ const SessionNotes: React.FC<SessionNotesProps> = ({ sessionId }) => {
       description: "Your notes have been downloaded successfully",
     });
   };
+
+  const handleShareToggle = () => {
+    if (notes.length > 0) {
+      const userNote = notes[0]; // Get the first note for this example
+      if (hasSharedNote) {
+        unshareNotes(userNote.id);
+      } else {
+        shareNotes(userNote.id);
+      }
+    }
+  };
   
   if (isLoading) {
     return (
@@ -70,7 +81,7 @@ const SessionNotes: React.FC<SessionNotesProps> = ({ sessionId }) => {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={hasSharedNote ? unshareNotes : shareNotes}
+            onClick={handleShareToggle}
           >
             {hasSharedNote ? (
               <>
