@@ -6,10 +6,10 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 
 interface ErrorFallbackProps {
   error: Error;
-  resetError: () => void;
+  resetErrorBoundary: () => void;
 }
 
-export const ErrorFallback = ({ error, resetError }: ErrorFallbackProps): React.ReactElement => {
+export const ErrorFallback = ({ error, resetErrorBoundary }: ErrorFallbackProps): React.ReactElement => {
   return (
     <div className="p-6 flex flex-col items-center justify-center min-h-[200px] gap-4">
       <Alert variant="destructive" className="max-w-md">
@@ -20,7 +20,7 @@ export const ErrorFallback = ({ error, resetError }: ErrorFallbackProps): React.
         </AlertDescription>
       </Alert>
       <Button 
-        onClick={resetError} 
+        onClick={resetErrorBoundary} 
         variant="outline" 
         className="mt-4 flex items-center gap-2"
       >
