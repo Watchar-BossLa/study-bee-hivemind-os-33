@@ -62,7 +62,7 @@ export class ArenaService extends BaseService {
 
   async getMatchPlayers(matchId: string): Promise<ServiceResponse<MatchPlayer[]>> {
     return this.executeWithRetry(async () => {
-      // Select all columns including the ones that might not exist in older records
+      // Only select columns that exist in the database
       const { data, error } = await supabase
         .from('match_players')
         .select(`
@@ -72,8 +72,6 @@ export class ArenaService extends BaseService {
           score,
           questions_answered,
           correct_answers,
-          total_response_time,
-          streak,
           created_at,
           updated_at
         `)
@@ -89,8 +87,8 @@ export class ArenaService extends BaseService {
         score: player.score || 0,
         correct_answers: player.correct_answers || 0,
         questions_answered: player.questions_answered || 0,
-        total_response_time: player.total_response_time || 0,
-        streak: player.streak || 0,
+        total_response_time: 0, // Default since column doesn't exist yet
+        streak: 0, // Default since column doesn't exist yet
         joined_at: player.created_at || new Date().toISOString()
       }));
       
