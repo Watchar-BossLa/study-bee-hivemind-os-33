@@ -1,89 +1,64 @@
 
-import { LiveSession } from "@/types/livesessions";
-import { SupabaseClient } from "@supabase/supabase-js";
+import { SessionFeatures, SessionParticipant } from '@/types/livesessions';
 
-/**
- * Formats features data from database format to application format
- */
-export const formatSessionFeatures = (featuresData: any) => {
-  const defaultFeatures = {
-    video: true,
-    audio: true,
-    chat: true,
-    whiteboard: true,
-    screenSharing: true,
-    polls: true
-  };
-
-  // If it's a plain object with the expected properties
-  if (typeof featuresData === 'object' && 
-      featuresData !== null && 
-      !Array.isArray(featuresData)) {
-    return {
-      video: Boolean(featuresData.video !== undefined ? featuresData.video : true),
-      audio: Boolean(featuresData.audio !== undefined ? featuresData.audio : true),
-      chat: Boolean(featuresData.chat !== undefined ? featuresData.chat : true),
-      whiteboard: Boolean(featuresData.whiteboard !== undefined ? featuresData.whiteboard : true),
-      screenSharing: Boolean(featuresData.screenSharing !== undefined ? featuresData.screenSharing : true),
-      polls: Boolean(featuresData.polls !== undefined ? featuresData.polls : true)
-    };
-  }
-  
-  // Return default values if not a valid object
-  return defaultFeatures;
-};
-
-/**
- * Helper to parse JSON string features if needed
- */
-export const parseSessionFeatures = (features: any) => {
-  try {
-    if (typeof features === 'string') {
-      try {
-        const parsedFeatures = JSON.parse(features);
-        return formatSessionFeatures(parsedFeatures);
-      } catch (parseErr) {
-        console.error("Error parsing features string:", parseErr);
-        return formatSessionFeatures({});
-      }
-    } else {
-      // Direct object access
-      return formatSessionFeatures(features);
-    }
-  } catch (err) {
-    console.error("Error handling features:", err);
-    return formatSessionFeatures({});
-  }
-};
-
-/**
- * Format host data from database response
- */
-export const formatHostData = (hostData: any) => {
-  if (!hostData) return { id: 'unknown', name: 'Unknown User', avatar: undefined };
-  
+export function formatHostData(hostData: any): SessionParticipant {
   return {
-    id: hostData.id,
-    name: hostData.full_name || 'Unknown User',
-    avatar: hostData.avatar_url || undefined
+    id: hostData?.id || 'unknown',
+    name: hostData?.full_name || 'Unknown Host',
+    avatar: hostData?.avatar_url,
+    role: 'host' as const,
+    isActive: true,
+    joinedAt: new Date().toISOString(),
+    lastSeen: new Date().toISOString()
   };
-};
+}
 
-/**
- * Format participants data from database response
- */
-export const formatParticipantsData = (participantsData: any[], hostId: string) => {
-  if (!participantsData) return [];
-  
-  const participants = participantsData.map(p => {
-    // Safely access profile data with null checks
-    const profile = p.profiles as Record<string, any> | null;
-    return {
-      id: profile?.id || p.user_id,
-      name: profile?.full_name || 'Unknown User',
-      avatar: profile?.avatar_url || undefined
-    };
-  });
-  
-  return participants;
-};
+export function formatParticipantsData(participantsData: any[], hostId: string): SessionParticipant[] {
+  return participantsData.map(participant => ({
+    id: participant.user_id,
+    name: participant.user_name || 'Unknown User',
+    avatar: participant.user_avatar,
+    role: participant.role || 'participant',
+    isActive: participant.is_active,
+    joinedAt: participant.joined_at,
+    lastSeen: participant.left_at || participant.joined_at
+  })).filter(p => p.id !== hostId); // Exclude host from participants list
+}
+
+export function parseSessionFeatures(features: any): SessionFeatures {
+  const defaultFeatures: SessionFeatures = {
+    chat: true,
+    audio: true,
+    video: true,
+    whiteboard: true,
+    polls: true,
+    screenSharing: true,
+    breakoutRooms: false
+  };
+
+  if (!features || typeof features !== 'object') {
+    return defaultFeatures;
+  }
+
+  return {
+    chat: features.chat ?? defaultFeatures.chat,
+    audio: features.audio ?? defaultFeatures.audio,
+    video: features.video ?? defaultFeatures.video,
+    whiteboard: features.whiteboard ?? defaultFeatures.whiteboard,
+    polls: features.polls ?? defaultFeatures.polls,
+    screenSharing: features.screenSharing ?? defaultFeatures.screenSharing,
+    breakoutRooms: features.breakoutRooms ?? defaultFeatures.breakoutRooms
+  };
+}
+
+export function sessionFeaturesToJson(features: SessionFeatures): Record<string, boolean> {
+  return {
+    chat: features.chat,
+    audio: features.audio,
+    video: features.video,
+    whiteboard: features.whiteboard,
+    polls: features.polls,
+    screenSharing: features.screenSharing,
+    breakoutRooms: features.breakoutRooms
+  };
+}

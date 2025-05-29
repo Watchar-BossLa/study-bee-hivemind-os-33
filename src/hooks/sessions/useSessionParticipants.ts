@@ -5,26 +5,20 @@ import { supabase } from '@/integrations/supabase/client';
 export function useSessionParticipants() {
   const fetchParticipants = useCallback(async (sessionId: string, hostId: string) => {
     try {
-      // Fetch participants
-      const { data: participantsData, error: participantsError } = await supabase
+      const { data, error } = await supabase
         .from('session_participants')
-        .select(`
-          user_id,
-          profiles (id, full_name, avatar_url)
-        `)
-        .eq('session_id', sessionId);
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('is_active', true);
+
+      if (error) throw error;
       
-      if (participantsError) {
-        console.error("Error fetching participants:", participantsError);
-        return [];
-      }
-      
-      return participantsData || [];
+      return data;
     } catch (err) {
-      console.error("Error in fetchParticipants:", err);
+      console.error("Error fetching participants:", err);
       return [];
     }
   }, []);
-  
+
   return { fetchParticipants };
 }

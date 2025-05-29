@@ -5,24 +5,20 @@ import { supabase } from '@/integrations/supabase/client';
 export function useHostDetails() {
   const fetchHostDetails = useCallback(async (hostId: string) => {
     try {
-      // Fetch host details from profiles
-      const { data: hostData, error: hostError } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url')
         .eq('id', hostId)
         .single();
+
+      if (error) throw error;
       
-      if (hostError) {
-        console.error("Error fetching host details:", hostError);
-        return null;
-      }
-      
-      return hostData;
+      return data;
     } catch (err) {
-      console.error("Error in fetchHostDetails:", err);
-      return null;
+      console.error("Error fetching host details:", err);
+      return { id: hostId, full_name: 'Unknown Host', avatar_url: null };
     }
   }, []);
-  
+
   return { fetchHostDetails };
 }

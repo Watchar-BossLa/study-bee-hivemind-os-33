@@ -32,7 +32,9 @@ const CreateSessionForm: React.FC<CreateSessionFormProps> = ({ onSessionCreated,
     audio: true,
     chat: true,
     whiteboard: true,
-    screenSharing: true
+    screenSharing: true,
+    polls: true,
+    breakoutRooms: false
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -194,11 +196,31 @@ const CreateSessionForm: React.FC<CreateSessionFormProps> = ({ onSessionCreated,
               </div>
               
               <div className="flex items-center justify-between">
+                <Label htmlFor="feature-polls">Polls</Label>
+                <Switch
+                  id="feature-polls"
+                  checked={features.polls}
+                  onCheckedChange={() => toggleFeature('polls')}
+                  disabled={disabled}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
                 <Label htmlFor="feature-screen">Screen Sharing</Label>
                 <Switch
                   id="feature-screen"
                   checked={features.screenSharing}
                   onCheckedChange={() => toggleFeature('screenSharing')}
+                  disabled={disabled}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="feature-breakout">Breakout Rooms</Label>
+                <Switch
+                  id="feature-breakout"
+                  checked={features.breakoutRooms}
+                  onCheckedChange={() => toggleFeature('breakoutRooms')}
                   disabled={disabled}
                 />
               </div>

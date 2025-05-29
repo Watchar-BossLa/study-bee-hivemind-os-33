@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { LiveSession } from '@/types/livesessions';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
+import { sessionFeaturesToJson } from '@/utils/sessionFormatters';
 
 export function useSessionActions() {
   const { toast } = useToast();
@@ -32,7 +33,7 @@ export function useSessionActions() {
           max_participants: sessionData.maxParticipants,
           is_private: sessionData.isPrivate,
           access_code: sessionData.accessCode,
-          features: sessionData.features,
+          features: sessionFeaturesToJson(sessionData.features),
           status: sessionData.status
         })
         .select('id')

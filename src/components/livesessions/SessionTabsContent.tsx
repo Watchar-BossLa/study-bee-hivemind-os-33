@@ -24,7 +24,7 @@ const SessionTabsContent: React.FC<SessionTabsContentProps> = ({ session }) => {
       
       {session.features.chat && (
         <TabsContent value="chat" className="border-none p-0">
-          <SessionChat sessionId={session.id} />
+          <SessionChat session={session} />
         </TabsContent>
       )}
       
@@ -41,10 +41,7 @@ const SessionTabsContent: React.FC<SessionTabsContentProps> = ({ session }) => {
       </TabsContent>
       
       <TabsContent value="polls" className="border-none p-0">
-        <SessionPoll 
-          sessionId={session.id} 
-          isHost={session.host.isCurrentUser === true} 
-        />
+        <SessionPoll session={session} />
       </TabsContent>
       
       <TabsContent value="analytics" className="border-none p-0">

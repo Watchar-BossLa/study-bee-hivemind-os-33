@@ -35,6 +35,7 @@ export interface SessionFeatures {
   polls: boolean;
   screenSharing: boolean;
   breakoutRooms: boolean;
+  [key: string]: boolean; // Index signature for Supabase Json compatibility
 }
 
 export interface SessionMessage {

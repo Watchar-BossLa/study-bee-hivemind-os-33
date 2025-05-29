@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LiveSession } from '@/types/livesessions';
+import { sessionFeaturesToJson } from '@/utils/sessionFormatters';
 import CreateSessionTab from './tabs/CreateSessionTab';
 import JoinSessionTab from './tabs/JoinSessionTab';
 import BrowseSessionsTab from './tabs/BrowseSessionsTab';
@@ -99,7 +100,7 @@ const LiveSessionsContainer: React.FC = () => {
           max_participants: sessionData.maxParticipants,
           is_private: sessionData.isPrivate,
           access_code: sessionData.accessCode,
-          features: sessionData.features,
+          features: sessionFeaturesToJson(sessionData.features),
           status: 'active'
         })
         .select()
