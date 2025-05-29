@@ -5,7 +5,6 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { HelmetProvider } from 'react-helmet-async';
-import { ErrorBoundary } from 'react-error-boundary';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from "@/components/ui/toast"
 
@@ -45,6 +44,7 @@ import NotImplemented from '@/pages/NotImplemented';
 import NotFound from '@/pages/NotFound';
 import NotFoundPage from '@/pages/NotFoundPage';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { ErrorFallback } from '@/components/error/ErrorFallback';
 import StudyGroups from '@/pages/StudyGroups';
 import PeerLearning from '@/pages/PeerLearning';
@@ -205,15 +205,20 @@ const router = createBrowserRouter([
   },
 ]);
 
+const handleGlobalError = (error: Error): void => {
+  console.error('Global application error:', error);
+  // In production, this would send to monitoring service
+};
+
 function App() {
   return (
     <HelmetProvider>
-      <AuthProvider>
-        <ToastProvider />
-        <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <ErrorBoundary fallback={ErrorFallback} onError={handleGlobalError}>
+        <AuthProvider>
+          <ToastProvider />
           <RouterProvider router={router} />
-        </ErrorBoundary>
-      </AuthProvider>
+        </AuthProvider>
+      </ErrorBoundary>
     </HelmetProvider>
   );
 }
