@@ -1,4 +1,3 @@
-
 export interface LiveSession {
   id: string;
   title: string;
@@ -70,9 +69,14 @@ export interface PollOption {
 }
 
 export interface PollResults {
-  totalVotes: number;
-  options: (PollOption & { percentage: number })[];
-  voters: string[];
+  totalResponses: number;
+  optionCounts: number[];
+  respondents: {
+    id: string;
+    name: string;
+    avatar?: string;
+    selectedOptions: number[];
+  }[];
 }
 
 export interface SessionNote {
