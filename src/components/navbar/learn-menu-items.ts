@@ -1,5 +1,5 @@
 
-import { BookOpen, GraduationCap, Users, Trophy, BarChart3, Brain } from 'lucide-react';
+import { BookOpen, GraduationCap, Users, Camera, FileText, PaintBucket, UsersRound } from 'lucide-react';
 
 export interface LearnMenuItem {
   label: string;
@@ -16,28 +16,40 @@ export const learnMenuItems: LearnMenuItem[] = [
     icon: BookOpen,
   },
   {
-    label: 'AI Tutor',
-    href: '/graph-tutor',
-    description: 'Get personalized help from our AI tutor',
-    icon: Brain,
-  },
-  {
     label: 'Live Sessions',
     href: '/live-sessions',
     description: 'Join collaborative learning sessions',
     icon: Users,
   },
   {
-    label: 'Arena',
-    href: '/arena',
-    description: 'Compete in knowledge challenges',
-    icon: Trophy,
+    label: 'OCR Flashcards',
+    href: '/ocr/flashcards',
+    description: 'Create flashcards from photos with AI',
+    icon: Camera,
   },
   {
-    label: 'Analytics',
-    href: '/analytics',
-    description: 'Track your learning progress',
-    icon: BarChart3,
+    label: 'Study Groups',
+    href: '/study-groups',
+    description: 'Join or create collaborative study groups',
+    icon: UsersRound,
+  },
+  {
+    label: 'Peer Learning',
+    href: '/peer-learning',
+    description: 'Connect with study partners and peers',
+    icon: Users,
+  },
+  {
+    label: 'Collaborative Notes',
+    href: '/collaborative-notes',
+    description: 'Create and share notes with your study groups',
+    icon: FileText,
+  },
+  {
+    label: 'Theme Settings',
+    href: '/theme-settings',
+    description: 'Customize your learning environment',
+    icon: PaintBucket,
   },
   {
     label: 'Qualifications',
