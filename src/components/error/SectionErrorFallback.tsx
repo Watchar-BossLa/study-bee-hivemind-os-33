@@ -6,12 +6,12 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 
 interface SectionErrorFallbackProps {
   error: Error;
-  resetError: () => void;
+  resetErrorBoundary: () => void;
 }
 
 export const SectionErrorFallback = ({ 
   error, 
-  resetError 
+  resetErrorBoundary 
 }: SectionErrorFallbackProps): React.ReactElement => {
   return (
     <Card className="w-full border-red-200">
@@ -33,7 +33,7 @@ export const SectionErrorFallback = ({
       </CardContent>
       <CardFooter>
         <Button 
-          onClick={resetError} 
+          onClick={resetErrorBoundary} 
           size="sm" 
           variant="outline"
           className="flex items-center gap-2"
