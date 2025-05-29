@@ -44,7 +44,9 @@ describe('StudyGroupService', () => {
       const mockGroupData = {
         name: 'New Study Group',
         subject: 'Physics',
-        description: 'A group for physics study'
+        description: 'A group for physics study',
+        max_members: 15,
+        is_private: false
       };
 
       const mockResponse = { id: '3', ...mockGroupData };
@@ -58,6 +60,80 @@ describe('StudyGroupService', () => {
       expect(executeSpy).toHaveBeenCalledWith(
         expect.any(Function),
         'study-group-creation'
+      );
+    });
+  });
+
+  describe('joinStudyGroup', () => {
+    it('should join a study group successfully', async () => {
+      const groupId = 'group-123';
+      const accessCode = 'ACCESS123';
+
+      const executeSpy = jest.spyOn(service as any, 'executeWithRetry');
+      executeSpy.mockResolvedValue(undefined);
+
+      const result = await service.joinStudyGroup(groupId, accessCode);
+
+      expect(result).toBeUndefined();
+      expect(executeSpy).toHaveBeenCalledWith(
+        expect.any(Function),
+        'study-group-joining'
+      );
+    });
+  });
+
+  describe('leaveStudyGroup', () => {
+    it('should leave a study group successfully', async () => {
+      const groupId = 'group-123';
+
+      const executeSpy = jest.spyOn(service as any, 'executeWithRetry');
+      executeSpy.mockResolvedValue(undefined);
+
+      const result = await service.leaveStudyGroup(groupId);
+
+      expect(result).toBeUndefined();
+      expect(executeSpy).toHaveBeenCalledWith(
+        expect.any(Function),
+        'study-group-leaving'
+      );
+    });
+  });
+
+  describe('getGroupMembers', () => {
+    it('should return group members successfully', async () => {
+      const groupId = 'group-123';
+      const mockMembers = [
+        { id: 'member1', user_id: 'user1', role: 'admin' },
+        { id: 'member2', user_id: 'user2', role: 'member' }
+      ];
+
+      const executeSpy = jest.spyOn(service as any, 'executeWithRetry');
+      executeSpy.mockResolvedValue(mockMembers);
+
+      const result = await service.getGroupMembers(groupId);
+
+      expect(result).toEqual(mockMembers);
+      expect(executeSpy).toHaveBeenCalledWith(
+        expect.any(Function),
+        'group-members-fetching'
+      );
+    });
+  });
+
+  describe('sendGroupMessage', () => {
+    it('should send a group message successfully', async () => {
+      const groupId = 'group-123';
+      const content = 'Hello everyone!';
+
+      const executeSpy = jest.spyOn(service as any, 'executeWithRetry');
+      executeSpy.mockResolvedValue(undefined);
+
+      const result = await service.sendGroupMessage(groupId, content);
+
+      expect(result).toBeUndefined();
+      expect(executeSpy).toHaveBeenCalledWith(
+        expect.any(Function),
+        'group-message-sending'
       );
     });
   });
