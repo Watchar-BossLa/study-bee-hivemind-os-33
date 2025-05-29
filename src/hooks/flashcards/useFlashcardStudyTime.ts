@@ -11,12 +11,18 @@ export interface StudyTimeData {
   longestSession: number;
   shortestSession: number;
   studyEfficiency: number; // correct answers per minute
+  // Add expected properties for component compatibility
+  totalTimeMs: number;
+  sessions: number;
+  uniqueCards: number;
+  averageTimePerCardMs: number;
 }
 
-export function useFlashcardStudyTime(days: number = 30) {
+export function useFlashcardStudyTime(timeframe: 'today' | 'week' | 'month' | 'all' = 'today') {
+  const days = timeframe === 'today' ? 1 : timeframe === 'week' ? 7 : timeframe === 'month' ? 30 : 365;
   const { data: reviews, isLoading } = useRecentFlashcardReviews(1000);
 
-  const studyTimeData = useMemo((): StudyTimeData | null => {
+  const data = useMemo((): StudyTimeData | null => {
     if (!reviews || reviews.length === 0) return null;
 
     const cutoffDate = new Date();
@@ -92,6 +98,10 @@ export function useFlashcardStudyTime(days: number = 30) {
     const totalMinutes = totalStudyTimeMs / (1000 * 60);
     const studyEfficiency = totalMinutes > 0 ? correctAnswers / totalMinutes : 0;
 
+    // Calculate unique cards
+    const uniqueCards = new Set(relevantReviews.map(r => r.flashcard_id)).size;
+    const averageTimePerCardMs = uniqueCards > 0 ? totalStudyTimeMs / uniqueCards : 0;
+
     return {
       totalStudyTimeMs,
       averageSessionLength,
@@ -101,11 +111,16 @@ export function useFlashcardStudyTime(days: number = 30) {
       longestSession,
       shortestSession,
       studyEfficiency,
+      // Compatibility properties
+      totalTimeMs: totalStudyTimeMs,
+      sessions: sessions.length,
+      uniqueCards,
+      averageTimePerCardMs,
     };
   }, [reviews, days]);
 
   return {
-    data: studyTimeData,
+    data,
     isLoading,
   };
 }

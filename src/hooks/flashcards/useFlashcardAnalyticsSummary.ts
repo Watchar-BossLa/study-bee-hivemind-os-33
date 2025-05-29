@@ -2,7 +2,6 @@
 import { useMemo } from 'react';
 import { useFlashcardStatistics } from './useFlashcardStatistics';
 import { useRecentFlashcardReviews } from './useRecentFlashcardReviews';
-import { predictReviewSuccess, calculateMemoryStrength } from '@/utils/spacedRepetition';
 
 export interface AnalyticsSummary {
   totalCards: number;
@@ -19,13 +18,21 @@ export interface AnalyticsSummary {
   subjectDistribution: Record<string, number>;
   difficultyDistribution: Record<string, number>;
   memoryStrengthAverage: number;
+  // Add missing properties that components expect
+  retention_rate: number;
+  cards_mastered: number;
+  streak_days: number;
+  total_cards: number;
+  last_study_date: string | null;
+  reviewsToday: number;
+  correctReviewsToday: number;
 }
 
 export function useFlashcardAnalyticsSummary() {
   const { data: statistics, isLoading: statsLoading } = useFlashcardStatistics();
   const { data: reviews, isLoading: reviewsLoading } = useRecentFlashcardReviews(500);
 
-  const summary = useMemo((): AnalyticsSummary | null => {
+  const data = useMemo((): AnalyticsSummary | null => {
     if (!statistics || !reviews) return null;
 
     // Calculate average response time
@@ -43,6 +50,18 @@ export function useFlashcardAnalyticsSummary() {
     const weeklyReviewCount = reviews.filter(
       r => new Date(r.review_time) >= oneWeekAgo
     ).length;
+
+    // Calculate today's reviews
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayReviews = reviews.filter(r => {
+      const reviewDate = new Date(r.review_time);
+      reviewDate.setHours(0, 0, 0, 0);
+      return reviewDate.getTime() === today.getTime();
+    });
+    
+    const reviewsToday = todayReviews.length;
+    const correctReviewsToday = todayReviews.filter(r => r.was_correct).length;
 
     // Calculate subject distribution
     const subjectDistribution: Record<string, number> = {};
@@ -68,14 +87,7 @@ export function useFlashcardAnalyticsSummary() {
     const learningVelocity = recentReviews.length / 30;
 
     // Calculate daily goal progress (assuming 20 reviews per day goal)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayReviews = reviews.filter(r => {
-      const reviewDate = new Date(r.review_time);
-      reviewDate.setHours(0, 0, 0, 0);
-      return reviewDate.getTime() === today.getTime();
-    }).length;
-    const dailyGoalProgress = Math.min(100, (todayReviews / 20) * 100);
+    const dailyGoalProgress = Math.min(100, (reviewsToday / 20) * 100);
 
     // Estimate average memory strength
     const memoryStrengthAverage = 75; // Simplified calculation
@@ -95,11 +107,19 @@ export function useFlashcardAnalyticsSummary() {
       subjectDistribution,
       difficultyDistribution,
       memoryStrengthAverage,
+      // Duplicate properties for backward compatibility
+      retention_rate: statistics.retention_rate || 0,
+      cards_mastered: statistics.cards_mastered || 0,
+      streak_days: statistics.streak_days || 0,
+      total_cards: statistics.total_cards || 0,
+      last_study_date: statistics.last_study_date,
+      reviewsToday,
+      correctReviewsToday,
     };
   }, [statistics, reviews]);
 
   return {
-    data: summary,
+    data,
     isLoading: statsLoading || reviewsLoading,
   };
 }

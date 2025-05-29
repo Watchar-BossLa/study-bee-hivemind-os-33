@@ -1,22 +1,11 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useRecentFlashcardReviews } from '@/hooks/useFlashcardAnalytics';
+import { useRecentFlashcardReviews } from '@/hooks/flashcards/useRecentFlashcardReviews';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Check, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Define an extended type that includes the properties we're expecting
-interface FlashcardReviewWithContent {
-  id: string;
-  was_correct: boolean;
-  review_time: string;
-  confidence_level?: number | null;
-  flashcard_id: string;
-  question: string;
-  answer: string;
-}
 
 const FlashcardReviewHistory = () => {
   const { data: reviews, isLoading } = useRecentFlashcardReviews(20);
@@ -68,12 +57,12 @@ const FlashcardReviewHistory = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {(reviews as FlashcardReviewWithContent[]).map((review) => (
+        {reviews.map((review) => (
           <div key={review.id} className="border-b pb-3 last:border-0">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center">
                 {review.was_correct ? (
-                  <Badge variant="success" className="mr-2 flex items-center">
+                  <Badge variant="default" className="mr-2 flex items-center bg-green-100 text-green-800">
                     <Check className="h-3 w-3 mr-1" /> Correct
                   </Badge>
                 ) : (
@@ -86,10 +75,15 @@ const FlashcardReviewHistory = () => {
                 </span>
               </div>
             </div>
-            <div className="text-sm">
-              <div className="font-medium">Q: {review.question}</div>
-              <div className="text-muted-foreground">A: {review.answer}</div>
-            </div>
+            {review.flashcard && (
+              <div className="text-sm">
+                <div className="font-medium">Q: {review.flashcard.question}</div>
+                <div className="text-muted-foreground">
+                  Subject: {review.flashcard.subject_area || 'General'} | 
+                  Difficulty: {review.flashcard.difficulty || 'Unknown'}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </CardContent>

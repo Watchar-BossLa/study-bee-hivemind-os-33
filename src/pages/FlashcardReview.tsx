@@ -8,11 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Book, BarChart2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useFlashcardAnalyticsSummary } from '@/hooks/flashcards';
+import { useFlashcardAnalyticsSummary } from '@/hooks/flashcards/useFlashcardAnalyticsSummary';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const FlashcardReviewPage = () => {
-  const { summary, isLoading } = useFlashcardAnalyticsSummary();
+  const { data: summary, isLoading } = useFlashcardAnalyticsSummary();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -109,7 +109,7 @@ const FlashcardReviewPage = () => {
                 ) : (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-muted/50 p-3 rounded-md text-center">
-                      <div className="text-2xl font-bold">{summary?.cards_due || 0}</div>
+                      <div className="text-2xl font-bold">{summary?.cardsDue || 0}</div>
                       <div className="text-xs text-muted-foreground">Due Today</div>
                     </div>
                     <div className="bg-muted/50 p-3 rounded-md text-center">
@@ -117,11 +117,11 @@ const FlashcardReviewPage = () => {
                       <div className="text-xs text-muted-foreground">Reviewed</div>
                     </div>
                     <div className="bg-muted/50 p-3 rounded-md text-center">
-                      <div className="text-2xl font-bold">{summary?.cards_mastered || 0}</div>
+                      <div className="text-2xl font-bold">{summary?.cardsMastered || 0}</div>
                       <div className="text-xs text-muted-foreground">Mastered</div>
                     </div>
                     <div className="bg-muted/50 p-3 rounded-md text-center">
-                      <div className="text-2xl font-bold">{summary?.total_cards || 0}</div>
+                      <div className="text-2xl font-bold">{summary?.totalCards || 0}</div>
                       <div className="text-xs text-muted-foreground">Total Cards</div>
                     </div>
                   </div>

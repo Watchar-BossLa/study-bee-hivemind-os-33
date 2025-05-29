@@ -8,6 +8,8 @@ export interface HeatmapData {
   date: string;
   count: number;
   level: number; // 0-4 intensity level
+  correct: number;
+  accuracy: number;
 }
 
 export function useFlashcardActivityHeatmap(days: number = 365) {
@@ -23,7 +25,7 @@ export function useFlashcardActivityHeatmap(days: number = 365) {
 
       const { data, error } = await supabase
         .from('flashcard_reviews')
-        .select('review_time')
+        .select('review_time, was_correct')
         .eq('user_id', user.id)
         .gte('review_time', startDate.toISOString())
         .order('review_time', { ascending: true });
@@ -39,11 +41,17 @@ export function useFlashcardActivityHeatmap(days: number = 365) {
     if (!rawData) return [];
 
     // Group reviews by date
-    const reviewsByDate: Record<string, number> = {};
+    const reviewsByDate: Record<string, { count: number; correct: number }> = {};
     
     rawData.forEach(review => {
       const date = new Date(review.review_time).toISOString().split('T')[0];
-      reviewsByDate[date] = (reviewsByDate[date] || 0) + 1;
+      if (!reviewsByDate[date]) {
+        reviewsByDate[date] = { count: 0, correct: 0 };
+      }
+      reviewsByDate[date].count += 1;
+      if (review.was_correct) {
+        reviewsByDate[date].correct += 1;
+      }
     });
 
     // Generate complete date range
@@ -56,9 +64,12 @@ export function useFlashcardActivityHeatmap(days: number = 365) {
       currentDate.setDate(startDate.getDate() + i);
       const dateString = currentDate.toISOString().split('T')[0];
       
-      const count = reviewsByDate[dateString] || 0;
-      let level = 0;
+      const dayData = reviewsByDate[dateString] || { count: 0, correct: 0 };
+      const count = dayData.count;
+      const correct = dayData.correct;
+      const accuracy = count > 0 ? Math.round((correct / count) * 100) : 0;
       
+      let level = 0;
       // Calculate intensity level (0-4)
       if (count > 0) {
         if (count >= 50) level = 4;
@@ -71,6 +82,8 @@ export function useFlashcardActivityHeatmap(days: number = 365) {
         date: dateString,
         count,
         level,
+        correct,
+        accuracy,
       });
     }
 

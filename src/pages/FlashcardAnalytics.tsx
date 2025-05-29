@@ -3,7 +3,7 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { FlashcardAnalyticsDashboard } from '@/components/flashcards/analytics/FlashcardAnalyticsDashboard';
+import FlashcardAnalyticsDashboard from '@/components/flashcards/analytics/FlashcardAnalyticsDashboard';
 
 const FlashcardAnalytics = () => {
   return (

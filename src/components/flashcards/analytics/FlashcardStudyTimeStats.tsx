@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useFlashcardStudyTime } from '@/hooks/flashcards';
+import { useFlashcardStudyTime } from '@/hooks/flashcards/useFlashcardStudyTime';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Clock } from 'lucide-react';
 

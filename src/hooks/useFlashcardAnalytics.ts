@@ -1,4 +1,7 @@
 
-// This file re-exports all flashcard analytics hooks from the new directory structure
-// It's maintained for backward compatibility with existing imports
-export * from './flashcards';
+// Re-export from the flashcards hooks for backward compatibility
+export { useFlashcardAnalyticsSummary } from './flashcards/useFlashcardAnalyticsSummary';
+export { useRecentFlashcardReviews } from './flashcards/useRecentFlashcardReviews';
+export { useFlashcardStatistics } from './flashcards/useFlashcardStatistics';
+export { useFlashcardActivityHeatmap } from './flashcards/useFlashcardActivityHeatmap';
+export { useFlashcardStudyTime } from './flashcards/useFlashcardStudyTime';

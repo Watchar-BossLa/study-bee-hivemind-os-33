@@ -176,3 +176,24 @@ export function calculateMemoryStrength(
   
   return Math.max(0, Math.min(100, baseStrength + easinessBonus - decayPenalty));
 }
+
+/**
+ * Export RL policy configuration for analytics
+ */
+export function exportRLPolicy() {
+  return {
+    version: "1.0.0",
+    algorithm: "SM-2+",
+    rlComponents: {
+      responseTimeAnalysis: true,
+      userPerformanceContext: true,
+      adaptiveScheduling: true,
+    },
+    parameters: {
+      minEasinessFactor: 1.3,
+      maxEasinessFactor: 3.0,
+      baseInterval: 3,
+      streakBonus: 1.1,
+    }
+  };
+}

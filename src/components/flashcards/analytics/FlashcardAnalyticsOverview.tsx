@@ -2,12 +2,12 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { useFlashcardAnalyticsSummary } from '@/hooks/useFlashcardAnalytics';
+import { useFlashcardAnalyticsSummary } from '@/hooks/flashcards/useFlashcardAnalyticsSummary';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Brain, CheckCheck, Clock, Calendar } from 'lucide-react';
 
 const FlashcardAnalyticsOverview = () => {
-  const { summary, isLoading } = useFlashcardAnalyticsSummary();
+  const { data: summary, isLoading } = useFlashcardAnalyticsSummary();
 
   if (isLoading) {
     return (
