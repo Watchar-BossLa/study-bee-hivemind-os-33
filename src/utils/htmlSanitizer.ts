@@ -8,37 +8,36 @@ interface SanitizeOptions {
 }
 
 export class HTMLSanitizer {
-  private static getConfig(options: SanitizeOptions = {}) {
+  private static getConfig(options: SanitizeOptions = {}): DOMPurify.Config {
     const {
       allowImages = false,
       allowLinks = false,
       allowBasicFormatting = true
     } = options;
 
-    let allowedTags = ['p', 'br'];
-    let allowedAttributes: { [key: string]: string[] } = {};
-
-    if (allowBasicFormatting) {
-      allowedTags.push('strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li');
-    }
-
-    if (allowImages) {
-      allowedTags.push('img');
-      allowedAttributes.img = ['src', 'alt', 'width', 'height'];
-    }
-
-    if (allowLinks) {
-      allowedTags.push('a');
-      allowedAttributes.a = ['href', 'target', 'rel'];
-    }
-
-    return {
-      ALLOWED_TAGS: allowedTags,
-      ALLOWED_ATTR: allowedAttributes,
+    const config: DOMPurify.Config = {
+      ALLOWED_TAGS: ['p', 'br'],
+      ALLOWED_ATTR: {},
       ALLOW_DATA_ATTR: false,
       FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input'],
       FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'style']
     };
+
+    if (allowBasicFormatting) {
+      config.ALLOWED_TAGS = [...(config.ALLOWED_TAGS || []), 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li'];
+    }
+
+    if (allowImages) {
+      config.ALLOWED_TAGS = [...(config.ALLOWED_TAGS || []), 'img'];
+      config.ALLOWED_ATTR = { ...config.ALLOWED_ATTR, img: ['src', 'alt', 'width', 'height'] };
+    }
+
+    if (allowLinks) {
+      config.ALLOWED_TAGS = [...(config.ALLOWED_TAGS || []), 'a'];
+      config.ALLOWED_ATTR = { ...config.ALLOWED_ATTR, a: ['href', 'target', 'rel'] };
+    }
+
+    return config;
   }
 
   static sanitize(html: string, options?: SanitizeOptions): string {

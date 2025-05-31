@@ -15,6 +15,7 @@ interface CSPDirectives {
   'form-action'?: string[];
   'base-uri'?: string[];
   'manifest-src'?: string[];
+  'upgrade-insecure-requests'?: string[];
 }
 
 export class ContentSecurityPolicy {

@@ -64,8 +64,8 @@ export class SecurityValidator {
       }
     });
 
-    // Check for data attributes that could be exploited
-    const dataElements = document.querySelectorAll('[data-*]');
+    // Check for data attributes that could be exploited  
+    const dataElements = document.querySelectorAll('[data-content], [data-html], [data-value]');
     dataElements.forEach((element) => {
       Array.from(element.attributes).forEach((attr) => {
         if (attr.name.startsWith('data-') && attr.value.includes('<script>')) {
@@ -285,7 +285,7 @@ export class SecurityValidator {
     this.issues.push(issue);
   }
 
-  static logSecurityReport(): void {
+  static logSecurityReport(): SecurityReport {
     const report = this.generateSecurityReport();
     
     console.group(`🔒 Security Report (Score: ${report.score}/100)`);
