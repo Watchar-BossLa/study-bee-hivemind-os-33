@@ -1,9 +1,9 @@
-
 import React from 'react';
 import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from "@/components/ui/toast"
@@ -205,6 +205,20 @@ const router = createBrowserRouter([
   },
 ]);
 
+// Create QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
+
 const handleGlobalError = (error: Error): void => {
   console.error('Global application error:', error);
   // In production, this would send to monitoring service
@@ -213,12 +227,14 @@ const handleGlobalError = (error: Error): void => {
 function App() {
   return (
     <HelmetProvider>
-      <ErrorBoundary fallback={ErrorFallback} onError={handleGlobalError}>
-        <AuthProvider>
-          <ToastProvider />
-          <RouterProvider router={router} />
-        </AuthProvider>
-      </ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary fallback={ErrorFallback} onError={handleGlobalError}>
+          <AuthProvider>
+            <ToastProvider />
+            <RouterProvider router={router} />
+          </AuthProvider>
+        </ErrorBoundary>
+      </QueryClientProvider>
     </HelmetProvider>
   );
 }
