@@ -2,10 +2,15 @@
 import { PerformanceMonitor } from './performanceMonitoring';
 import { AccessibilityChecker } from './accessibilityChecker';
 import { SecurityValidator } from './securityValidator';
+import { ContentSecurityPolicy } from './contentSecurityPolicy';
 
 export class MonitoringInitializer {
   static init(): void {
     if (typeof window === 'undefined') return;
+
+    // Initialize Content Security Policy
+    ContentSecurityPolicy.injectCSP();
+    ContentSecurityPolicy.setupCSPReporting();
 
     // Initialize performance monitoring
     PerformanceMonitor.init();

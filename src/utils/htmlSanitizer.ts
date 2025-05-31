@@ -8,14 +8,14 @@ interface SanitizeOptions {
 }
 
 export class HTMLSanitizer {
-  private static getConfig(options: SanitizeOptions = {}): DOMPurify.Config {
+  private static getConfig(options: SanitizeOptions = {}): any {
     const {
       allowImages = false,
       allowLinks = false,
       allowBasicFormatting = true
     } = options;
 
-    const config: DOMPurify.Config = {
+    const config: any = {
       ALLOWED_TAGS: ['p', 'br'],
       ALLOWED_ATTR: {},
       ALLOW_DATA_ATTR: false,
@@ -46,7 +46,8 @@ export class HTMLSanitizer {
     }
 
     const config = this.getConfig(options);
-    return DOMPurify.sanitize(html, config);
+    const sanitized = DOMPurify.sanitize(html, config);
+    return typeof sanitized === 'string' ? sanitized : sanitized.toString();
   }
 
   static sanitizeForDisplay(html: string): string {

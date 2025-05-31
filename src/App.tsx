@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { Suspense, lazy } from 'react';
 import {
   createBrowserRouter,
   RouterProvider,
@@ -8,204 +9,213 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from "@/components/ui/toast"
 
-import Home from '@/pages/Home';
-import Auth from '@/pages/Auth';
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
-import Dashboard from '@/pages/Dashboard';
-import Courses from '@/pages/Courses';
-import CourseDetail from '@/pages/CourseDetail';
-import CourseContent from '@/pages/CourseContent';
-import CourseLearning from '@/pages/CourseLearning';
-import Flashcards from '@/pages/Flashcards';
-import CreateFlashcard from '@/pages/CreateFlashcard';
-import EditFlashcard from '@/pages/EditFlashcard';
-import FlashcardReview from '@/pages/FlashcardReview';
-import FlashcardManagement from '@/pages/FlashcardManagement';
-import FlashcardAnalytics from '@/pages/FlashcardAnalytics';
-import Analytics from '@/pages/Analytics';
-import Arena from '@/pages/Arena';
-import ArenaLobby from '@/pages/ArenaLobby';
-import ArenaMatch from '@/pages/ArenaMatch';
-import ArenaAdmin from '@/pages/ArenaAdmin';
-import LiveSessions from '@/pages/LiveSessions';
-import LiveStudySessions from '@/pages/LiveStudySessions';
-import Tutor from '@/pages/Tutor';
-import GraphTutor from '@/pages/GraphTutor';
-import QuorumDashboard from '@/pages/QuorumDashboard';
-import OCR from '@/pages/OCR';
-import OCRFlashcards from '@/pages/OCRFlashcards';
-import AdaptiveQuiz from '@/pages/AdaptiveQuiz';
-import Qualifications from '@/pages/Qualifications';
-import Profile from '@/pages/Profile';
-import ThemeSettings from '@/pages/ThemeSettings';
-import Settings from '@/pages/Settings';
-import NotImplemented from '@/pages/NotImplemented';
-import NotFound from '@/pages/NotFound';
-import NotFoundPage from '@/pages/NotFoundPage';
+// Lazy load pages for better performance
+const Home = lazy(() => import('@/pages/Home'));
+const Auth = lazy(() => import('@/pages/Auth'));
+const Login = lazy(() => import('@/pages/Login'));
+const Register = lazy(() => import('@/pages/Register'));
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const Courses = lazy(() => import('@/pages/Courses'));
+const CourseDetail = lazy(() => import('@/pages/CourseDetail'));
+const CourseContent = lazy(() => import('@/pages/CourseContent'));
+const CourseLearning = lazy(() => import('@/pages/CourseLearning'));
+const Flashcards = lazy(() => import('@/pages/Flashcards'));
+const CreateFlashcard = lazy(() => import('@/pages/CreateFlashcard'));
+const EditFlashcard = lazy(() => import('@/pages/EditFlashcard'));
+const FlashcardReview = lazy(() => import('@/pages/FlashcardReview'));
+const FlashcardManagement = lazy(() => import('@/pages/FlashcardManagement'));
+const FlashcardAnalytics = lazy(() => import('@/pages/FlashcardAnalytics'));
+const Analytics = lazy(() => import('@/pages/Analytics'));
+const Arena = lazy(() => import('@/pages/Arena'));
+const ArenaLobby = lazy(() => import('@/pages/ArenaLobby'));
+const ArenaMatch = lazy(() => import('@/pages/ArenaMatch'));
+const ArenaAdmin = lazy(() => import('@/pages/ArenaAdmin'));
+const LiveSessions = lazy(() => import('@/pages/LiveSessions'));
+const LiveStudySessions = lazy(() => import('@/pages/LiveStudySessions'));
+const Tutor = lazy(() => import('@/pages/Tutor'));
+const GraphTutor = lazy(() => import('@/pages/GraphTutor'));
+const QuorumDashboard = lazy(() => import('@/pages/QuorumDashboard'));
+const OCR = lazy(() => import('@/pages/OCR'));
+const OCRFlashcards = lazy(() => import('@/pages/OCRFlashcards'));
+const AdaptiveQuiz = lazy(() => import('@/pages/AdaptiveQuiz'));
+const Qualifications = lazy(() => import('@/pages/Qualifications'));
+const Profile = lazy(() => import('@/pages/Profile'));
+const ThemeSettings = lazy(() => import('@/pages/ThemeSettings'));
+const Settings = lazy(() => import('@/pages/Settings'));
+const NotImplemented = lazy(() => import('@/pages/NotImplemented'));
+const NotFound = lazy(() => import('@/pages/NotFound'));
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
+const StudyGroups = lazy(() => import('@/pages/StudyGroups'));
+const PeerLearning = lazy(() => import('@/pages/PeerLearning'));
+const CollaborativeNotes = lazy(() => import('@/pages/CollaborativeNotes'));
+
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { ErrorFallback } from '@/components/error/ErrorFallback';
-import StudyGroups from '@/pages/StudyGroups';
-import PeerLearning from '@/pages/PeerLearning';
-import CollaborativeNotes from '@/pages/CollaborativeNotes';
+
+// Loading component for Suspense fallback
+const PageLoading = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+  </div>
+);
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Home />,
+    element: <Suspense fallback={<PageLoading />}><Home /></Suspense>,
   },
   {
     path: "/auth",
-    element: <Auth />,
+    element: <Suspense fallback={<PageLoading />}><Auth /></Suspense>,
   },
   {
     path: "/login",
-    element: <Login />,
+    element: <Suspense fallback={<PageLoading />}><Login /></Suspense>,
   },
   {
     path: "/register",
-    element: <Register />,
+    element: <Suspense fallback={<PageLoading />}><Register /></Suspense>,
   },
   {
     path: "/dashboard",
-    element: <ProtectedRoute><Dashboard /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><Dashboard /></ProtectedRoute></Suspense>,
   },
   {
     path: "/courses",
-    element: <ProtectedRoute><Courses /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><Courses /></ProtectedRoute></Suspense>,
   },
   {
     path: "/courses/:courseId",
-    element: <ProtectedRoute><CourseDetail /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><CourseDetail /></ProtectedRoute></Suspense>,
   },
   {
     path: "/courses/:courseId/content",
-    element: <ProtectedRoute><CourseContent /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><CourseContent /></ProtectedRoute></Suspense>,
   },
   {
     path: "/courses/:courseId/learning",
-    element: <ProtectedRoute><CourseLearning /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><CourseLearning /></ProtectedRoute></Suspense>,
   },
   {
     path: "/flashcards",
-    element: <ProtectedRoute><Flashcards /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><Flashcards /></ProtectedRoute></Suspense>,
   },
   {
     path: "/flashcards/create",
-    element: <ProtectedRoute><CreateFlashcard /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><CreateFlashcard /></ProtectedRoute></Suspense>,
   },
   {
     path: "/flashcards/:id/edit",
-    element: <ProtectedRoute><EditFlashcard /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><EditFlashcard /></ProtectedRoute></Suspense>,
   },
   {
     path: "/flashcards/review",
-    element: <ProtectedRoute><FlashcardReview /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><FlashcardReview /></ProtectedRoute></Suspense>,
   },
   {
     path: "/flashcards/management",
-    element: <ProtectedRoute><FlashcardManagement /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><FlashcardManagement /></ProtectedRoute></Suspense>,
   },
   {
     path: "/flashcards/analytics",
-    element: <ProtectedRoute><FlashcardAnalytics /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><FlashcardAnalytics /></ProtectedRoute></Suspense>,
   },
   {
     path: "/analytics",
-    element: <ProtectedRoute><Analytics /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><Analytics /></ProtectedRoute></Suspense>,
   },
   {
     path: "/arena",
-    element: <ProtectedRoute><Arena /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><Arena /></ProtectedRoute></Suspense>,
   },
   {
     path: "/arena/lobby",
-    element: <ProtectedRoute><ArenaLobby /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><ArenaLobby /></ProtectedRoute></Suspense>,
   },
   {
     path: "/arena/match/:matchId",
-    element: <ProtectedRoute><ArenaMatch /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><ArenaMatch /></ProtectedRoute></Suspense>,
   },
   {
     path: "/arena/admin",
-    element: <ProtectedRoute><ArenaAdmin /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><ArenaAdmin /></ProtectedRoute></Suspense>,
   },
   {
     path: "/live-sessions",
-    element: <ProtectedRoute><LiveSessions /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><LiveSessions /></ProtectedRoute></Suspense>,
   },
   {
     path: "/live-study-sessions",
-    element: <ProtectedRoute><LiveStudySessions /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><LiveStudySessions /></ProtectedRoute></Suspense>,
   },
   {
     path: "/study-groups",
-    element: <ProtectedRoute><StudyGroups /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><StudyGroups /></ProtectedRoute></Suspense>,
   },
   {
     path: "/peer-learning",
-    element: <ProtectedRoute><PeerLearning /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><PeerLearning /></ProtectedRoute></Suspense>,
   },
   {
     path: "/collaborative-notes",
-    element: <ProtectedRoute><CollaborativeNotes /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><CollaborativeNotes /></ProtectedRoute></Suspense>,
   },
   {
     path: "/tutor",
-    element: <ProtectedRoute><Tutor /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><Tutor /></ProtectedRoute></Suspense>,
   },
   {
     path: "/graph-tutor",
-    element: <ProtectedRoute><GraphTutor /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><GraphTutor /></ProtectedRoute></Suspense>,
   },
   {
     path: "/quorum-dashboard",
-    element: <ProtectedRoute><QuorumDashboard /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><QuorumDashboard /></ProtectedRoute></Suspense>,
   },
   {
     path: "/ocr",
-    element: <ProtectedRoute><OCR /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><OCR /></ProtectedRoute></Suspense>,
   },
   {
     path: "/ocr/flashcards",
-    element: <ProtectedRoute><OCRFlashcards /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><OCRFlashcards /></ProtectedRoute></Suspense>,
   },
   {
     path: "/adaptive-quiz",
-    element: <ProtectedRoute><AdaptiveQuiz /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><AdaptiveQuiz /></ProtectedRoute></Suspense>,
   },
   {
     path: "/qualifications",
-    element: <ProtectedRoute><Qualifications /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><Qualifications /></ProtectedRoute></Suspense>,
   },
   {
     path: "/profile",
-    element: <ProtectedRoute><Profile /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><Profile /></ProtectedRoute></Suspense>,
   },
   {
     path: "/theme-settings",
-    element: <ProtectedRoute><ThemeSettings /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><ThemeSettings /></ProtectedRoute></Suspense>,
   },
   {
     path: "/settings",
-    element: <ProtectedRoute><Settings /></ProtectedRoute>,
+    element: <Suspense fallback={<PageLoading />}><ProtectedRoute><Settings /></ProtectedRoute></Suspense>,
   },
   {
     path: "/not-implemented",
-    element: <NotImplemented />,
+    element: <Suspense fallback={<PageLoading />}><NotImplemented /></Suspense>,
   },
   {
     path: "/404",
-    element: <NotFound />,
+    element: <Suspense fallback={<PageLoading />}><NotFound /></Suspense>,
   },
   {
     path: "*",
-    element: <NotFoundPage />,
+    element: <Suspense fallback={<PageLoading />}><NotFoundPage /></Suspense>,
   },
 ]);
 
-// Create QueryClient instance
+// Create optimized QueryClient instance
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
