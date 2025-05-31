@@ -10,12 +10,25 @@ import { Book, BookOpen, Check } from 'lucide-react';
 import { SubjectArea } from '@/types/qualifications';
 import { subjectAreas } from '@/data/qualifications';
 import { CourseQuizzes } from '@/components/quiz/CourseQuizzes';
+import { HTMLSanitizer } from '@/utils/htmlSanitizer';
 
 interface LearningContentProps {
   subjectId?: string;
   moduleId?: string;
   courseId?: string;
 }
+
+// Secure content component that safely renders HTML
+const SecureContent: React.FC<{ content: string }> = ({ content }) => {
+  const sanitizedContent = HTMLSanitizer.validateAndSanitize(content);
+  
+  return (
+    <div 
+      className="prose max-w-none"
+      dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+    />
+  );
+};
 
 const mockSections = [
   {
@@ -157,7 +170,7 @@ const LearningContent: React.FC<LearningContentProps> = ({ subjectId, moduleId, 
                         </div>
                         <div>{currentLesson.duration}</div>
                       </div>
-                      <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
+                      <SecureContent content={currentLesson.content} />
                     </div>
                   </div>
                 ) : (
