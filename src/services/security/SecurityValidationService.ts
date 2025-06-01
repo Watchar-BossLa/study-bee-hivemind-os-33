@@ -1,6 +1,4 @@
 
-import { HTMLSanitizer } from '@/utils/htmlSanitizer';
-
 interface ValidationResult {
   isValid: boolean;
   sanitizedValue: string;
@@ -8,146 +6,143 @@ interface ValidationResult {
   warnings: string[];
 }
 
+interface SecurityEvent {
+  type: string;
+  severity: 'low' | 'medium' | 'high';
+  details: Record<string, any>;
+  timestamp: Date;
+}
+
 export class SecurityValidationService {
-  private static readonly MAX_INPUT_LENGTH = 10000;
-  private static readonly SUSPICIOUS_PATTERNS = [
+  private static readonly XSS_PATTERNS = [
+    /<script[^>]*>.*?<\/script>/gi,
     /javascript:/gi,
-    /vbscript:/gi,
-    /data:text\/html/gi,
-    /<script/gi,
-    /<iframe/gi,
-    /<object/gi,
-    /<embed/gi,
-    /on\w+\s*=/gi, // event handlers like onclick, onload
-    /expression\s*\(/gi, // CSS expressions
-    /import\s*\(/gi, // dynamic imports
+    /on\w+\s*=/gi,
+    /<iframe[^>]*>.*?<\/iframe>/gi,
+    /<object[^>]*>.*?<\/object>/gi,
+    /<embed[^>]*>/gi,
+    /<form[^>]*>.*?<\/form>/gi
   ];
 
-  static validateUserInput(input: unknown, fieldName: string = 'input'): ValidationResult {
-    const result: ValidationResult = {
-      isValid: true,
-      sanitizedValue: '',
-      errors: [],
-      warnings: []
-    };
+  private static readonly SQL_INJECTION_PATTERNS = [
+    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)/gi,
+    /(--|\/\*|\*\/|;)/g,
+    /(\b(OR|AND)\b.*?[=<>])/gi
+  ];
 
-    // Type check
-    if (typeof input !== 'string') {
-      result.isValid = false;
-      result.errors.push(`${fieldName} must be a string`);
-      return result;
-    }
+  static validateUserInput(input: string, fieldName: string): ValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    let sanitizedValue = input;
 
-    // Length check
-    if (input.length > this.MAX_INPUT_LENGTH) {
-      result.isValid = false;
-      result.errors.push(`${fieldName} exceeds maximum length of ${this.MAX_INPUT_LENGTH} characters`);
-      return result;
-    }
-
-    // Check for suspicious patterns
-    for (const pattern of this.SUSPICIOUS_PATTERNS) {
+    // Check for XSS patterns
+    this.XSS_PATTERNS.forEach(pattern => {
       if (pattern.test(input)) {
-        result.warnings.push(`Potentially unsafe content detected in ${fieldName}`);
-        break;
+        errors.push('Potentially dangerous content detected');
+        sanitizedValue = sanitizedValue.replace(pattern, '');
       }
+    });
+
+    // Check for SQL injection patterns
+    this.SQL_INJECTION_PATTERNS.forEach(pattern => {
+      if (pattern.test(input)) {
+        warnings.push('Suspicious SQL-like content detected');
+      }
+    });
+
+    // Basic length validation
+    if (input.length > 10000) {
+      errors.push('Input too long');
     }
 
-    // Sanitize the input
-    result.sanitizedValue = HTMLSanitizer.sanitizeUserInput(input);
-
-    // Check if sanitization removed content
-    if (result.sanitizedValue !== input) {
-      result.warnings.push(`Some content was removed from ${fieldName} for security reasons`);
+    // Check for excessive special characters
+    const specialCharCount = (input.match(/[<>'"&]/g) || []).length;
+    if (specialCharCount > input.length * 0.1) {
+      warnings.push('High number of special characters detected');
     }
 
-    return result;
+    return {
+      isValid: errors.length === 0,
+      sanitizedValue,
+      errors,
+      warnings
+    };
   }
 
   static validateEmailInput(email: string): ValidationResult {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const result = this.validateUserInput(email, 'email');
+    const errors: string[] = [];
 
-    if (result.isValid && !emailRegex.test(result.sanitizedValue)) {
-      result.isValid = false;
-      result.errors.push('Invalid email format');
+    if (!emailRegex.test(email)) {
+      errors.push('Invalid email format');
     }
 
-    return result;
+    if (email.length > 254) {
+      errors.push('Email too long');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      sanitizedValue: email.toLowerCase().trim(),
+      errors,
+      warnings: []
+    };
   }
 
   static validatePasswordInput(password: string): ValidationResult {
-    const result = this.validateUserInput(password, 'password');
+    const errors: string[] = [];
+    const warnings: string[] = [];
 
-    if (result.isValid) {
-      const minLength = 8;
-      if (password.length < minLength) {
-        result.isValid = false;
-        result.errors.push(`Password must be at least ${minLength} characters long`);
-      }
-
-      // Check for basic password requirements
-      const hasUppercase = /[A-Z]/.test(password);
-      const hasLowercase = /[a-z]/.test(password);
-      const hasNumbers = /\d/.test(password);
-      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-      if (!hasUppercase || !hasLowercase || !hasNumbers || !hasSpecialChar) {
-        result.warnings.push('Password should contain uppercase, lowercase, numbers, and special characters');
-      }
+    if (password.length < 8) {
+      errors.push('Password must be at least 8 characters');
     }
 
-    return result;
-  }
+    if (!/[A-Z]/.test(password)) {
+      warnings.push('Password should contain uppercase letters');
+    }
 
-  static validateFileUpload(file: File, allowedTypes: string[] = []): ValidationResult {
-    const result: ValidationResult = {
-      isValid: true,
-      sanitizedValue: file.name,
-      errors: [],
-      warnings: []
+    if (!/[a-z]/.test(password)) {
+      warnings.push('Password should contain lowercase letters');
+    }
+
+    if (!/\d/.test(password)) {
+      warnings.push('Password should contain numbers');
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      warnings.push('Password should contain special characters');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      sanitizedValue: password,
+      errors,
+      warnings
     };
-
-    // File size check (10MB max)
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      result.isValid = false;
-      result.errors.push('File size exceeds 10MB limit');
-    }
-
-    // File type check
-    if (allowedTypes.length > 0 && !allowedTypes.includes(file.type)) {
-      result.isValid = false;
-      result.errors.push(`File type ${file.type} is not allowed`);
-    }
-
-    // Check for suspicious file names
-    const suspiciousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif', '.com'];
-    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-    
-    if (suspiciousExtensions.includes(fileExtension)) {
-      result.isValid = false;
-      result.errors.push('Executable files are not allowed');
-    }
-
-    return result;
   }
 
-  static logSecurityEvent(event: string, details: any = {}, severity: 'low' | 'medium' | 'high' | 'critical' = 'medium'): void {
-    const securityEvent = {
-      timestamp: new Date().toISOString(),
-      event,
+  static logSecurityEvent(
+    type: string,
+    details: Record<string, any>,
+    severity: 'low' | 'medium' | 'high' = 'medium'
+  ): void {
+    const event: SecurityEvent = {
+      type,
       severity,
       details,
-      userAgent: navigator.userAgent,
-      url: window.location.href
+      timestamp: new Date()
     };
 
-    console.warn(`Security Event [${severity.toUpperCase()}]:`, securityEvent);
+    // Log to console in development
+    if (process.env.NODE_ENV === 'development') {
+      const icon = severity === 'high' ? '🚨' : severity === 'medium' ? '⚠️' : 'ℹ️';
+      console.warn(`${icon} Security Event: ${type}`, event);
+    }
 
-    // In production, this would send to a security monitoring service
-    if (severity === 'high' || severity === 'critical') {
-      console.error('CRITICAL SECURITY EVENT:', securityEvent);
+    // In production, send to monitoring service
+    if (process.env.NODE_ENV === 'production' && severity === 'high') {
+      // This would be sent to your security monitoring service
+      console.error('High severity security event:', event);
     }
   }
 }

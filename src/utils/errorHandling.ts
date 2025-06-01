@@ -1,94 +1,72 @@
 
-import { errorLoggingService } from '@/services/ErrorLoggingService';
+import { captureProductionError } from '@/services/monitoring/productionSentry';
+import { logger } from './logger';
 
-interface ErrorContext {
+export interface ErrorContext {
   component?: string;
   action?: string;
   userId?: string;
-  additionalData?: Record<string, any>;
+  metadata?: Record<string, any>;
 }
 
 export class ErrorHandler {
-  static handle(error: unknown, context?: string | ErrorContext): void {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorContext = typeof context === 'string' ? { action: context } : context;
-    
-    const logData = {
-      message: errorMessage,
-      context: errorContext,
-      timestamp: new Date().toISOString(),
-      stack: error instanceof Error ? error.stack : undefined
+  static handle(error: Error, context?: ErrorContext): void {
+    // Log the error
+    logger.error('Application error', error, context);
+
+    // Report to monitoring service
+    captureProductionError(error, context);
+
+    // Track error patterns for analytics
+    this.trackErrorPattern(error, context);
+  }
+
+  static createUserFriendlyMessage(error: Error): string {
+    // Map technical errors to user-friendly messages
+    const errorMap: Record<string, string> = {
+      'NetworkError': 'Connection problem. Please check your internet and try again.',
+      'ValidationError': 'Please check your input and try again.',
+      'AuthenticationError': 'Please sign in to continue.',
+      'AuthorizationError': 'You don\'t have permission to perform this action.',
+      'NotFoundError': 'The requested item could not be found.',
+      'TimeoutError': 'The request took too long. Please try again.',
     };
 
-    console.error('Error occurred:', logData);
+    const errorType = error.name || 'Error';
+    return errorMap[errorType] || 'Something went wrong. Please try again.';
+  }
 
-    // Log to centralized error logging service
-    if (error instanceof Error) {
-      errorLoggingService.logError({
-        error_message: error.message,
-        error_stack: error.stack,
-        component_name: errorContext?.component,
-        context: errorContext,
-        severity: this.determineSeverity(error)
-      }).catch(loggingError => {
-        console.error('Failed to log error to service:', loggingError);
-      });
+  private static trackErrorPattern(error: Error, context?: ErrorContext): void {
+    // In production, this would send to analytics
+    if (process.env.NODE_ENV === 'development') {
+      console.group('🔍 Error Pattern Analysis');
+      console.log('Error:', error.name);
+      console.log('Message:', error.message);
+      console.log('Context:', context);
+      console.log('Stack:', error.stack);
+      console.groupEnd();
     }
   }
 
-  static async handleAsync(
-    operation: () => Promise<void>,
-    context?: string | ErrorContext
-  ): Promise<boolean> {
+  static async withErrorHandling<T>(
+    operation: () => Promise<T>,
+    context?: ErrorContext
+  ): Promise<T | null> {
     try {
-      await operation();
-      return true;
+      return await operation();
     } catch (error) {
-      this.handle(error, context);
-      return false;
-    }
-  }
-
-  static createUserFriendlyMessage(error: unknown): string {
-    if (error instanceof Error) {
-      // Map common error types to user-friendly messages
-      if (error.message.includes('network')) {
-        return 'Network connection issue. Please check your internet connection.';
+      if (error instanceof Error) {
+        this.handle(error, context);
       }
-      if (error.message.includes('permission')) {
-        return 'You do not have permission to perform this action.';
-      }
-      if (error.message.includes('not found')) {
-        return 'The requested item could not be found.';
-      }
-      if (error.message.includes('validation')) {
-        return 'Please check your input and try again.';
-      }
-      if (error.message.includes('timeout')) {
-        return 'The request took too long. Please try again.';
-      }
+      return null;
     }
-    
-    return 'An unexpected error occurred. Please try again.';
-  }
-
-  private static determineSeverity(error: Error): 'low' | 'medium' | 'high' | 'critical' {
-    const message = error.message.toLowerCase();
-    
-    if (message.includes('permission') || message.includes('unauthorized')) {
-      return 'high';
-    }
-    
-    if (message.includes('network') || message.includes('timeout')) {
-      return 'medium';
-    }
-    
-    if (message.includes('not found') || message.includes('validation')) {
-      return 'low';
-    }
-    
-    return 'medium';
   }
 }
 
-export const errorHandler = new ErrorHandler();
+export const handleGlobalError = (error: Error, errorInfo?: any): void => {
+  ErrorHandler.handle(error, {
+    component: 'ErrorBoundary',
+    action: 'componentDidCatch',
+    metadata: errorInfo
+  });
+};

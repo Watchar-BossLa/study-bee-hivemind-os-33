@@ -1,94 +1,72 @@
 
-import DOMPurify from 'dompurify';
-
-interface SanitizeOptions {
-  allowImages?: boolean;
-  allowLinks?: boolean;
-  allowBasicFormatting?: boolean;
+interface SanitizationOptions {
+  allowedTags?: string[];
+  allowedAttributes?: Record<string, string[]>;
+  stripScripts?: boolean;
 }
 
 export class HTMLSanitizer {
-  private static getConfig(options: SanitizeOptions = {}): any {
+  private static readonly DEFAULT_ALLOWED_TAGS = [
+    'p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'blockquote', 'code', 'pre', 'a', 'img'
+  ];
+
+  private static readonly DEFAULT_ALLOWED_ATTRIBUTES: Record<string, string[]> = {
+    'a': ['href', 'title', 'target'],
+    'img': ['src', 'alt', 'width', 'height'],
+    'blockquote': ['cite'],
+    '*': ['class', 'id']
+  };
+
+  static validateAndSanitize(
+    html: string, 
+    options: SanitizationOptions = {}
+  ): string {
     const {
-      allowImages = false,
-      allowLinks = false,
-      allowBasicFormatting = true
+      allowedTags = this.DEFAULT_ALLOWED_TAGS,
+      allowedAttributes = this.DEFAULT_ALLOWED_ATTRIBUTES,
+      stripScripts = true
     } = options;
 
-    const config: any = {
-      ALLOWED_TAGS: ['p', 'br'],
-      ALLOWED_ATTR: {},
-      ALLOW_DATA_ATTR: false,
-      FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input'],
-      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'style']
-    };
+    // Basic XSS prevention
+    let sanitized = html;
 
-    if (allowBasicFormatting) {
-      config.ALLOWED_TAGS = [...(config.ALLOWED_TAGS || []), 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li'];
+    // Remove script tags and their content
+    if (stripScripts) {
+      sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
     }
 
-    if (allowImages) {
-      config.ALLOWED_TAGS = [...(config.ALLOWED_TAGS || []), 'img'];
-      config.ALLOWED_ATTR = { ...config.ALLOWED_ATTR, img: ['src', 'alt', 'width', 'height'] };
+    // Remove javascript: URLs
+    sanitized = sanitized.replace(/javascript:/gi, '');
+
+    // Remove event handlers
+    sanitized = sanitized.replace(/\son\w+\s*=\s*"[^"]*"/gi, '');
+    sanitized = sanitized.replace(/\son\w+\s*=\s*'[^']*'/gi, '');
+
+    // Remove style attributes that could contain CSS expressions
+    sanitized = sanitized.replace(/\sstyle\s*=\s*"[^"]*"/gi, '');
+
+    // For production use, integrate with DOMPurify library
+    if (typeof window !== 'undefined' && (window as any).DOMPurify) {
+      const DOMPurify = (window as any).DOMPurify;
+      return DOMPurify.sanitize(sanitized, {
+        ALLOWED_TAGS: allowedTags,
+        ALLOWED_ATTR: Object.values(allowedAttributes).flat()
+      });
     }
 
-    if (allowLinks) {
-      config.ALLOWED_TAGS = [...(config.ALLOWED_TAGS || []), 'a'];
-      config.ALLOWED_ATTR = { ...config.ALLOWED_ATTR, a: ['href', 'target', 'rel'] };
-    }
-
-    return config;
+    return sanitized;
   }
 
-  static sanitize(html: string, options?: SanitizeOptions): string {
-    if (!html || typeof html !== 'string') {
-      return '';
-    }
-
-    const config = this.getConfig(options);
-    const sanitized = DOMPurify.sanitize(html, config);
-    return typeof sanitized === 'string' ? sanitized : sanitized.toString();
+  static escapeHTML(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
-  static sanitizeForDisplay(html: string): string {
-    return this.sanitize(html, {
-      allowBasicFormatting: true,
-      allowImages: true,
-      allowLinks: true
-    });
-  }
-
-  static sanitizeUserInput(input: string): string {
-    return this.sanitize(input, {
-      allowBasicFormatting: false,
-      allowImages: false,
-      allowLinks: false
-    });
-  }
-
-  static validateAndSanitize(input: unknown): string {
-    if (typeof input !== 'string') {
-      console.warn('HTMLSanitizer: Non-string input detected and rejected');
-      return '';
-    }
-
-    // Check for obvious malicious patterns
-    const dangerousPatterns = [
-      /<script/i,
-      /javascript:/i,
-      /vbscript:/i,
-      /data:text\/html/i,
-      /onload=/i,
-      /onerror=/i
-    ];
-
-    for (const pattern of dangerousPatterns) {
-      if (pattern.test(input)) {
-        console.error('HTMLSanitizer: Potentially malicious content detected and blocked');
-        return '';
-      }
-    }
-
-    return this.sanitizeForDisplay(input);
+  static stripHTML(html: string): string {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.textContent || div.innerText || '';
   }
 }
