@@ -55,12 +55,12 @@ export class ProductionInitializer {
   private static initPerformanceMonitoring(): void {
     // Monitor Core Web Vitals using dynamic import
     if (typeof window !== 'undefined') {
-      import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-        getCLS((metric) => logger.info('CLS:', metric));
-        getFID((metric) => logger.info('FID:', metric));
-        getFCP((metric) => logger.info('FCP:', metric));
-        getLCP((metric) => logger.info('LCP:', metric));
-        getTTFB((metric) => logger.info('TTFB:', metric));
+      import('web-vitals').then((webVitals) => {
+        if (webVitals.onCLS) webVitals.onCLS((metric) => logger.info('CLS:', metric));
+        if (webVitals.onFID) webVitals.onFID((metric) => logger.info('FID:', metric));
+        if (webVitals.onFCP) webVitals.onFCP((metric) => logger.info('FCP:', metric));
+        if (webVitals.onLCP) webVitals.onLCP((metric) => logger.info('LCP:', metric));
+        if (webVitals.onTTFB) webVitals.onTTFB((metric) => logger.info('TTFB:', metric));
       }).catch(() => {
         logger.warn('Web Vitals not available');
       });

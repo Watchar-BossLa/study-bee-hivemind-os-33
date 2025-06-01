@@ -1,7 +1,10 @@
 
-import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
-import { ENVIRONMENT } from '@/config/environment';
+import { DatabaseTester } from '@/utils/testing/DatabaseTester';
+import { AuthTester } from '@/utils/testing/AuthTester';
+import { SecurityTester } from '@/utils/testing/SecurityTester';
+import { PerformanceTester } from '@/utils/testing/PerformanceTester';
+import { FeatureTester } from '@/utils/testing/FeatureTester';
 
 interface TestResult {
   name: string;
@@ -18,12 +21,11 @@ export class ProductionTester {
     logger.info('🧪 Running comprehensive production tests...');
     
     await Promise.all([
-      this.testDatabaseConnection(),
-      this.testAuthentication(),
-      this.testApiEndpoints(),
-      this.testFeatureFlags(),
-      this.testSecurity(),
-      this.testPerformance()
+      this.runDatabaseTests(),
+      this.runAuthTests(),
+      this.runSecurityTests(),
+      this.runPerformanceTests(),
+      this.runFeatureTests()
     ]);
     
     this.logResults();
@@ -34,155 +36,36 @@ export class ProductionTester {
     this.results.push(result);
   }
   
-  private static async testDatabaseConnection(): Promise<void> {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('count(*)')
-        .limit(1);
-      
-      if (error) {
-        this.addResult({
-          name: 'Database Connection',
-          status: 'fail',
-          message: 'Failed to connect to database',
-          details: error.message
-        });
-      } else {
-        this.addResult({
-          name: 'Database Connection',
-          status: 'pass',
-          message: 'Database connection successful'
-        });
-      }
-    } catch (error) {
-      this.addResult({
-        name: 'Database Connection',
-        status: 'fail',
-        message: 'Database connection error',
-        details: error
-      });
-    }
+  private static addResults(results: TestResult[]): void {
+    this.results.push(...results);
   }
   
-  private static async testAuthentication(): Promise<void> {
-    try {
-      const { data } = await supabase.auth.getSession();
-      
-      this.addResult({
-        name: 'Authentication System',
-        status: 'pass',
-        message: 'Authentication system initialized',
-        details: { hasSession: !!data.session }
-      });
-    } catch (error) {
-      this.addResult({
-        name: 'Authentication System',
-        status: 'fail',
-        message: 'Authentication system error',
-        details: error
-      });
-    }
+  private static async runDatabaseTests(): Promise<void> {
+    const dbResult = await DatabaseTester.testDatabaseConnection();
+    this.addResult(dbResult);
+    
+    const apiResults = await DatabaseTester.testApiEndpoints();
+    this.addResults(apiResults);
   }
   
-  private static async testApiEndpoints(): Promise<void> {
-    const endpoints = [
-      { name: 'Quiz Questions', table: 'quiz_questions' as const },
-      { name: 'Flashcards', table: 'flashcards' as const },
-      { name: 'Live Sessions', table: 'live_sessions' as const },
-      { name: 'Study Groups', table: 'study_groups' as const }
-    ];
-    
-    for (const endpoint of endpoints) {
-      try {
-        const { error } = await supabase
-          .from(endpoint.table)
-          .select('count(*)')
-          .limit(1);
-        
-        if (error) {
-          this.addResult({
-            name: `API: ${endpoint.name}`,
-            status: 'warning',
-            message: `API endpoint accessible but returned error: ${error.message}`
-          });
-        } else {
-          this.addResult({
-            name: `API: ${endpoint.name}`,
-            status: 'pass',
-            message: 'API endpoint accessible'
-          });
-        }
-      } catch (error) {
-        this.addResult({
-          name: `API: ${endpoint.name}`,
-          status: 'fail',
-          message: 'API endpoint failed',
-          details: error
-        });
-      }
-    }
+  private static async runAuthTests(): Promise<void> {
+    const authResult = await AuthTester.testAuthentication();
+    this.addResult(authResult);
   }
   
-  private static async testFeatureFlags(): Promise<void> {
-    const enabledFeatures = Object.entries(ENVIRONMENT.FEATURES)
-      .filter(([_, enabled]) => enabled)
-      .map(([name]) => name);
-    
-    this.addResult({
-      name: 'Feature Flags',
-      status: 'pass',
-      message: `${enabledFeatures.length} features enabled`,
-      details: enabledFeatures
-    });
+  private static async runSecurityTests(): Promise<void> {
+    const securityResult = await SecurityTester.testSecurity();
+    this.addResult(securityResult);
   }
   
-  private static async testSecurity(): Promise<void> {
-    const securityChecks = [];
-    
-    // Check HTTPS
-    if (location.protocol === 'https:' || location.hostname === 'localhost') {
-      securityChecks.push('HTTPS ✅');
-    } else {
-      securityChecks.push('HTTPS ❌');
-    }
-    
-    // Check CSP
-    const csp = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-    if (csp) {
-      securityChecks.push('CSP ✅');
-    } else {
-      securityChecks.push('CSP ❌');
-    }
-    
-    this.addResult({
-      name: 'Security Configuration',
-      status: securityChecks.every(check => check.includes('✅')) ? 'pass' : 'warning',
-      message: 'Security checks completed',
-      details: securityChecks
-    });
+  private static async runPerformanceTests(): Promise<void> {
+    const performanceResult = await PerformanceTester.testPerformance();
+    this.addResult(performanceResult);
   }
   
-  private static async testPerformance(): Promise<void> {
-    const performanceMetrics: any = {};
-    
-    // Use PerformanceNavigationTiming API
-    if (typeof window !== 'undefined' && 'performance' in window) {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      if (navigation) {
-        performanceMetrics.loadTime = navigation.loadEventEnd - navigation.loadEventStart;
-        performanceMetrics.domReady = navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart;
-      }
-    }
-    
-    performanceMetrics.memoryUsage = (performance as any).memory?.usedJSHeapSize || 'N/A';
-    
-    this.addResult({
-      name: 'Performance Metrics',
-      status: 'pass',
-      message: 'Performance data collected',
-      details: performanceMetrics
-    });
+  private static async runFeatureTests(): Promise<void> {
+    const featureResult = await FeatureTester.testFeatureFlags();
+    this.addResult(featureResult);
   }
   
   private static logResults(): void {
