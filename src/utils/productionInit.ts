@@ -57,7 +57,7 @@ export class ProductionInitializer {
     if (typeof window !== 'undefined') {
       import('web-vitals').then((webVitals) => {
         if (webVitals.onCLS) webVitals.onCLS((metric) => logger.info('CLS:', metric));
-        if (webVitals.onFID) webVitals.onFID((metric) => logger.info('FID:', metric));
+        if (webVitals.onINP) webVitals.onINP((metric) => logger.info('INP:', metric));
         if (webVitals.onFCP) webVitals.onFCP((metric) => logger.info('FCP:', metric));
         if (webVitals.onLCP) webVitals.onLCP((metric) => logger.info('LCP:', metric));
         if (webVitals.onTTFB) webVitals.onTTFB((metric) => logger.info('TTFB:', metric));
