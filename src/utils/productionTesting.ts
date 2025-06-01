@@ -22,8 +22,8 @@ export class ProductionTester {
     
     // Run tests with proper error handling and sequencing
     try {
-      await this.runDatabaseTests();
       await this.runAuthTests();
+      await this.runDatabaseTests();
       await this.runSecurityTests();
       await this.runPerformanceTests();
       await this.runFeatureTests();
@@ -49,6 +49,29 @@ export class ProductionTester {
     this.results.push(...results);
   }
   
+  private static async runAuthTests(): Promise<void> {
+    try {
+      // Basic auth system test
+      const authResult = await AuthTester.testAuthentication();
+      this.addResult(authResult);
+      
+      // Comprehensive auth flow tests
+      const authFlowResults = await AuthTester.testAuthFlow();
+      this.addResults(authFlowResults);
+      
+      // Session persistence test
+      const sessionResult = await AuthTester.testSessionPersistence();
+      this.addResult(sessionResult);
+    } catch (error) {
+      this.addResult({
+        name: 'Auth Tests',
+        status: 'fail',
+        message: 'Auth test suite failed',
+        details: error
+      });
+    }
+  }
+  
   private static async runDatabaseTests(): Promise<void> {
     try {
       const dbResult = await DatabaseTester.testDatabaseConnection();
@@ -61,20 +84,6 @@ export class ProductionTester {
         name: 'Database Tests',
         status: 'fail',
         message: 'Database test suite failed',
-        details: error
-      });
-    }
-  }
-  
-  private static async runAuthTests(): Promise<void> {
-    try {
-      const authResult = await AuthTester.testAuthentication();
-      this.addResult(authResult);
-    } catch (error) {
-      this.addResult({
-        name: 'Auth Tests',
-        status: 'fail',
-        message: 'Auth test suite failed',
         details: error
       });
     }
