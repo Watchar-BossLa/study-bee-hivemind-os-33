@@ -20,13 +20,22 @@ export class ProductionTester {
     this.results = [];
     logger.info('🧪 Running comprehensive production tests...');
     
-    await Promise.all([
-      this.runDatabaseTests(),
-      this.runAuthTests(),
-      this.runSecurityTests(),
-      this.runPerformanceTests(),
-      this.runFeatureTests()
-    ]);
+    // Run tests with proper error handling and sequencing
+    try {
+      await this.runDatabaseTests();
+      await this.runAuthTests();
+      await this.runSecurityTests();
+      await this.runPerformanceTests();
+      await this.runFeatureTests();
+    } catch (error) {
+      logger.error('Test suite encountered an error:', error);
+      this.addResult({
+        name: 'Test Suite',
+        status: 'fail',
+        message: 'Test suite execution failed',
+        details: error
+      });
+    }
     
     this.logResults();
     return this.results;
@@ -41,31 +50,76 @@ export class ProductionTester {
   }
   
   private static async runDatabaseTests(): Promise<void> {
-    const dbResult = await DatabaseTester.testDatabaseConnection();
-    this.addResult(dbResult);
-    
-    const apiResults = await DatabaseTester.testApiEndpoints();
-    this.addResults(apiResults);
+    try {
+      const dbResult = await DatabaseTester.testDatabaseConnection();
+      this.addResult(dbResult);
+      
+      const apiResults = await DatabaseTester.testApiEndpoints();
+      this.addResults(apiResults);
+    } catch (error) {
+      this.addResult({
+        name: 'Database Tests',
+        status: 'fail',
+        message: 'Database test suite failed',
+        details: error
+      });
+    }
   }
   
   private static async runAuthTests(): Promise<void> {
-    const authResult = await AuthTester.testAuthentication();
-    this.addResult(authResult);
+    try {
+      const authResult = await AuthTester.testAuthentication();
+      this.addResult(authResult);
+    } catch (error) {
+      this.addResult({
+        name: 'Auth Tests',
+        status: 'fail',
+        message: 'Auth test suite failed',
+        details: error
+      });
+    }
   }
   
   private static async runSecurityTests(): Promise<void> {
-    const securityResult = await SecurityTester.testSecurity();
-    this.addResult(securityResult);
+    try {
+      const securityResult = await SecurityTester.testSecurity();
+      this.addResult(securityResult);
+    } catch (error) {
+      this.addResult({
+        name: 'Security Tests',
+        status: 'fail',
+        message: 'Security test suite failed',
+        details: error
+      });
+    }
   }
   
   private static async runPerformanceTests(): Promise<void> {
-    const performanceResult = await PerformanceTester.testPerformance();
-    this.addResult(performanceResult);
+    try {
+      const performanceResult = await PerformanceTester.testPerformance();
+      this.addResult(performanceResult);
+    } catch (error) {
+      this.addResult({
+        name: 'Performance Tests',
+        status: 'fail',
+        message: 'Performance test suite failed',
+        details: error
+      });
+    }
   }
   
   private static async runFeatureTests(): Promise<void> {
-    const featureResult = await FeatureTester.testFeatureFlags();
-    this.addResult(featureResult);
+    try {
+      const featureResult = await FeatureTester.testFeatureFlags();
+      this.addResult(featureResult);
+    } catch (error) {
+      this.addResult({
+        name: 'Feature Tests',
+        status: 'fail',
+        message: 'Feature test suite failed',
+        details: error
+      });
+    }
   }
   
   private static logResults(): void {
@@ -78,13 +132,20 @@ export class ProductionTester {
       passed,
       failed,
       warnings,
+      successRate: Math.round((passed / this.results.length) * 100),
       details: this.results
     });
     
     if (failed > 0) {
-      logger.error('❌ Critical tests failed - review before production deployment');
+      logger.error(`❌ ${failed} critical tests failed - review before production deployment`);
+      this.results.filter(r => r.status === 'fail').forEach(result => {
+        logger.error(`   • ${result.name}: ${result.message}`);
+      });
     } else if (warnings > 0) {
-      logger.warn('⚠️ Some tests have warnings - review recommended');
+      logger.warn(`⚠️ ${warnings} tests have warnings - review recommended`);
+      this.results.filter(r => r.status === 'warning').forEach(result => {
+        logger.warn(`   • ${result.name}: ${result.message}`);
+      });
     } else {
       logger.info('✅ All tests passed - ready for production');
     }

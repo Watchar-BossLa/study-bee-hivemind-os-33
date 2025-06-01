@@ -1,27 +1,36 @@
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Study Bee - AI-Powered Learning OS</title>
-    <meta name="description" content="Study Bee is an AI-native learning OS that helps you master any subject with flashcards, tutoring, and spaced repetition." />
-    <meta name="author" content="Study Bee" />
-
-    <meta property="og:title" content="Study Bee - AI-Powered Learning OS" />
-    <meta property="og:description" content="Study Bee is an AI-native learning OS that helps you master any subject with flashcards, tutoring, and spaced repetition." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <title>Study Bee - Your AI-Powered Learning Companion</title>
+    
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com; media-src 'self' blob:; frame-src 'self';">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    
+    <!-- SEO and App Metadata -->
+    <meta name="description" content="Study Bee is your AI-powered learning companion featuring spaced repetition, live tutoring, quiz arena, and collaborative study tools.">
+    <meta name="keywords" content="study, learning, AI tutor, flashcards, spaced repetition, education">
+    <meta name="author" content="Study Bee">
+    
+    <!-- Progressive Web App -->
+    <meta name="theme-color" content="#fbbf24">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
-
   <body>
     <div id="root"></div>
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

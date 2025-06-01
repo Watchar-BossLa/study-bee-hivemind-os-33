@@ -16,19 +16,21 @@ const initializeApp = async () => {
     // Log system status
     ProductionInitializer.logSystemStatus();
     
-    // Run comprehensive tests in development
-    if (isDevelopment()) {
-      setTimeout(async () => {
-        await ProductionTester.runComprehensiveTests();
-      }, 3000);
-    }
-    
-    // Render the app
+    // Render the app first
     ReactDOM.createRoot(document.getElementById("root")!).render(
       <React.StrictMode>
         <App />
       </React.StrictMode>,
     );
+    
+    // Run comprehensive tests in development after app is fully loaded
+    if (isDevelopment()) {
+      // Wait for the app to fully load before running tests
+      setTimeout(async () => {
+        console.log('🔄 Starting comprehensive production tests...');
+        await ProductionTester.runComprehensiveTests();
+      }, 5000); // Increased delay to ensure app is fully loaded
+    }
     
   } catch (error) {
     console.error('Failed to initialize application:', error);

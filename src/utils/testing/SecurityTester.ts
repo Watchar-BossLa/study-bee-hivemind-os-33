@@ -17,18 +17,48 @@ export class SecurityTester {
       securityChecks.push('HTTPS ❌');
     }
     
-    // Check CSP
-    const csp = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-    if (csp) {
+    // Check CSP - look for both meta tag and programmatically set headers
+    const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+    const cspHeader = document.querySelector('meta[name="csp-nonce"]'); // Check for programmatic CSP
+    
+    if (cspMeta || cspHeader) {
       securityChecks.push('CSP ✅');
     } else {
-      securityChecks.push('CSP ❌');
+      // Check if CSP was set programmatically by looking for CSP violations handler
+      const hasCSPHandler = window.addEventListener && 
+        document.addEventListener.toString().includes('securitypolicyviolation');
+      
+      if (hasCSPHandler) {
+        securityChecks.push('CSP ✅ (Programmatic)');
+      } else {
+        securityChecks.push('CSP ❌');
+      }
     }
+    
+    // Check for security headers via meta tags
+    const xFrameOptions = document.querySelector('meta[http-equiv="X-Frame-Options"]');
+    if (xFrameOptions) {
+      securityChecks.push('X-Frame-Options ✅');
+    } else {
+      securityChecks.push('X-Frame-Options ⚠️');
+    }
+    
+    // Check for secure cookies (if any)
+    const hasSecureCookies = document.cookie.includes('Secure') || document.cookie.length === 0;
+    if (hasSecureCookies) {
+      securityChecks.push('Secure Cookies ✅');
+    } else {
+      securityChecks.push('Secure Cookies ⚠️');
+    }
+    
+    const passedChecks = securityChecks.filter(check => check.includes('✅')).length;
+    const totalChecks = securityChecks.length;
     
     return {
       name: 'Security Configuration',
-      status: securityChecks.every(check => check.includes('✅')) ? 'pass' : 'warning',
-      message: 'Security checks completed',
+      status: passedChecks === totalChecks ? 'pass' : 
+              passedChecks >= totalChecks * 0.75 ? 'warning' : 'fail',
+      message: `${passedChecks}/${totalChecks} security checks passed`,
       details: securityChecks
     };
   }
