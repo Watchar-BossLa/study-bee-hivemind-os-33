@@ -19,9 +19,11 @@ export class DatabaseTester {
         .limit(1);
       
       if (error) {
-        // If profiles query fails, try a more basic query
+        // If profiles query fails, try a more basic query using a simple select
         const { data: basicData, error: basicError } = await supabase
-          .rpc('now'); // This should work if Supabase is connected
+          .from('quiz_questions')
+          .select('count(*)')
+          .limit(1);
           
         if (basicError) {
           return {
@@ -34,7 +36,7 @@ export class DatabaseTester {
           return {
             name: 'Database Connection',
             status: 'warning',
-            message: 'Database connected but table access may require authentication',
+            message: 'Database connected but some table access may require authentication',
             details: error.message
           };
         }
@@ -80,6 +82,12 @@ export class DatabaseTester {
               name: `API: ${endpoint.name}`,
               status: 'warning',
               message: `Table exists but requires authentication (RLS enabled)`
+            });
+          } else if (error.message.includes('permission denied') || error.message.includes('insufficient_privilege')) {
+            results.push({
+              name: `API: ${endpoint.name}`,
+              status: 'warning',
+              message: `Table exists but access restricted by RLS policies`
             });
           } else {
             results.push({
