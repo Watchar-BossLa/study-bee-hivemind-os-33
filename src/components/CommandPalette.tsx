@@ -47,7 +47,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, setOpen }) => {
             <span className="ml-auto text-xs text-muted-foreground">Find your next learning path</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => navigate('/tutor'))}
+            onSelect={() => runCommand(() => navigate('/graph-tutor'))}
           >
             <Brain className="mr-2 h-4 w-4" />
             <span>AI Tutor</span>
@@ -73,7 +73,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, setOpen }) => {
             <Users className="mr-2 h-4 w-4" />
             <span>Quiz Arena</span>
           </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => navigate('/spaced-repetition'))}>
+          <CommandItem onSelect={() => runCommand(() => navigate('/flashcards'))}>
             <Award className="mr-2 h-4 w-4" />
             <span>Spaced Repetition</span>
           </CommandItem>

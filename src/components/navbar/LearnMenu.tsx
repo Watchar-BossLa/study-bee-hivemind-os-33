@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
@@ -20,12 +20,16 @@ const LearnMenu = () => {
           <ChevronDown className="ml-1 h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 bg-background border border-border shadow-lg">
+      <DropdownMenuContent 
+        className="w-56 bg-background border border-border shadow-lg z-50" 
+        align="start"
+        sideOffset={4}
+      >
         {learnMenuItems.map((item) => (
           <DropdownMenuItem key={item.label} asChild>
             <Link
               to={item.href}
-              className="flex items-center px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+              className="flex items-center px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground w-full"
             >
               <item.icon className="mr-2 h-4 w-4" />
               <div>
