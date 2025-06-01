@@ -18,9 +18,9 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ children
         if (entry.entryType === 'navigation') {
           const navEntry = entry as PerformanceNavigationTiming;
           logger.info('Navigation timing', {
-            loadTime: navEntry.loadEventEnd - navEntry.navigationStart,
-            domContentLoaded: navEntry.domContentLoadedEventEnd - navEntry.navigationStart,
-            firstPaint: navEntry.responseEnd - navEntry.navigationStart
+            loadTime: navEntry.loadEventEnd - navEntry.startTime,
+            domContentLoaded: navEntry.domContentLoadedEventEnd - navEntry.startTime,
+            firstPaint: navEntry.responseEnd - navEntry.startTime
           });
         }
         
