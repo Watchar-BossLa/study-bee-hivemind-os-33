@@ -87,10 +87,10 @@ export class ProductionTester {
   
   private static async testApiEndpoints(): Promise<void> {
     const endpoints = [
-      { name: 'Quiz Questions', table: 'quiz_questions' },
-      { name: 'Flashcards', table: 'flashcards' },
-      { name: 'Live Sessions', table: 'live_sessions' },
-      { name: 'Study Groups', table: 'study_groups' }
+      { name: 'Quiz Questions', table: 'quiz_questions' as const },
+      { name: 'Flashcards', table: 'flashcards' as const },
+      { name: 'Live Sessions', table: 'live_sessions' as const },
+      { name: 'Study Groups', table: 'study_groups' as const }
     ];
     
     for (const endpoint of endpoints) {
@@ -166,9 +166,13 @@ export class ProductionTester {
   private static async testPerformance(): Promise<void> {
     const performanceMetrics: any = {};
     
-    if (performance.navigation) {
-      performanceMetrics.loadTime = performance.navigation.loadEventEnd - performance.navigation.navigationStart;
-      performanceMetrics.domReady = performance.navigation.domContentLoadedEventEnd - performance.navigation.navigationStart;
+    // Use PerformanceNavigationTiming API
+    if (typeof window !== 'undefined' && 'performance' in window) {
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      if (navigation) {
+        performanceMetrics.loadTime = navigation.loadEventEnd - navigation.loadEventStart;
+        performanceMetrics.domReady = navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart;
+      }
     }
     
     performanceMetrics.memoryUsage = (performance as any).memory?.usedJSHeapSize || 'N/A';

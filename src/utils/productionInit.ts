@@ -53,14 +53,16 @@ export class ProductionInitializer {
   }
   
   private static initPerformanceMonitoring(): void {
-    // Monitor Core Web Vitals
-    if ('web-vitals' in window) {
+    // Monitor Core Web Vitals using dynamic import
+    if (typeof window !== 'undefined') {
       import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-        getCLS(console.log);
-        getFID(console.log);
-        getFCP(console.log);
-        getLCP(console.log);
-        getTTFB(console.log);
+        getCLS((metric) => logger.info('CLS:', metric));
+        getFID((metric) => logger.info('FID:', metric));
+        getFCP((metric) => logger.info('FCP:', metric));
+        getLCP((metric) => logger.info('LCP:', metric));
+        getTTFB((metric) => logger.info('TTFB:', metric));
+      }).catch(() => {
+        logger.warn('Web Vitals not available');
       });
     }
     
@@ -69,9 +71,10 @@ export class ProductionInitializer {
       const observer = new PerformanceObserver((list) => {
         list.getEntries().forEach((entry) => {
           if (entry.entryType === 'navigation') {
+            const navEntry = entry as PerformanceNavigationTiming;
             logger.info('Page load performance:', {
-              loadTime: entry.duration,
-              domContentLoaded: (entry as PerformanceNavigationTiming).domContentLoadedEventEnd
+              loadTime: navEntry.loadEventEnd - navEntry.loadEventStart,
+              domContentLoaded: navEntry.domContentLoadedEventEnd - navEntry.domContentLoadedEventStart
             });
           }
         });
