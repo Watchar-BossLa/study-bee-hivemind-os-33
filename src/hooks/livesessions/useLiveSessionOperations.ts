@@ -15,7 +15,7 @@ export const useLiveSessionOperations = () => {
       toast.success('Session created successfully');
       return result.data;
     } catch (error) {
-      ErrorHandler.handle(error, 'session-creation');
+      ErrorHandler.handle(error, { action: 'session-creation' });
       return null;
     }
   }, []);
@@ -30,7 +30,7 @@ export const useLiveSessionOperations = () => {
       toast.success('Joined session successfully');
       return true;
     } catch (error) {
-      ErrorHandler.handle(error, 'session-joining');
+      ErrorHandler.handle(error, { action: 'session-joining' });
       return false;
     }
   }, []);
@@ -45,7 +45,7 @@ export const useLiveSessionOperations = () => {
       toast.success('Left session successfully');
       return true;
     } catch (error) {
-      ErrorHandler.handle(error, 'session-leaving');
+      ErrorHandler.handle(error, { action: 'session-leaving' });
       return false;
     }
   }, []);
@@ -59,7 +59,7 @@ export const useLiveSessionOperations = () => {
       
       return result.data;
     } catch (error) {
-      ErrorHandler.handle(error, 'sessions-fetching');
+      ErrorHandler.handle(error, { action: 'sessions-fetching' });
       return [];
     }
   }, []);

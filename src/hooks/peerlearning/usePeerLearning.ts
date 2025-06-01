@@ -17,7 +17,7 @@ export const usePeerLearning = () => {
         setConnections(result.data);
       }
     } catch (error) {
-      ErrorHandler.handle(error, 'peer-connections-fetching');
+      ErrorHandler.handle(error, { action: 'peer-connections-fetching' });
     } finally {
       setIsLoading(false);
     }
@@ -31,7 +31,7 @@ export const usePeerLearning = () => {
         setPeers(result.data);
       }
     } catch (error) {
-      ErrorHandler.handle(error, 'peers-searching');
+      ErrorHandler.handle(error, { action: 'peers-searching' });
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +46,7 @@ export const usePeerLearning = () => {
         return result.data;
       }
     } catch (error) {
-      ErrorHandler.handle(error, 'peer-connection-creation');
+      ErrorHandler.handle(error, { action: 'peer-connection-creation' });
       toast.error('Failed to send connection request');
     }
     return null;
@@ -65,7 +65,7 @@ export const usePeerLearning = () => {
         return true;
       }
     } catch (error) {
-      ErrorHandler.handle(error, 'peer-connection-updating');
+      ErrorHandler.handle(error, { action: 'peer-connection-updating' });
       toast.error(`Failed to ${status} connection`);
     }
     return false;

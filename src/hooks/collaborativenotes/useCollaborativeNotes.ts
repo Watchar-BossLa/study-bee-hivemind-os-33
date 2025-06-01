@@ -16,7 +16,7 @@ export const useCollaborativeNotes = () => {
         setNotes(result.data);
       }
     } catch (error) {
-      ErrorHandler.handle(error, 'notes-fetching');
+      ErrorHandler.handle(error, { action: 'notes-fetching' });
     } finally {
       setIsLoading(false);
     }
@@ -31,7 +31,7 @@ export const useCollaborativeNotes = () => {
         return result.data;
       }
     } catch (error) {
-      ErrorHandler.handle(error, 'note-creation');
+      ErrorHandler.handle(error, { action: 'note-creation' });
       toast.error('Failed to create note');
     }
     return null;
@@ -49,7 +49,7 @@ export const useCollaborativeNotes = () => {
         return true;
       }
     } catch (error) {
-      ErrorHandler.handle(error, 'note-updating');
+      ErrorHandler.handle(error, { action: 'note-updating' });
     }
     return false;
   }, []);
@@ -63,7 +63,7 @@ export const useCollaborativeNotes = () => {
         return true;
       }
     } catch (error) {
-      ErrorHandler.handle(error, 'note-deletion');
+      ErrorHandler.handle(error, { action: 'note-deletion' });
       toast.error('Failed to delete note');
     }
     return false;
@@ -92,7 +92,7 @@ export const useNoteRealtime = (noteId: string) => {
           setNote(result.data);
         }
       } catch (error) {
-        ErrorHandler.handle(error, 'note-fetching');
+        ErrorHandler.handle(error, { action: 'note-fetching' });
       }
     };
 

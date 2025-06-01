@@ -13,7 +13,7 @@ export const useArenaOperations = () => {
       }
       return result.data;
     } catch (error) {
-      ErrorHandler.handle(error, 'arena-match-finding');
+      ErrorHandler.handle(error, { action: 'arena-match-finding' });
       return null;
     }
   }, []);
@@ -26,7 +26,7 @@ export const useArenaOperations = () => {
       }
       return true;
     } catch (error) {
-      ErrorHandler.handle(error, 'arena-match-joining');
+      ErrorHandler.handle(error, { action: 'arena-match-joining' });
       return false;
     }
   }, []);
@@ -39,7 +39,7 @@ export const useArenaOperations = () => {
       }
       return result.data;
     } catch (error) {
-      ErrorHandler.handle(error, 'arena-questions-loading');
+      ErrorHandler.handle(error, { action: 'arena-questions-loading' });
       return [];
     }
   }, []);
@@ -67,7 +67,7 @@ export const useArenaOperations = () => {
       }
       return true;
     } catch (error) {
-      ErrorHandler.handle(error, 'arena-answer-submission');
+      ErrorHandler.handle(error, { action: 'arena-answer-submission' });
       return false;
     }
   }, []);

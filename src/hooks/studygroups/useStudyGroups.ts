@@ -16,7 +16,7 @@ export const useStudyGroups = () => {
         setGroups(result.data);
       }
     } catch (error) {
-      ErrorHandler.handle(error, 'study-groups-fetching');
+      ErrorHandler.handle(error, { action: 'study-groups-fetching' });
     } finally {
       setIsLoading(false);
     }
@@ -31,7 +31,7 @@ export const useStudyGroups = () => {
         return result.data;
       }
     } catch (error) {
-      ErrorHandler.handle(error, 'study-group-creation');
+      ErrorHandler.handle(error, { action: 'study-group-creation' });
       toast.error('Failed to create study group');
     }
     return null;
@@ -46,7 +46,7 @@ export const useStudyGroups = () => {
         return true;
       }
     } catch (error) {
-      ErrorHandler.handle(error, 'study-group-joining');
+      ErrorHandler.handle(error, { action: 'study-group-joining' });
       toast.error('Failed to join study group');
     }
     return false;
@@ -61,7 +61,7 @@ export const useStudyGroups = () => {
         return true;
       }
     } catch (error) {
-      ErrorHandler.handle(error, 'study-group-leaving');
+      ErrorHandler.handle(error, { action: 'study-group-leaving' });
       toast.error('Failed to leave study group');
     }
     return false;
