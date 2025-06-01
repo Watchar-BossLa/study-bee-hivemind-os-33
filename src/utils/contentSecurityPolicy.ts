@@ -23,14 +23,14 @@ export class ContentSecurityPolicy {
     'default-src': ["'self'"],
     'script-src': [
       "'self'",
-      "'unsafe-inline'", // Allow inline scripts in development
-      "'unsafe-eval'", // Allow eval() in development for HMR
-      "https://cdn.gpteng.co", // Lovable badge
+      "'unsafe-inline'",
+      "'unsafe-eval'",
+      "https://cdn.gpteng.co",
       "https://5615ee4e-9397-4615-a170-5c4fd36c9ac9.lovableproject.com"
     ],
     'style-src': [
       "'self'",
-      "'unsafe-inline'", // Allow inline styles
+      "'unsafe-inline'",
       "https://fonts.googleapis.com"
     ],
     'img-src': [
@@ -43,7 +43,8 @@ export class ContentSecurityPolicy {
       "'self'",
       "https://api.openai.com",
       "https://*.supabase.co",
-      "wss://*.supabase.co"
+      "wss://*.supabase.co",
+      "https://sentry.io"
     ],
     'font-src': [
       "'self'",
@@ -59,11 +60,11 @@ export class ContentSecurityPolicy {
     'default-src': ["'self'"],
     'script-src': [
       "'self'",
-      "https://cdn.gpteng.co" // Lovable badge only
+      "https://cdn.gpteng.co"
     ],
     'style-src': [
       "'self'",
-      "'unsafe-inline'", // Required for styled-components/emotion
+      "'unsafe-inline'",
       "https://fonts.googleapis.com"
     ],
     'img-src': [
@@ -74,7 +75,9 @@ export class ContentSecurityPolicy {
     'connect-src': [
       "'self'",
       "https://*.supabase.co",
-      "wss://*.supabase.co"
+      "wss://*.supabase.co",
+      "https://sentry.io",
+      "https://*.lovable.app"
     ],
     'font-src': [
       "'self'",
@@ -104,27 +107,27 @@ export class ContentSecurityPolicy {
     const isDevelopment = process.env.NODE_ENV === 'development';
     const cspString = this.generateCSPString(isDevelopment);
     
-    // Remove existing CSP meta tag if present
     const existingCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
     if (existingCSP) {
       existingCSP.remove();
     }
     
-    // Create and inject new CSP meta tag
     const metaTag = document.createElement('meta');
     metaTag.setAttribute('http-equiv', 'Content-Security-Policy');
     metaTag.setAttribute('content', cspString);
     document.head.appendChild(metaTag);
     
-    console.log(`🔒 Content Security Policy ${isDevelopment ? '(Development)' : '(Production)'} injected`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔒 Content Security Policy ${isDevelopment ? '(Development)' : '(Production)'} injected`);
+    }
   }
 
   static reportCSPViolation(violationReport: any): void {
-    console.error('CSP Violation:', violationReport);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('CSP Violation:', violationReport);
+    }
     
-    // In production, send to monitoring service
     if (process.env.NODE_ENV === 'production') {
-      // Send to security monitoring endpoint
       fetch('/api/security/csp-violation', {
         method: 'POST',
         headers: {
@@ -136,14 +139,13 @@ export class ContentSecurityPolicy {
           userAgent: navigator.userAgent,
           url: window.location.href
         })
-      }).catch(error => {
-        console.error('Failed to report CSP violation:', error);
+      }).catch(() => {
+        // Fail silently in production
       });
     }
   }
 
   static setupCSPReporting(): void {
-    // Listen for CSP violations
     document.addEventListener('securitypolicyviolation', (event) => {
       this.reportCSPViolation({
         blockedURI: event.blockedURI,
