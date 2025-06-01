@@ -1,34 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { SectionErrorBoundary } from '@/components/error/SectionErrorBoundary';
-import CourseSection from './components/CourseSection';
 import CourseProgress from './components/CourseProgress';
-import { Book, BookOpen, Check } from 'lucide-react';
 import { SubjectArea } from '@/types/qualifications';
 import { subjectAreas } from '@/data/qualifications';
-import { CourseQuizzes } from '@/components/quiz/CourseQuizzes';
-import { HTMLSanitizer } from '@/utils/htmlSanitizer';
+import { LessonViewer } from './components/LessonViewer';
+import { TabsContainer } from './components/TabsContainer';
+import { CourseNotFound } from './components/CourseNotFound';
 
 interface LearningContentProps {
   subjectId?: string;
   moduleId?: string;
   courseId?: string;
 }
-
-// Secure content component that safely renders HTML
-const SecureContent: React.FC<{ content: string }> = ({ content }) => {
-  const sanitizedContent = HTMLSanitizer.validateAndSanitize(content);
-  
-  return (
-    <div 
-      className="prose max-w-none"
-      dangerouslySetInnerHTML={{ __html: sanitizedContent }}
-    />
-  );
-};
 
 const mockSections = [
   {
@@ -92,7 +76,6 @@ const LearningContent: React.FC<LearningContentProps> = ({ subjectId, moduleId, 
   const [currentCourse, setCurrentCourse] = useState<any>();
   const [sections] = useState(mockSections);
   const [currentLesson, setCurrentLesson] = useState<any>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (subjectId) {
@@ -112,18 +95,15 @@ const LearningContent: React.FC<LearningContentProps> = ({ subjectId, moduleId, 
   }, [subjectId, moduleId, courseId]);
 
   if (!currentSubject || !currentModule || !currentCourse) {
-    return (
-      <div className="text-center p-8">
-        <h2 className="text-2xl font-bold mb-4">Course Not Found</h2>
-        <Button onClick={() => navigate('/qualifications')}>
-          Back to Qualifications
-        </Button>
-      </div>
-    );
+    return <CourseNotFound />;
   }
 
   const handleSelectLesson = (lesson: any) => {
     setCurrentLesson(lesson);
+  };
+
+  const handleBackToLessons = () => {
+    setCurrentLesson(null);
   };
 
   const completedLessons = sections.flatMap(s => s.lessons).filter(l => l.completed).length;
@@ -139,85 +119,22 @@ const LearningContent: React.FC<LearningContentProps> = ({ subjectId, moduleId, 
             {currentSubject.name} &gt; {currentModule.name}
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-4">
-              <TabsTrigger value="content">
-                <Book className="h-4 w-4 mr-2" />
-                Content
-              </TabsTrigger>
-              <TabsTrigger value="quizzes">
-                <Check className="h-4 w-4 mr-2" />
-                Quizzes
-              </TabsTrigger>
-              <TabsTrigger value="resources">
-                <BookOpen className="h-4 w-4 mr-2" />
-                Resources
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="content">
-              <div className="space-y-6">
-                {currentLesson ? (
-                  <div className="space-y-4">
-                    <Button variant="ghost" onClick={() => setCurrentLesson(null)} className="mb-2">
-                      ← Back to lessons
-                    </Button>
-                    <div className="border rounded-lg p-6">
-                      <h2 className="text-2xl font-bold mb-4">{currentLesson.title}</h2>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-                        <div className="px-2 py-1 bg-muted rounded">
-                          {currentLesson.type}
-                        </div>
-                        <div>{currentLesson.duration}</div>
-                      </div>
-                      <SecureContent content={currentLesson.content} />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {sections.map((section) => (
-                      <CourseSection
-                        key={section.id}
-                        section={section}
-                        onSelectLesson={handleSelectLesson}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="quizzes">
-              <CourseQuizzes 
-                subjectId={subjectId} 
-                moduleId={moduleId} 
-                courseId={courseId} 
-              />
-            </TabsContent>
-
-            <TabsContent value="resources">
-              <div className="border rounded-lg p-6">
-                <h2 className="text-2xl font-bold mb-4">Additional Resources</h2>
-                <p className="text-muted-foreground mb-4">
-                  Enhance your learning with these supplementary materials.
-                </p>
-                <ul className="space-y-2">
-                  <li>
-                    <a href="#" className="text-blue-600 hover:underline">Course syllabus</a>
-                  </li>
-                  <li>
-                    <a href="#" className="text-blue-600 hover:underline">Reading list</a>
-                  </li>
-                  <li>
-                    <a href="#" className="text-blue-600 hover:underline">Glossary of terms</a>
-                  </li>
-                  <li>
-                    <a href="#" className="text-blue-600 hover:underline">Reference guide</a>
-                  </li>
-                </ul>
-              </div>
-            </TabsContent>
-          </Tabs>
+          {currentLesson ? (
+            <LessonViewer 
+              lesson={currentLesson} 
+              onBack={handleBackToLessons} 
+            />
+          ) : (
+            <TabsContainer
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              sections={sections}
+              onSelectLesson={handleSelectLesson}
+              subjectId={subjectId}
+              moduleId={moduleId}
+              courseId={courseId}
+            />
+          )}
         </div>
 
         <div>
