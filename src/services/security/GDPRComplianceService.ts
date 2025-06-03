@@ -134,24 +134,23 @@ export class GDPRComplianceService {
       // 2. Handle foreign key constraints properly
       // 3. Use a transaction to ensure all-or-nothing deletion
       
-      const tablesToDelete = [
-        'flashcard_reviews',
-        'flashcards', 
-        'arena_stats',
-        'session_participants',
-        'session_messages',
-        'live_sessions',
-        'profiles'
-      ] as const;
+      // Delete data in proper order to handle foreign key constraints
+      const deletionTasks = [
+        // Delete dependent records first
+        { table: 'flashcard_reviews', column: 'user_id' },
+        { table: 'flashcards', column: 'user_id' },
+        { table: 'arena_stats', column: 'user_id' },
+        { table: 'session_participants', column: 'user_id' },
+        { table: 'session_messages', column: 'user_id' },
+        { table: 'live_sessions', column: 'host_id' },
+        { table: 'profiles', column: 'id' }
+      ];
 
-      for (const table of tablesToDelete) {
-        const column = table === 'live_sessions' ? 'host_id' : 
-                      table === 'profiles' ? 'id' : 'user_id';
-        
+      for (const task of deletionTasks) {
         const { error } = await supabase
-          .from(table)
+          .from(task.table as any)
           .delete()
-          .eq(column, userId);
+          .eq(task.column, userId);
         
         if (error && !error.message.includes('No rows found')) {
           throw error;
