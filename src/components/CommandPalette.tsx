@@ -10,7 +10,7 @@ import {
   CommandItem,
   CommandSeparator,
 } from '@/components/ui/command';
-import { Book, Search, Brain, Camera, Users, Award, Home, GraduationCap } from 'lucide-react';
+import { Book, Search, Brain, Camera, Users, Award, Home, GraduationCap, Shield, Settings } from 'lucide-react';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -80,6 +80,19 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, setOpen }) => {
           <CommandItem onSelect={() => runCommand(() => navigate('/'))}>
             <Search className="mr-2 h-4 w-4" />
             <span>Search All Content</span>
+          </CommandItem>
+        </CommandGroup>
+
+        <CommandSeparator />
+        
+        <CommandGroup heading="Settings & Security">
+          <CommandItem onSelect={() => runCommand(() => navigate('/settings'))}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => navigate('/security'))}>
+            <Shield className="mr-2 h-4 w-4" />
+            <span>Security & Privacy</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>
