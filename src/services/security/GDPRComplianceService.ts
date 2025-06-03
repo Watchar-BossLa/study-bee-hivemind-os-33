@@ -82,7 +82,20 @@ export class GDPRComplianceService {
         .order('requested_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform data to match interface
+      const transformedData: DataExportRequest[] = (data || []).map(row => ({
+        id: row.id,
+        user_id: row.user_id,
+        request_type: row.request_type as 'export' | 'delete',
+        status: row.status as 'pending' | 'processing' | 'completed' | 'failed',
+        file_url: row.file_url,
+        requested_at: row.requested_at,
+        completed_at: row.completed_at,
+        expires_at: row.expires_at
+      }));
+
+      return transformedData;
     } catch (error) {
       logger.error('Failed to fetch export requests:', error);
       return [];
@@ -121,7 +134,7 @@ export class GDPRComplianceService {
       // 2. Handle foreign key constraints properly
       // 3. Use a transaction to ensure all-or-nothing deletion
       
-      const tables = [
+      const tablesToDelete = [
         'flashcard_reviews',
         'flashcards', 
         'arena_stats',
@@ -129,14 +142,16 @@ export class GDPRComplianceService {
         'session_messages',
         'live_sessions',
         'profiles'
-      ];
+      ] as const;
 
-      for (const table of tables) {
+      for (const table of tablesToDelete) {
+        const column = table === 'live_sessions' ? 'host_id' : 
+                      table === 'profiles' ? 'id' : 'user_id';
+        
         const { error } = await supabase
           .from(table)
           .delete()
-          .eq(table === 'live_sessions' ? 'host_id' : 
-              table === 'profiles' ? 'id' : 'user_id', userId);
+          .eq(column, userId);
         
         if (error && !error.message.includes('No rows found')) {
           throw error;

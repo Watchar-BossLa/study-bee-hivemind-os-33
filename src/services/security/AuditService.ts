@@ -51,7 +51,21 @@ export class AuditService {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our interface
+      const transformedData: AuditLog[] = (data || []).map(row => ({
+        id: row.id,
+        user_id: row.user_id,
+        table_name: row.table_name,
+        operation: row.operation,
+        old_values: row.old_values as Record<string, any> | null,
+        new_values: row.new_values as Record<string, any> | null,
+        ip_address: row.ip_address ? String(row.ip_address) : null,
+        user_agent: row.user_agent,
+        created_at: row.created_at
+      }));
+
+      return transformedData;
     } catch (error) {
       logger.error('Failed to fetch audit logs:', error);
       throw error;

@@ -171,7 +171,7 @@ export const SecurityDashboard: React.FC = () => {
                   {auditSummary && Object.entries(auditSummary.eventsByTable).map(([table, count]) => (
                     <div key={table} className="flex justify-between items-center">
                       <span className="font-medium">{table}</span>
-                      <Badge variant="outline">{count}</Badge>
+                      <Badge variant="outline">{String(count)}</Badge>
                     </div>
                   ))}
                 </div>
@@ -187,7 +187,7 @@ export const SecurityDashboard: React.FC = () => {
                   {auditSummary && Object.entries(auditSummary.eventsByOperation).map(([operation, count]) => (
                     <div key={operation} className="flex justify-between items-center">
                       <span className="font-medium">{operation}</span>
-                      <Badge variant="outline">{count}</Badge>
+                      <Badge variant="outline">{String(count)}</Badge>
                     </div>
                   ))}
                 </div>

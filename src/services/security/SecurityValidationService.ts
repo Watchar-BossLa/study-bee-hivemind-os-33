@@ -2,6 +2,13 @@
 import DOMPurify from 'dompurify';
 import { logger } from '@/utils/logger';
 
+interface ValidationResult {
+  isValid: boolean;
+  sanitizedValue: string;
+  errors: string[];
+  warnings: string[];
+}
+
 export class SecurityValidationService {
   // Input sanitization
   static sanitizeHtml(input: string): string {
@@ -29,6 +36,67 @@ export class SecurityValidationService {
     };
 
     return patterns[type]?.test(input) || false;
+  }
+
+  // Enhanced validation methods for useSecureForm
+  static validateEmailInput(input: string): ValidationResult {
+    const sanitized = this.sanitizeText(input);
+    const isValid = this.validateInput(sanitized, 'email');
+    
+    return {
+      isValid,
+      sanitizedValue: sanitized,
+      errors: isValid ? [] : ['Invalid email format'],
+      warnings: input !== sanitized ? ['Input was sanitized'] : []
+    };
+  }
+
+  static validatePasswordInput(input: string): ValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    
+    if (input.length < 8) {
+      errors.push('Password must be at least 8 characters long');
+    }
+    
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(input)) {
+      errors.push('Password must contain uppercase, lowercase, and numbers');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      sanitizedValue: input, // Don't sanitize passwords
+      errors,
+      warnings
+    };
+  }
+
+  static validateUserInput(input: string, fieldName: string): ValidationResult {
+    const sanitized = this.sanitizeText(input);
+    const hasScriptTags = /<script/i.test(input);
+    const hasSqlInjection = /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b)/i.test(input);
+    
+    const warnings: string[] = [];
+    const errors: string[] = [];
+
+    if (hasScriptTags) {
+      warnings.push('Script tags detected and removed');
+    }
+    
+    if (hasSqlInjection) {
+      warnings.push('Potential SQL injection attempt detected');
+    }
+
+    if (input !== sanitized) {
+      warnings.push('Input was sanitized for security');
+    }
+
+    return {
+      isValid: true, // Allow but sanitize
+      sanitizedValue: sanitized,
+      errors,
+      warnings
+    };
   }
 
   // XSS prevention
