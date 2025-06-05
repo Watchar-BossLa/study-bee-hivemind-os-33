@@ -2,6 +2,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TabErrorBoundary } from '@/components/ui/TabErrorBoundary';
 import SecurityDashboard from '@/components/admin/SecurityDashboard';
 import GDPRCompliancePanel from '@/components/privacy/GDPRCompliancePanel';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,24 +38,26 @@ const SecuritySettings: React.FC = () => {
           <h1 className="text-3xl font-bold">Security & Privacy</h1>
         </div>
 
-        <Tabs defaultValue="privacy" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="privacy" className="flex items-center gap-2">
-              Privacy & Data
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              Security Dashboard
-            </TabsTrigger>
-          </TabsList>
+        <TabErrorBoundary>
+          <Tabs defaultValue="privacy" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="privacy" className="flex items-center gap-2">
+                Privacy & Data
+              </TabsTrigger>
+              <TabsTrigger value="security" className="flex items-center gap-2">
+                Security Dashboard
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="privacy">
-            <GDPRCompliancePanel />
-          </TabsContent>
+            <TabsContent value="privacy">
+              <GDPRCompliancePanel />
+            </TabsContent>
 
-          <TabsContent value="security">
-            <SecurityDashboard />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="security">
+              <SecurityDashboard />
+            </TabsContent>
+          </Tabs>
+        </TabErrorBoundary>
       </div>
     </>
   );

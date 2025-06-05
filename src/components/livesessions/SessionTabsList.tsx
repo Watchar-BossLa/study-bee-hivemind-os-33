@@ -9,18 +9,25 @@ interface SessionTabsListProps {
 }
 
 const SessionTabsList: React.FC<SessionTabsListProps> = ({ session }) => {
-  // Calculate active tabs to determine grid layout
+  // Calculate which tabs are active
   const activeTabs = [];
   
   if (session.features.whiteboard) activeTabs.push('whiteboard');
   if (session.features.chat) activeTabs.push('chat');
   activeTabs.push('notes', 'participants', 'polls', 'analytics');
   
-  const gridCols = activeTabs.length;
-  const gridClass = `grid w-full grid-cols-${Math.min(gridCols, 6)}`;
+  // Use fixed grid classes based on number of tabs
+  const getGridClass = (tabCount: number) => {
+    switch (tabCount) {
+      case 4: return 'grid w-full grid-cols-4';
+      case 5: return 'grid w-full grid-cols-5';
+      case 6: return 'grid w-full grid-cols-6';
+      default: return 'grid w-full grid-cols-6';
+    }
+  };
 
   return (
-    <TabsList className={gridClass}>
+    <TabsList className={getGridClass(activeTabs.length)}>
       {session.features.whiteboard && (
         <TabsTrigger value="whiteboard" className="flex items-center gap-2">
           <Pencil className="h-4 w-4" />
