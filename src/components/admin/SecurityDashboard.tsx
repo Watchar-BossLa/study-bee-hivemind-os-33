@@ -122,10 +122,16 @@ export const SecurityDashboard: React.FC = () => {
       </div>
 
       <Tabs defaultValue="audit-logs" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="policies">Security Policies</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="audit-logs" className="flex items-center gap-2">
+            Audit Logs
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="flex items-center gap-2">
+            Summary
+          </TabsTrigger>
+          <TabsTrigger value="policies" className="flex items-center gap-2">
+            Security Policies
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="audit-logs" className="space-y-4">

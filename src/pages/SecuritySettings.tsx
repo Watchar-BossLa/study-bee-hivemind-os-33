@@ -39,8 +39,12 @@ const SecuritySettings: React.FC = () => {
 
         <Tabs defaultValue="privacy" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="privacy">Privacy & Data</TabsTrigger>
-            <TabsTrigger value="security">Security Dashboard</TabsTrigger>
+            <TabsTrigger value="privacy" className="flex items-center gap-2">
+              Privacy & Data
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              Security Dashboard
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="privacy">

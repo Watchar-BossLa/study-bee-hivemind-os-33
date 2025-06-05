@@ -30,14 +30,14 @@ const Qualifications = () => {
         <section className="py-12">
           <div className="container">
             <Tabs defaultValue="subjects" className="space-y-8">
-              <TabsList className="w-full max-w-md mx-auto">
-                <TabsTrigger value="subjects" className="flex-1 gap-2">
+              <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
+                <TabsTrigger value="subjects" className="flex items-center gap-2">
                   <Book className="h-4 w-4" />
-                  Subject Areas
+                  <span className="hidden sm:inline">Subject Areas</span>
                 </TabsTrigger>
-                <TabsTrigger value="accounting" className="flex-1 gap-2">
+                <TabsTrigger value="accounting" className="flex items-center gap-2">
                   <Award className="h-4 w-4" />
-                  Accounting
+                  <span className="hidden sm:inline">Accounting</span>
                 </TabsTrigger>
               </TabsList>
               
