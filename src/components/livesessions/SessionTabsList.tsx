@@ -10,7 +10,7 @@ interface SessionTabsListProps {
 
 const SessionTabsList: React.FC<SessionTabsListProps> = ({ session }) => {
   return (
-    <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
+    <TabsList className="grid w-full grid-cols-6">
       {session.features.whiteboard && (
         <TabsTrigger value="whiteboard" className="flex items-center gap-2">
           <Pencil className="h-4 w-4" />
