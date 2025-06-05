@@ -9,18 +9,18 @@ interface SessionTabsListProps {
 }
 
 const SessionTabsList: React.FC<SessionTabsListProps> = ({ session }) => {
-  // Calculate the number of active tabs dynamically
-  const tabCount = [
-    session.features.whiteboard,
-    session.features.chat,
-    true, // notes - always shown
-    true, // participants - always shown
-    true, // polls - always shown
-    true, // analytics - always shown
-  ].filter(Boolean).length;
+  // Calculate active tabs to determine grid layout
+  const activeTabs = [];
+  
+  if (session.features.whiteboard) activeTabs.push('whiteboard');
+  if (session.features.chat) activeTabs.push('chat');
+  activeTabs.push('notes', 'participants', 'polls', 'analytics');
+  
+  const gridCols = activeTabs.length;
+  const gridClass = `grid w-full grid-cols-${Math.min(gridCols, 6)}`;
 
   return (
-    <TabsList className={`grid w-full grid-cols-${tabCount}`}>
+    <TabsList className={gridClass}>
       {session.features.whiteboard && (
         <TabsTrigger value="whiteboard" className="flex items-center gap-2">
           <Pencil className="h-4 w-4" />

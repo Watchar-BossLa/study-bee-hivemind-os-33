@@ -5,7 +5,7 @@ import Footer from '@/components/Footer';
 import SubjectAreas from '@/components/qualifications/SubjectAreas';
 import AccountingQualifications from '@/components/qualifications/AccountingQualifications';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Book, Award, GraduationCap, School } from 'lucide-react';
+import { Book, Award } from 'lucide-react';
 
 const QualificationsHeader = () => (
   <section className="bg-bee-light py-12">

@@ -14,9 +14,6 @@ interface SessionTabsProps {
   onCreateSession?: (sessionData: Omit<LiveSession, 'id' | 'createdAt' | 'updatedAt' | 'host' | 'participants'>) => Promise<any>;
 }
 
-/**
- * Component that renders the session tabs UI
- */
 const SessionTabs: React.FC<SessionTabsProps> = ({
   isAuthenticated,
   onJoinSession,
