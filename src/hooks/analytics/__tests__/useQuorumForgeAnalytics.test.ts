@@ -3,6 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useQuorumForgeAnalytics } from '../useQuorumForgeAnalytics';
 import { quorumForgeAnalyticsService } from '@/services/analytics/QuorumForgeAnalyticsService';
+import React from 'react';
 
 // Mock the analytics service
 jest.mock('@/services/analytics/QuorumForgeAnalyticsService');
@@ -18,7 +19,7 @@ const createWrapper = () => {
     },
   });
   return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    React.createElement(QueryClientProvider, { client: queryClient }, children)
   );
 };
 
