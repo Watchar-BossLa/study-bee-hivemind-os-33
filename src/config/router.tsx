@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -30,6 +29,7 @@ const LiveStudySessions = lazy(() => import('@/pages/LiveStudySessions'));
 const Tutor = lazy(() => import('@/pages/Tutor'));
 const GraphTutor = lazy(() => import('@/pages/GraphTutor'));
 const QuorumDashboard = lazy(() => import('@/pages/QuorumDashboard'));
+const QuorumAnalytics = lazy(() => import('@/pages/QuorumAnalytics'));
 const OCR = lazy(() => import('@/pages/OCR'));
 const OCRFlashcards = lazy(() => import('@/pages/OCRFlashcards'));
 const AdaptiveQuiz = lazy(() => import('@/pages/AdaptiveQuiz'));
@@ -170,6 +170,10 @@ export const router = createBrowserRouter([
   {
     path: "/quorum-dashboard",
     element: withProtectedSuspense(QuorumDashboard),
+  },
+  {
+    path: "/quorum-analytics",
+    element: withProtectedSuspense(QuorumAnalytics),
   },
   {
     path: "/ocr",

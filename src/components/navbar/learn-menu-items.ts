@@ -1,60 +1,47 @@
 
-import { BookOpen, GraduationCap, Users, Camera, FileText, PaintBucket, UsersRound } from 'lucide-react';
+import { Brain, BookOpen, Users, Video, Target, BarChart3, Activity } from 'lucide-react';
 
-export interface LearnMenuItem {
-  label: string;
-  href: string;
-  description: string;
-  icon: typeof BookOpen;
-}
-
-export const learnMenuItems: LearnMenuItem[] = [
+export const learnMenuItems = [
+  {
+    label: 'AI Tutor',
+    href: '/tutor',
+    description: 'Get personalized help from our AI tutor',
+    icon: Brain,
+  },
   {
     label: 'Courses',
     href: '/courses',
-    description: 'Browse our comprehensive course catalog',
+    description: 'Browse available courses',
     icon: BookOpen,
   },
   {
     label: 'Live Sessions',
     href: '/live-sessions',
-    description: 'Join collaborative learning sessions',
-    icon: Users,
-  },
-  {
-    label: 'OCR Flashcards',
-    href: '/ocr/flashcards',
-    description: 'Create flashcards from photos with AI',
-    icon: Camera,
+    description: 'Join collaborative study sessions',
+    icon: Video,
   },
   {
     label: 'Study Groups',
     href: '/study-groups',
-    description: 'Join or create collaborative study groups',
-    icon: UsersRound,
-  },
-  {
-    label: 'Peer Learning',
-    href: '/peer-learning',
-    description: 'Connect with study partners and peers',
+    description: 'Connect with other learners',
     icon: Users,
   },
   {
-    label: 'Collaborative Notes',
-    href: '/collaborative-notes',
-    description: 'Create and share notes with your study groups',
-    icon: FileText,
+    label: 'Arena',
+    href: '/arena',
+    description: 'Compete in quiz battles',
+    icon: Target,
   },
   {
-    label: 'Theme Settings',
-    href: '/theme-settings',
-    description: 'Customize your learning environment',
-    icon: PaintBucket,
+    label: 'Analytics',
+    href: '/analytics',
+    description: 'Track your learning progress',
+    icon: BarChart3,
   },
   {
-    label: 'Qualifications',
-    href: '/qualifications',
-    description: 'Explore certification pathways',
-    icon: GraduationCap,
+    label: 'QuorumForge Analytics',
+    href: '/quorum-analytics',
+    description: 'AI system performance insights',
+    icon: Activity,
   },
 ];

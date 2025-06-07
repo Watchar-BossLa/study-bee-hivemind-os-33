@@ -8,7 +8,7 @@ import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Users, Video, MessageSquare, BarChart3 } from 'lucide-react';
+import { Users, Video, MessageSquare, BarChart3, Activity } from 'lucide-react';
 
 const Index = () => {
   return (
@@ -25,7 +25,7 @@ const Index = () => {
         <section className="py-16 bg-muted/50">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-bold text-center mb-12">Start Learning Today</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-5xl mx-auto">
               <Link to="/live-sessions">
                 <Button 
                   variant="outline" 
@@ -63,6 +63,16 @@ const Index = () => {
                 >
                   <BarChart3 className="h-6 w-6" />
                   <span>Analytics</span>
+                </Button>
+              </Link>
+
+              <Link to="/quorum-analytics">
+                <Button 
+                  variant="outline" 
+                  className="w-full h-24 flex-col gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
+                  <Activity className="h-6 w-6" />
+                  <span>AI Analytics</span>
                 </Button>
               </Link>
             </div>
