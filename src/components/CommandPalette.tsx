@@ -10,7 +10,7 @@ import {
   CommandItem,
   CommandSeparator,
 } from '@/components/ui/command';
-import { Book, Search, Brain, Camera, Users, Award, Home, GraduationCap, Shield, Settings } from 'lucide-react';
+import { Book, Search, Brain, Camera, Users, Award, Home, GraduationCap } from 'lucide-react';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -47,7 +47,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, setOpen }) => {
             <span className="ml-auto text-xs text-muted-foreground">Find your next learning path</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => navigate('/graph-tutor'))}
+            onSelect={() => runCommand(() => navigate('/tutor'))}
           >
             <Brain className="mr-2 h-4 w-4" />
             <span>AI Tutor</span>
@@ -73,26 +73,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, setOpen }) => {
             <Users className="mr-2 h-4 w-4" />
             <span>Quiz Arena</span>
           </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => navigate('/flashcards'))}>
+          <CommandItem onSelect={() => runCommand(() => navigate('/spaced-repetition'))}>
             <Award className="mr-2 h-4 w-4" />
             <span>Spaced Repetition</span>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate('/'))}>
             <Search className="mr-2 h-4 w-4" />
             <span>Search All Content</span>
-          </CommandItem>
-        </CommandGroup>
-
-        <CommandSeparator />
-        
-        <CommandGroup heading="Settings & Security">
-          <CommandItem onSelect={() => runCommand(() => navigate('/settings'))}>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => navigate('/security'))}>
-            <Shield className="mr-2 h-4 w-4" />
-            <span>Security & Privacy</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>

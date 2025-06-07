@@ -5,7 +5,7 @@ import { ChartBar, BookOpen, Brain, Clock, Zap } from 'lucide-react';
 
 const AnalyticsTabsEnhanced: React.FC = () => {
   return (
-    <TabsList className="grid w-full grid-cols-5">
+    <TabsList className="grid grid-cols-5 w-full md:w-auto">
       <TabsTrigger value="overview" className="flex items-center gap-2">
         <ChartBar className="h-4 w-4" />
         <span className="hidden sm:inline">Overview</span>

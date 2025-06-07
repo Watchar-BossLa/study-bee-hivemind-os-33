@@ -5,8 +5,7 @@ import Footer from '@/components/Footer';
 import SubjectAreas from '@/components/qualifications/SubjectAreas';
 import AccountingQualifications from '@/components/qualifications/AccountingQualifications';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TabErrorBoundary } from '@/components/ui/TabErrorBoundary';
-import { Book, Award } from 'lucide-react';
+import { Book, Award, GraduationCap, School } from 'lucide-react';
 
 const QualificationsHeader = () => (
   <section className="bg-bee-light py-12">
@@ -30,28 +29,26 @@ const Qualifications = () => {
         
         <section className="py-12">
           <div className="container">
-            <TabErrorBoundary>
-              <Tabs defaultValue="subjects" className="space-y-8">
-                <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
-                  <TabsTrigger value="subjects" className="flex items-center gap-2">
-                    <Book className="h-4 w-4" />
-                    <span className="hidden sm:inline">Subject Areas</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="accounting" className="flex items-center gap-2">
-                    <Award className="h-4 w-4" />
-                    <span className="hidden sm:inline">Accounting</span>
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="subjects">
-                  <SubjectAreas />
-                </TabsContent>
-                
-                <TabsContent value="accounting">
-                  <AccountingQualifications />
-                </TabsContent>
-              </Tabs>
-            </TabErrorBoundary>
+            <Tabs defaultValue="subjects" className="space-y-8">
+              <TabsList className="w-full max-w-md mx-auto">
+                <TabsTrigger value="subjects" className="flex-1 gap-2">
+                  <Book className="h-4 w-4" />
+                  Subject Areas
+                </TabsTrigger>
+                <TabsTrigger value="accounting" className="flex-1 gap-2">
+                  <Award className="h-4 w-4" />
+                  Accounting
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="subjects">
+                <SubjectAreas />
+              </TabsContent>
+              
+              <TabsContent value="accounting">
+                <AccountingQualifications />
+              </TabsContent>
+            </Tabs>
           </div>
         </section>
       </main>

@@ -14,6 +14,9 @@ interface SessionTabsProps {
   onCreateSession?: (sessionData: Omit<LiveSession, 'id' | 'createdAt' | 'updatedAt' | 'host' | 'participants'>) => Promise<any>;
 }
 
+/**
+ * Component that renders the session tabs UI
+ */
 const SessionTabs: React.FC<SessionTabsProps> = ({
   isAuthenticated,
   onJoinSession,
@@ -24,16 +27,10 @@ const SessionTabs: React.FC<SessionTabsProps> = ({
 
   return (
     <Tabs defaultValue="browse" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="join" className="flex items-center gap-2">
-          Join Session
-        </TabsTrigger>
-        <TabsTrigger value="browse" className="flex items-center gap-2">
-          Browse Sessions
-        </TabsTrigger>
-        <TabsTrigger value="create" className="flex items-center gap-2">
-          Create Session
-        </TabsTrigger>
+      <TabsList className="grid w-full md:w-auto grid-cols-3">
+        <TabsTrigger value="join">Join Session</TabsTrigger>
+        <TabsTrigger value="browse">Browse Sessions</TabsTrigger>
+        <TabsTrigger value="create">Create Session</TabsTrigger>
       </TabsList>
       
       <TabsContent value="join">

@@ -216,19 +216,11 @@ const InterventionDashboard: React.FC = () => {
 
       {/* Main Content */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="active" className="flex items-center gap-2">
-            Active
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger value="risk" className="flex items-center gap-2">
-            Risk Assessment
-          </TabsTrigger>
+        <TabsList className="grid grid-cols-4 w-full md:w-auto">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="active">Active</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="risk">Risk Assessment</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">

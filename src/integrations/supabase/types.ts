@@ -75,42 +75,6 @@ export type Database = {
         }
         Relationships: []
       }
-      audit_logs: {
-        Row: {
-          created_at: string
-          id: string
-          ip_address: unknown | null
-          new_values: Json | null
-          old_values: Json | null
-          operation: string
-          table_name: string
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          ip_address?: unknown | null
-          new_values?: Json | null
-          old_values?: Json | null
-          operation: string
-          table_name: string
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          ip_address?: unknown | null
-          new_values?: Json | null
-          old_values?: Json | null
-          operation?: string
-          table_name?: string
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       collaborative_note_collaborators: {
         Row: {
           added_at: string
@@ -204,39 +168,6 @@ export type Database = {
           course_id?: string
           created_at?: string
           id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      data_export_requests: {
-        Row: {
-          completed_at: string | null
-          expires_at: string | null
-          file_url: string | null
-          id: string
-          request_type: string
-          requested_at: string
-          status: string
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          expires_at?: string | null
-          file_url?: string | null
-          id?: string
-          request_type?: string
-          requested_at?: string
-          status?: string
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          expires_at?: string | null
-          file_url?: string | null
-          id?: string
-          request_type?: string
-          requested_at?: string
-          status?: string
           user_id?: string
         }
         Relationships: []
@@ -682,33 +613,6 @@ export type Database = {
         }
         Relationships: []
       }
-      rate_limits: {
-        Row: {
-          created_at: string
-          endpoint: string
-          id: string
-          identifier: string
-          requests_count: number
-          window_start: string
-        }
-        Insert: {
-          created_at?: string
-          endpoint: string
-          id?: string
-          identifier: string
-          requests_count?: number
-          window_start?: string
-        }
-        Update: {
-          created_at?: string
-          endpoint?: string
-          id?: string
-          identifier?: string
-          requests_count?: number
-          window_start?: string
-        }
-        Relationships: []
-      }
       session_messages: {
         Row: {
           content: string
@@ -1044,58 +948,11 @@ export type Database = {
         }
         Relationships: []
       }
-      user_roles: {
-        Row: {
-          assigned_at: string
-          assigned_by: string | null
-          expires_at: string | null
-          id: string
-          role: Database["public"]["Enums"]["user_role"]
-          user_id: string
-        }
-        Insert: {
-          assigned_at?: string
-          assigned_by?: string | null
-          expires_at?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["user_role"]
-          user_id: string
-        }
-        Update: {
-          assigned_at?: string
-          assigned_by?: string | null
-          expires_at?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["user_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      check_rate_limit: {
-        Args: {
-          p_identifier: string
-          p_endpoint: string
-          p_max_requests?: number
-          p_window_minutes?: number
-        }
-        Returns: boolean
-      }
-      cleanup_old_data: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      has_role: {
-        Args: {
-          p_user_id: string
-          p_role: Database["public"]["Enums"]["user_role"]
-        }
-        Returns: boolean
-      }
       update_daily_flashcard_stats: {
         Args: { user_id_param: string }
         Returns: undefined
@@ -1112,7 +969,6 @@ export type Database = {
     }
     Enums: {
       processing_status: "pending" | "processing" | "completed" | "error"
-      user_role: "admin" | "moderator" | "user" | "guest"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1229,7 +1085,6 @@ export const Constants = {
   public: {
     Enums: {
       processing_status: ["pending", "processing", "completed", "error"],
-      user_role: ["admin", "moderator", "user", "guest"],
     },
   },
 } as const

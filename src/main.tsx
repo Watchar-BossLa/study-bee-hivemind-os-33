@@ -27,9 +27,9 @@ const initializeApp = async () => {
     if (isDevelopment()) {
       // Wait for the app to fully load before running tests
       setTimeout(async () => {
-        console.log('🔄 Starting enhanced auth and production tests...');
+        console.log('🔄 Starting comprehensive production tests...');
         await ProductionTester.runComprehensiveTests();
-      }, 3000); // Reduced delay for faster feedback
+      }, 5000); // Increased delay to ensure app is fully loaded
     }
     
   } catch (error) {
